@@ -1,0 +1,286 @@
+
+services:
+  - name: Prometheus
+    exporters:
+      - rules:
+          - name: Exporter down
+            description: Prometheus exporter down
+            query: 'up{} == 0'
+            severity: warning
+
+  - name: Host
+    exporters:
+      - name: node-exporter
+        rules:
+          - name: Out of memory
+            description: Node memory is filling up (< 10% left)
+            query: '(node_memory_MemFree{} + node_memory_Cached{} + node_memory_Buffers{}) / node_memory_MemTotal{} * 100 < 10'
+            severity: warning
+          - name: Unusual network throughput in
+            description: Host network interfaces are probably receiving too much data (> 100 MB/s)
+            query: 'sum by (instance) (irate(node_network_receive_bytes{}[2m])) / 1024 / 1024 > 100'
+            severity: warning
+          - name: Unusual network throughput out
+            description: Host network interfaces are probably sending too much data (> 100 MB/s)
+            query: 'sum by (instance) (irate(node_network_transmit_bytes{}[2m])) / 1024 / 1024 > 100'
+            severity: warning
+          - name: Unusual disk read rate
+            description: Disk is probably reading too much data (> 50 MB/s)
+            query: 'sum by (instance) (irate(node_disk_bytes_read{}[2m])) / 1024 / 1024 > 50'
+            severity: warning
+          - name: Unusual disk write rate
+            description: Disk is probably writing too much data (> 50 MB/s)
+            query: 'sum by (instance) (irate(node_disk_bytes_written{}[2m])) / 1024 / 1024 > 50'
+            severity: warning
+          - name: Out of disk space
+            description: Disk is almost full (< 10% left)
+            query: 'node_filesystem_free{mountpoint ="/rootfs"} / node_filesystem_size{mountpoint ="/rootfs"} * 100 < 10'
+            severity: warning
+          - name: Out of inodes
+            description: Disk is almost running out of available inodes (< 10% left)
+            query: 'node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint ="/rootfs"} * 100 < 10'
+            severity: warning
+          - name: Unusual disk read latency
+            description: Disk latency is growing (read operations > 100ms)
+            query: 'rate(node_disk_read_time_ms{}[1m]) / rate(node_disk_reads_completed{}[1m]) > 100'
+            severity: warning
+          - name: Unusual disk write latency
+            description: Disk latency is growing (write operations > 100ms)
+            query: 'rate(node_disk_write_time_ms{}[1m]) / rate(node_disk_writes_completed{}[1m]) > 100'
+            severity: warning
+          - name: CPU load
+            description: CPU load (15m) is high (> 75%)
+            query: 'avg by (instance) (sum by (cpu) (rate(node_cpu{mode!="idle"}[5m]))) * 100 > 75'
+            severity: warning
+          - name: Context switching
+            description: Context switching is growing on node (> 1000 / s)
+            query: 'rate(node_context_switches{}[5m]) > 1000'
+            severity: warning
+
+  - name: Docker containers
+    exporters:
+      - name: cAdvisor
+        doc_url: https://github.com/google/cadvisor
+        rules:
+          - name: Container killed
+            description: A container has disappeared
+            query: 'time() - container_last_seen{} > 60'
+            severity: warning
+
+  - name: Nginx
+    exporters:
+      - name: nginx-lua-prometheus
+        doc_url: https://github.com/knyar/nginx-lua-prometheus
+        rules:
+          - name: HTTP errors 4xx
+            description: Too many HTTP requests with status 4xx (> 5%)
+            query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total{}[1m])) * 100 > 5'
+            severity: error
+          - name: HTTP errors 5xx
+            description: Too many HTTP requests with status 5xx (> 5%)
+            query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total{}[1m])) * 100 > 5'
+            severity: error
+
+  - name: RabbitMQ
+    exporters:
+      - name: kbudde/rabbitmq-exporter
+        doc_url: https://github.com/kbudde/rabbitmq_exporter
+        rules:
+          - name: Rabbitmq down
+            description: RabbitMQ node down
+            query: 'rabbitmq_up{} == 0'
+            severity: error
+          - name: Cluster down
+            description: Less than 3 nodes running in RabbitMQ cluster
+            query: 'rabbitmq_running{} < 3'
+            severity: error
+          - name: Cluster partition
+            description: Cluster partition
+            query: 'rabbitmq_partitions{} > 0'
+            severity: error
+          - name: Out of memory
+            description: Memory available for RabbmitMQ is low (< 10%)
+            query: 'rabbitmq_node_mem_used{} / rabbitmq_node_mem_limit{} * 100 > 90'
+            severity: warning
+          - name: Too many connections
+            description: RabbitMQ instance has too many connections (> 1000)
+            query: 'rabbitmq_connectionsTotal{} > 1000'
+            severity: warning
+          - name: Dead letter queue filling up
+            description: Dead letter queue is filling up (> 10 msgs)
+            query: 'rabbitmq_queue_messages{queue="my-dead-letter-queue"} > 10'
+            severity: error
+          - name: Too many messages in queue
+            description: Queue is filling up (> 1000 msgs)
+            query: 'rabbitmq_queue_messages_ready{queue="my-queue"} > 1000'
+            severity: warning
+          - name: Slow queue consuming
+            description: Queue messages are consumed slowly (> 60s)
+            query: 'time() - rabbitmq_queue_head_message_timestamp{queue="my-queue"} > 60'
+            severity: warning
+          - name: No consumer
+            description: Queue has no consumer
+            query: 'rabbitmq_queue_consumers{} == 0'
+            severity: error
+          - name: Too many consumers
+            description: Queue should have only 1 consumer
+            query: 'rabbitmq_queue_consumers{} > 1'
+            severity: error
+          - name: Unactive exchange
+            description: Exchange receive less than 5 msgs per second
+            query: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
+            severity: warning
+
+  - name: MySQL
+    exporters:
+      - name: prometheus/mysqld_exporter
+        doc_url: https://github.com/prometheus/mysqld_exporter
+        rules:
+
+  - name: PostgreSQL
+    exporters:
+      - name: wrouesnel/postgres_exporter
+        doc_url: https://github.com/wrouesnel/postgres_exporter/
+        rules:
+          - name: PostgreSQL down
+            description: PostgreSQL instance is down
+            query: 'pg_up{} == 0'
+            severity: error
+          - name: Replication lag
+            description: PostgreSQL replication lag is going up (> 10s)
+            query: 'pg_replication_lag{} > 10'
+            severity: warning
+          - name: Table not vaccumed
+            description: Table has not been vaccum for 24 hours
+            query: 'time() - pg_stat_user_tables_last_autovacuum{} > 60 * 60 * 24'
+            severity: warning
+          - name: Table not analyzed
+            description: Table has not been analyzed for 24 hours
+            query: 'time() - pg_stat_user_tables_last_autoanalyze{} > 60 * 60 * 24'
+            severity: warning
+          - name: Too many connections
+            description: PostgreSQL instance has too many connections
+            query: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) > 100'
+            severity: warning
+          - name: Not enough connections
+            description: PostgreSQL instance should have more connections (> 5)
+            query: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) < 5'
+            severity: warning
+          - name: Dead locks
+            description: PostgreSQL has dead-locks
+            query: 'rate(pg_stat_database_deadlocks{pg_stat_database_de}[1m]) > 0'
+            severity: warning
+
+  - name: Redis
+    exporters:
+      - name: oliver006/redis_exporter
+        doc_url: https://github.com/oliver006/redis_exporter
+        rules:
+          - name: Redis down
+            description: Redis instance is down
+            query: 'redis_up{} == 0'
+            severity: error
+          - name: Missing backup
+            description: Redis has not been backuped for 24 hours
+            query: 'time() - redis_rdb_last_save_timestamp_seconds{} > 60 * 60 * 24'
+            severity: error
+          - name: Out of memory
+            description: Redis is running out of memory (> 90%)
+            query: 'redis_memory_used_bytes{} / redis_total_system_memory_bytes{} * 100 > 90'
+            severity: warning
+          - name: Replication broken
+            description: Redis instance lost a slave
+            query: 'delta(redis_connected_slaves{}[1m]) < 0'
+            severity: error
+          - name: Too many connections
+            description: Redis instance has too many connections
+            query: 'redis_connected_clients{} > 100'
+            severity: warning
+          - name: Not enough connections
+            description: Redis instance should have more connections (> 5)
+            query: 'redis_connected_clients{} < 5'
+            severity: warning
+          - name: Rejected connections
+            description: Some connections to Redis has been rejected
+            query: 'increase(redis_rejected_connections_total{}[1m]) > 0'
+            severity: error
+
+  - name: MongoDB
+    exporters:
+      - name: dcu/mongodb_exporter
+        doc_url: https://github.com/dcu/mongodb_exporter
+        rules:
+
+  - name: Elasticsearch
+    exporters:
+      - name: justwatchcom/elasticsearch_exporter
+        doc_url: https://github.com/justwatchcom/elasticsearch_exporter
+        rules:
+
+  - name: Apache
+    exporters:
+      - name: Lusitaniae/apache_exporter
+        doc_url: https://github.com/Lusitaniae/apache_exporter
+        rules:
+
+  - name: HaProxy
+    exporters:
+      - name: prometheus/haproxy_exporter
+        doc_url: https://github.com/prometheus/haproxy_exporter
+        rules:
+
+  - name: Traefik
+    exporters:
+      - rules:
+
+  - name: PHP-FPM
+    exporters:
+      - name: bakins/php-fpm-exporter
+        doc_url: https://github.com/bakins/php-fpm-exporter
+        rules:
+
+  - name: Kubernetes
+    exporters:
+      - rules:
+
+  - name: Nomad
+    exporters:
+      - name: samber/prometheus-nomad-exporter
+        doc_url: https://github.com/samber/prometheus-nomad-exporter
+        rules:
+
+  - name: Consul
+    exporters:
+      - name: prometheus/consul_exporter
+        doc_url: https://github.com/prometheus/consul_exporter
+        rules:
+
+  - name: Etcd
+    exporters:
+      - rules:
+
+  - name: Zookeeper
+    exporters:
+      - name: cloudflare/kafka_zookeeper_exporter
+        doc_url: https://github.com/cloudflare/kafka_zookeeper_exporter
+        rules:
+
+  - name: Kafka
+    exporters:
+      - name: danielqsj/kafka_exporter
+        doc_url: https://github.com/danielqsj/kafka_exporter
+        rules:
+
+  - name: Linkerd
+    exporters:
+      - rules:
+
+  - name: Istio
+    exporters:
+      - rules:
+
+  - name: Blackbox
+    exporters:
+      - name: prometheus/blackbox_exporter
+        doc_url: https://github.com/prometheus/blackbox_exporter
+        rules:
