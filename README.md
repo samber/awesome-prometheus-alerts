@@ -86,4 +86,28 @@ CPU:
 
 ### Elasticsearch
 
+### MongoDB
+
+### Apache
+
+### HaProxy
+
+### Traefik
+
+### PHP-FPM
+
+### Kubernetes
+
+### Nomad
+
+### Consul
+
+### Etcd
+
+### Zookeeper
+
+### Linkerd
+
+### Istio
+
 ### Blackbox
