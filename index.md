@@ -7,7 +7,9 @@
 }
 </style>
 
+
 ![Prometheus logo](assets/prometheus-logo.png){: .center-image }
+
 
 <h2>
   AlertManager configuration
