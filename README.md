@@ -8,4 +8,4 @@
 
 ## Todo
 
-- In Jekyll, create an alert rule builder, to create custom alerts (criticity, thresolds, instance...)
+- In Jekyll, create an alert rule builder, to create custom alerts (severity, thresolds, instance...)
