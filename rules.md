@@ -32,7 +32,7 @@ groups:
     labels:
       severity: error
     annotations:
-      summary: "Redis instance down"
+      summary: "Redis instance ($instance) down"
       description: "Whatever"
 
 {% endhighlight %}

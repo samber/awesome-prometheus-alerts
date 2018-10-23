@@ -2,9 +2,9 @@
 
 <img width="500" height="350" src="assets/logo.svg" alt="Awesome">
 
-(WIP)
+![Awesome logo](assets/logo.svg)
 
-[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)
+Collection here: [https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to).
 
 ## Todo
 

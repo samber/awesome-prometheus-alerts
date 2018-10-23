@@ -18,8 +18,27 @@
     <meta name="theme-color" content="#157878">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    <link rel="icon" type="image/png" href="/assets/favicon.ico">
   </head>
   <body>
+    <style>
+      #skip-to-content {
+      height: 1px;
+      width: 1px;
+      position: absolute;
+      overflow: hidden;
+      top: -10px;
+      &:focus {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      height: auto;
+      width: auto;
+      background: invert($body-link-color);
+      outline: thick solid invert($body-link-color);
+      }
+      }
+      </style>
     <a id="skip-to-content" href="#content">Skip to the content.</a>
 
     <header class="page-header" role="banner">

@@ -4,6 +4,7 @@
 </h2>
 
 {% highlight yaml %}
+{% raw %}
 # alertmanager.yml
 
 route:
@@ -53,4 +54,5 @@ receivers:
       - url: http://a.b.c:8080/send/sms
         send_resolved: true
 
+{% endraw %}
 {% endhighlight %}
