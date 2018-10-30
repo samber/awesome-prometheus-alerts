@@ -4,6 +4,6 @@
 
 Collection here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**.
 
-## Todo
+## Todo :+1:
 
 - In Jekyll, create an alert rule builder, in order to create custom alerts (severity, thresolds, instance...)
