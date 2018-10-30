@@ -2,7 +2,7 @@
 
 ![Awesome logo](./assets/awesome.png)
 
-Collection here: [https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to).
+Collection here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**.
 
 ## Todo
 
