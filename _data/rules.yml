@@ -270,6 +270,10 @@ services:
       - name: danielqsj/kafka_exporter
         doc_url: https://github.com/danielqsj/kafka_exporter
         rules:
+        - name: Kafka Topics 
+            description: Kafka topic in-sync partition
+            query: 'sum(kafka_topic_partition_in_sync_replica) by (topic) > 3'
+            severity: error
 
   - name: Linkerd
     exporters:
