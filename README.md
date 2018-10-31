@@ -2,8 +2,8 @@
 
 ![Awesome logo](./assets/awesome.png)
 
-Collection here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**.
+Collection here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
 
 ## Todo
 
-- In Jekyll, create an alert rule builder, in order to create custom alerts (severity, thresolds, instance...)
+- Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances...)
