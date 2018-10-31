@@ -270,6 +270,10 @@ services:
       - name: danielqsj/kafka_exporter
         doc_url: https://github.com/danielqsj/kafka_exporter
         rules:
+          - name: Kafka consumers group
+            description: Kafka consumers group
+            query: 'sum(kafka_consumergroup_lag) by (consumergroup) > 50'
+            severity: error
 
   - name: Linkerd
     exporters:
