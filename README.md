@@ -10,3 +10,7 @@ Collection here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-p
 ## Todo
 
 - Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances, ...)
+
+## Contributing
+
+[Click here](CONTRIBUTING.md)
