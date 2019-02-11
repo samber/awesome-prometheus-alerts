@@ -5,7 +5,7 @@ services:
       - rules:
           - name: Exporter down
             description: Prometheus exporter down
-            query: 'up{} == 0'
+            query: 'up == 0'
             severity: warning
 
   - name: Host
@@ -14,23 +14,23 @@ services:
         rules:
           - name: Out of memory
             description: Node memory is filling up (< 10% left)
-            query: '(node_memory_MemFree{} + node_memory_Cached{} + node_memory_Buffers{}) / node_memory_MemTotal{} * 100 < 10'
+            query: '(node_memory_MemFree + node_memory_Cached + node_memory_Buffers) / node_memory_MemTotal * 100 < 10'
             severity: warning
           - name: Unusual network throughput in
             description: Host network interfaces are probably receiving too much data (> 100 MB/s)
-            query: 'sum by (instance) (irate(node_network_receive_bytes{}[2m])) / 1024 / 1024 > 100'
+            query: 'sum by (instance) (irate(node_network_receive_bytes[2m])) / 1024 / 1024 > 100'
             severity: warning
           - name: Unusual network throughput out
             description: Host network interfaces are probably sending too much data (> 100 MB/s)
-            query: 'sum by (instance) (irate(node_network_transmit_bytes{}[2m])) / 1024 / 1024 > 100'
+            query: 'sum by (instance) (irate(node_network_transmit_bytes[2m])) / 1024 / 1024 > 100'
             severity: warning
           - name: Unusual disk read rate
             description: Disk is probably reading too much data (> 50 MB/s)
-            query: 'sum by (instance) (irate(node_disk_bytes_read{}[2m])) / 1024 / 1024 > 50'
+            query: 'sum by (instance) (irate(node_disk_bytes_read[2m])) / 1024 / 1024 > 50'
             severity: warning
           - name: Unusual disk write rate
             description: Disk is probably writing too much data (> 50 MB/s)
-            query: 'sum by (instance) (irate(node_disk_bytes_written{}[2m])) / 1024 / 1024 > 50'
+            query: 'sum by (instance) (irate(node_disk_bytes_written[2m])) / 1024 / 1024 > 50'
             severity: warning
           - name: Out of disk space
             description: Disk is almost full (< 10% left)
@@ -42,11 +42,11 @@ services:
             severity: warning
           - name: Unusual disk read latency
             description: Disk latency is growing (read operations > 100ms)
-            query: 'rate(node_disk_read_time_ms{}[1m]) / rate(node_disk_reads_completed{}[1m]) > 100'
+            query: 'rate(node_disk_read_time_ms[1m]) / rate(node_disk_reads_completed[1m]) > 100'
             severity: warning
           - name: Unusual disk write latency
             description: Disk latency is growing (write operations > 100ms)
-            query: 'rate(node_disk_write_time_ms{}[1m]) / rate(node_disk_writes_completed{}[1m]) > 100'
+            query: 'rate(node_disk_write_time_ms[1m]) / rate(node_disk_writes_completed[1m]) > 100'
             severity: warning
           - name: CPU load
             description: CPU load (15m) is high (> 75%)
@@ -54,7 +54,7 @@ services:
             severity: warning
           - name: Context switching
             description: Context switching is growing on node (> 1000 / s)
-            query: 'rate(node_context_switches{}[5m]) > 1000'
+            query: 'rate(node_context_switches[5m]) > 1000'
             severity: warning
 
   - name: Docker containers
@@ -64,7 +64,7 @@ services:
         rules:
           - name: Container killed
             description: A container has disappeared
-            query: 'time() - container_last_seen{} > 60'
+            query: 'time() - container_last_seen > 60'
             severity: warning
 
   - name: Nginx
@@ -74,11 +74,11 @@ services:
         rules:
           - name: HTTP errors 4xx
             description: Too many HTTP requests with status 4xx (> 5%)
-            query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total{}[1m])) * 100 > 5'
+            query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
             severity: error
           - name: HTTP errors 5xx
             description: Too many HTTP requests with status 5xx (> 5%)
-            query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total{}[1m])) * 100 > 5'
+            query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
             severity: error
 
   - name: RabbitMQ
@@ -88,23 +88,23 @@ services:
         rules:
           - name: Rabbitmq down
             description: RabbitMQ node down
-            query: 'rabbitmq_up{} == 0'
+            query: 'rabbitmq_up == 0'
             severity: error
           - name: Cluster down
             description: Less than 3 nodes running in RabbitMQ cluster
-            query: 'rabbitmq_running{} < 3'
+            query: 'rabbitmq_running < 3'
             severity: error
           - name: Cluster partition
             description: Cluster partition
-            query: 'rabbitmq_partitions{} > 0'
+            query: 'rabbitmq_partitions > 0'
             severity: error
           - name: Out of memory
             description: Memory available for RabbmitMQ is low (< 10%)
-            query: 'rabbitmq_node_mem_used{} / rabbitmq_node_mem_limit{} * 100 > 90'
+            query: 'rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90'
             severity: warning
           - name: Too many connections
             description: RabbitMQ instance has too many connections (> 1000)
-            query: 'rabbitmq_connectionsTotal{} > 1000'
+            query: 'rabbitmq_connectionsTotal > 1000'
             severity: warning
           - name: Dead letter queue filling up
             description: Dead letter queue is filling up (> 10 msgs)
@@ -120,11 +120,11 @@ services:
             severity: warning
           - name: No consumer
             description: Queue has no consumer
-            query: 'rabbitmq_queue_consumers{} == 0'
+            query: 'rabbitmq_queue_consumers == 0'
             severity: error
           - name: Too many consumers
             description: Queue should have only 1 consumer
-            query: 'rabbitmq_queue_consumers{} > 1'
+            query: 'rabbitmq_queue_consumers > 1'
             severity: error
           - name: Unactive exchange
             description: Exchange receive less than 5 msgs per second
@@ -144,19 +144,19 @@ services:
         rules:
           - name: PostgreSQL down
             description: PostgreSQL instance is down
-            query: 'pg_up{} == 0'
+            query: 'pg_up == 0'
             severity: error
           - name: Replication lag
             description: PostgreSQL replication lag is going up (> 10s)
-            query: 'pg_replication_lag{} > 10'
+            query: 'pg_replication_lag > 10'
             severity: warning
           - name: Table not vaccumed
             description: Table has not been vaccum for 24 hours
-            query: 'time() - pg_stat_user_tables_last_autovacuum{} > 60 * 60 * 24'
+            query: 'time() - pg_stat_user_tables_last_autovacuum > 60 * 60 * 24'
             severity: warning
           - name: Table not analyzed
             description: Table has not been analyzed for 24 hours
-            query: 'time() - pg_stat_user_tables_last_autoanalyze{} > 60 * 60 * 24'
+            query: 'time() - pg_stat_user_tables_last_autoanalyze > 60 * 60 * 24'
             severity: warning
           - name: Too many connections
             description: PostgreSQL instance has too many connections
@@ -178,31 +178,31 @@ services:
         rules:
           - name: Redis down
             description: Redis instance is down
-            query: 'redis_up{} == 0'
+            query: 'redis_up == 0'
             severity: error
           - name: Missing backup
             description: Redis has not been backuped for 24 hours
-            query: 'time() - redis_rdb_last_save_timestamp_seconds{} > 60 * 60 * 24'
+            query: 'time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 24'
             severity: error
           - name: Out of memory
             description: Redis is running out of memory (> 90%)
-            query: 'redis_memory_used_bytes{} / redis_total_system_memory_bytes{} * 100 > 90'
+            query: 'redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90'
             severity: warning
           - name: Replication broken
             description: Redis instance lost a slave
-            query: 'delta(redis_connected_slaves{}[1m]) < 0'
+            query: 'delta(redis_connected_slaves[1m]) < 0'
             severity: error
           - name: Too many connections
             description: Redis instance has too many connections
-            query: 'redis_connected_clients{} > 100'
+            query: 'redis_connected_clients > 100'
             severity: warning
           - name: Not enough connections
             description: Redis instance should have more connections (> 5)
-            query: 'redis_connected_clients{} < 5'
+            query: 'redis_connected_clients < 5'
             severity: warning
           - name: Rejected connections
             description: Some connections to Redis has been rejected
-            query: 'increase(redis_rejected_connections_total{}[1m]) > 0'
+            query: 'increase(redis_rejected_connections_total[1m]) > 0'
             severity: error
 
   - name: MongoDB
@@ -217,11 +217,11 @@ services:
         doc_url: https://github.com/justwatchcom/elasticsearch_exporter
         rules:
           - name: Elastic Heap Usage Too High
-            description: 'The heap usage is over 90% for 5m - {{ $value | printf "%.2f"}}%'
+            description: 'The heap usage is over 90% for 5m'
             query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90'
             severity: error
           - name: Elastic Heap Usage warning
-            description: 'The heap usage is over 80% for 5m - {{ $value | printf "%.2f"}}%'
+            description: 'The heap usage is over 80% for 5m'
             query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
             severity: warning
           - name: Elastic Cluster RED
@@ -233,27 +233,27 @@ services:
             query: 'elasticsearch_cluster_health_status{color="yellow"} == 1'
             severity: warning
           - name: Number of Elastic Healthy Nodes
-            description: 'Number Healthy Nodes less then number_of_nodes - {{ $value }}'
+            description: 'Number Healthy Nodes less then number_of_nodes'
             query: 'elasticsearch_cluster_health_number_of_nodes < number_of_nodes'
             severity: error
           - name: Number of Elastic Healthy Data Nodes
-            description: 'Number Healthy Data Nodes less then number_of_data_nodes - {{ $value }}'
+            description: 'Number Healthy Data Nodes less then number_of_data_nodes'
             query: 'elasticsearch_cluster_health_number_of_data_nodes < number_of_data_nodes'
             severity: error
           - name: Number of relocation shards
-            description: 'Number of relocation shards for 20 min - {{ $value }}'
+            description: 'Number of relocation shards for 20 min'
             query: 'elasticsearch_cluster_health_relocating_shards > 0'
             severity: error
           - name: Number of initializing shards
-            description: 'Number of initializing shards for 10 min - {{ $value }}'
+            description: 'Number of initializing shards for 10 min'
             query: 'elasticsearch_cluster_health_initializing_shards > 0'
             severity: error
           - name: Number of unassigned shards
-            description: 'Number of unassigned shards for 2 min - {{ $value }}'
+            description: 'Number of unassigned shards for 2 min'
             query: 'elasticsearch_cluster_health_unassigned_shards > 0'
             severity: error
           - name: Number of pending tasks
-            description: 'Number of pending tasks for 10 min - {{ $value }}. Cluster works slowly.'
+            description: 'Number of pending tasks for 10 min. Cluster works slowly.'
             query: 'elasticsearch_cluster_health_number_of_pending_tasks > 0'
             severity: warning
           - name: Elastic no new documents
