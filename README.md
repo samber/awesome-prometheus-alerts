@@ -35,7 +35,9 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 
 ## Contributing
 
-[Click here](CONTRIBUTING.md)
+Contributions for common alerting rules are most welcome!
+
+[Instructions here](CONTRIBUTING.md)
 
 ## Todo
 
