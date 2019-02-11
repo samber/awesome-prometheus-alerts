@@ -5,15 +5,41 @@
     <img src="./assets/awesome.png">
 </p>
 
-Collection here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
+Collection available here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
 
-## Todo
+## Rules
 
-- Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances, ...)
+- [Prometheus](https://awesome-prometheus-alerts.grep.to/rules#prometheus)
+- [Host](https://awesome-prometheus-alerts.grep.to/rules#host)
+- [Docker Containers](https://awesome-prometheus-alerts.grep.to/rules#docker-containers)
+- [Nginx](https://awesome-prometheus-alerts.grep.to/rules#nginx)
+- [RabbitMQ](https://awesome-prometheus-alerts.grep.to/rules#rabbitmq)
+- [MySQL](https://awesome-prometheus-alerts.grep.to/rules#mysql)
+- [PostgreSQL](https://awesome-prometheus-alerts.grep.to/rules#postgresql)
+- [Redis](https://awesome-prometheus-alerts.grep.to/rules#redis)
+- [MongoDB](https://awesome-prometheus-alerts.grep.to/rules#mongodb)
+- [Elasticsearch](https://awesome-prometheus-alerts.grep.to/rules#elasticsearch)
+- [Apache](https://awesome-prometheus-alerts.grep.to/rules#apache)
+- [HaProxy](https://awesome-prometheus-alerts.grep.to/rules#haproxy)
+- [Traefik](https://awesome-prometheus-alerts.grep.to/rules#traefik)
+- [PHP-FPM](https://awesome-prometheus-alerts.grep.to/rules#php-fpm)
+- [Kubernetes](https://awesome-prometheus-alerts.grep.to/rules#kubernetes)
+- [Nomad](https://awesome-prometheus-alerts.grep.to/rules#nomad)
+- [Consul](https://awesome-prometheus-alerts.grep.to/rules#consul)
+- [Etcd](https://awesome-prometheus-alerts.grep.to/rules#etcd)
+- [Zookeeper](https://awesome-prometheus-alerts.grep.to/rules#zookeeper)
+- [Kafka](https://awesome-prometheus-alerts.grep.to/rules#kafka)
+- [Linkerd](https://awesome-prometheus-alerts.grep.to/rules#linkerd)
+- [Istio](https://awesome-prometheus-alerts.grep.to/rules#istio)
+- [Blackbox](https://awesome-prometheus-alerts.grep.to/rules#blackbox)
 
 ## Contributing
 
 [Click here](CONTRIBUTING.md)
+
+## Todo
+
+- Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances, ...)
 
 # License
 
