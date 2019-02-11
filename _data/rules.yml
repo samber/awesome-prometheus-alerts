@@ -224,8 +224,8 @@ services:
             description: 'The heap usage is over 80% for 5m'
             query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
             severity: warning
-          - name: Elastic Cluster RED
-            description: Elastic Cluster RED status
+          - name: Elastic Cluster Red
+            description: Elastic Cluster Red status
             query: 'elasticsearch_cluster_health_status{color="red"} == 1'
             severity: error
           - name: Elastic Cluster Yellow
