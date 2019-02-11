@@ -14,3 +14,9 @@ Collection here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-p
 ## Contributing
 
 [Click here](CONTRIBUTING.md)
+
+# License
+
+[![CC4](https://mirrors.creativecommons.org/presskit/cc.srr.primary.svg)](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+Licensed under the Creative Commons 4.0 License, see LICENSE file for more detail.
