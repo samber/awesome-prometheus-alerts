@@ -5,9 +5,11 @@
     <img src="./assets/awesome.png">
 </p>
 
+> Most alerting rules are common to any Prometheus setup. We need a place to find them. 🤘 🚨 📊
+
 Collection available here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
 
-## Rules
+## Content
 
 - [Prometheus](https://awesome-prometheus-alerts.grep.to/rules#prometheus)
 - [Host](https://awesome-prometheus-alerts.grep.to/rules#host)
