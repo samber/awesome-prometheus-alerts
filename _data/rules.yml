@@ -219,7 +219,7 @@ services:
           - name: Elastic Heap Usage Too High
             description: 'The heap usage is over 90% for 5m - {{ $value | printf "%.2f"}}%'
             query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90'
-            severity: critical
+            severity: error
           - name: Elastic Heap Usage warning
             description: 'The heap usage is over 80% for 5m - {{ $value | printf "%.2f"}}%'
             query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
@@ -227,7 +227,7 @@ services:
           - name: Elastic Cluster RED
             description: Elastic Cluster RED status
             query: 'elasticsearch_cluster_health_status{color="red"} == 1'
-            severity: critical
+            severity: error
           - name: Elastic Cluster Yellow
             description: Elastic Cluster Yellow status
             query: 'elasticsearch_cluster_health_status{color="yellow"} == 1'
@@ -235,23 +235,23 @@ services:
           - name: Number of Elastic Healthy Nodes
             description: 'Number Healthy Nodes less then number_of_nodes - {{ $value }}'
             query: 'elasticsearch_cluster_health_number_of_nodes < number_of_nodes'
-            severity: critical
+            severity: error
           - name: Number of Elastic Healthy Data Nodes
             description: 'Number Healthy Data Nodes less then number_of_data_nodes - {{ $value }}'
             query: 'elasticsearch_cluster_health_number_of_data_nodes < number_of_data_nodes'
-            severity: critical
+            severity: error
           - name: Number of relocation shards
             description: 'Number of relocation shards for 20 min - {{ $value }}'
             query: 'elasticsearch_cluster_health_relocating_shards > 0'
-            severity: critical
+            severity: error
           - name: Number of initializing shards
             description: 'Number of initializing shards for 10 min - {{ $value }}'
             query: 'elasticsearch_cluster_health_initializing_shards > 0'
-            severity: critical
+            severity: error
           - name: Number of unassigned shards
             description: 'Number of unassigned shards for 2 min - {{ $value }}'
             query: 'elasticsearch_cluster_health_unassigned_shards > 0'
-            severity: critical
+            severity: error
           - name: Number of pending tasks
             description: 'Number of pending tasks for 10 min - {{ $value }}. Cluster works slowly.'
             query: 'elasticsearch_cluster_health_number_of_pending_tasks > 0'
