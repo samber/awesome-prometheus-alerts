@@ -14,7 +14,7 @@ services:
         rules:
           - name: Out of memory
             description: Node memory is filling up (< 10% left)
-            query: '(node_memory_MemFree + node_memory_Cached + node_memory_Buffers) / node_memory_MemTotal * 100 < 10'
+            query: '(node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes * 100 < 10'
             severity: warning
           - name: Unusual network throughput in
             description: Host network interfaces are probably receiving too much data (> 100 MB/s)
