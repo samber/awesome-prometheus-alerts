@@ -49,8 +49,8 @@ services:
             query: 'rate(node_disk_write_time_ms[1m]) / rate(node_disk_writes_completed[1m]) > 100'
             severity: warning
           - name: CPU load
-            description: CPU load (15m) is high (> 75%)
-            query: 'avg by (instance) (sum by (cpu) (rate(node_cpu{mode!="idle"}[5m]))) * 100 > 75'
+            description: CPU load (15m) is high
+            query: 'node_load15 / (count without (cpu, mode) (node_cpu_seconds_total{mode="system"})) > 2'
             severity: warning
           - name: Context switching
             description: Context switching is growing on node (> 1000 / s)
