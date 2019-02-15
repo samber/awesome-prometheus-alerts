@@ -302,6 +302,14 @@ services:
       - name: prometheus/consul_exporter
         doc_url: https://github.com/prometheus/consul_exporter
         rules:
+          - name: consul healthcheck problem
+            description: 'Service: `{{ $labels.service_name }}` Healthcheck: `{{ $labels.service_id }}`'
+            query: 'consul_catalog_service_node_healthy == 0'
+            severity: error
+          - name: consul master peers problem
+            description: Numbers of consul raft peers less then <https://example.ru/ui/{{ $labels.dc }}/services/consul|Consul masters>
+            query: 'consul_raft_peers < number_of_consul_master'
+            severity: error
 
   - name: Etcd
     exporters:
