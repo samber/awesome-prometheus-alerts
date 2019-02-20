@@ -1,7 +1,7 @@
-# Awesome Prometheus alerting rules [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)
+# Awesome Prometheus alerting rules [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
 <!-- ![Awesome logo](./assets/awesome.png) -->
-<p align="center"> 
+<p align="center">
     <img src="./assets/awesome.png">
 </p>
 
@@ -9,7 +9,12 @@
 
 Collection available here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
 
-## Content
+## Contents
+
+- [Rules](#rules)
+- [Improvements](#improvements)
+
+## Rules
 
 - [Prometheus](https://awesome-prometheus-alerts.grep.to/rules#prometheus)
 - [Host](https://awesome-prometheus-alerts.grep.to/rules#host)
@@ -41,11 +46,11 @@ Contributions for common alerting rules are most welcome!
 
 [Instructions here](CONTRIBUTING.md)
 
-## Todo
+## Improvements
 
-- Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances, ...)
+- Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances...)
 
-# License
+## License
 
 [![CC4](https://mirrors.creativecommons.org/presskit/cc.srr.primary.svg)](https://creativecommons.org/licenses/by/4.0/legalcode)
 

@@ -14,27 +14,27 @@ services:
         rules:
           - name: Out of memory
             description: Node memory is filling up (< 10% left)
-            query: '(node_memory_MemFree + node_memory_Cached + node_memory_Buffers) / node_memory_MemTotal * 100 < 10'
+            query: '(node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes * 100 < 10'
             severity: warning
           - name: Unusual network throughput in
             description: Host network interfaces are probably receiving too much data (> 100 MB/s)
-            query: 'sum by (instance) (irate(node_network_receive_bytes[2m])) / 1024 / 1024 > 100'
+            query: 'sum by (instance) (irate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100'
             severity: warning
           - name: Unusual network throughput out
             description: Host network interfaces are probably sending too much data (> 100 MB/s)
-            query: 'sum by (instance) (irate(node_network_transmit_bytes[2m])) / 1024 / 1024 > 100'
+            query: 'sum by (instance) (irate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100'
             severity: warning
           - name: Unusual disk read rate
             description: Disk is probably reading too much data (> 50 MB/s)
-            query: 'sum by (instance) (irate(node_disk_bytes_read[2m])) / 1024 / 1024 > 50'
+            query: 'sum by (instance) (irate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50'
             severity: warning
           - name: Unusual disk write rate
             description: Disk is probably writing too much data (> 50 MB/s)
-            query: 'sum by (instance) (irate(node_disk_bytes_written[2m])) / 1024 / 1024 > 50'
+            query: 'sum by (instance) (irate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50'
             severity: warning
           - name: Out of disk space
             description: Disk is almost full (< 10% left)
-            query: 'node_filesystem_free{mountpoint ="/rootfs"} / node_filesystem_size{mountpoint ="/rootfs"} * 100 < 10'
+            query: 'node_filesystem_free_bytes{mountpoint ="/rootfs"} / node_filesystem_size_bytes{mountpoint ="/rootfs"} * 100 < 10'
             severity: warning
           - name: Out of inodes
             description: Disk is almost running out of available inodes (< 10% left)
@@ -42,19 +42,23 @@ services:
             severity: warning
           - name: Unusual disk read latency
             description: Disk latency is growing (read operations > 100ms)
-            query: 'rate(node_disk_read_time_ms[1m]) / rate(node_disk_reads_completed[1m]) > 100'
+            query: 'rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 100'
             severity: warning
           - name: Unusual disk write latency
             description: Disk latency is growing (write operations > 100ms)
-            query: 'rate(node_disk_write_time_ms[1m]) / rate(node_disk_writes_completed[1m]) > 100'
+            query: 'rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 100'
             severity: warning
           - name: CPU load
-            description: CPU load (15m) is high (> 75%)
-            query: 'avg by (instance) (sum by (cpu) (rate(node_cpu{mode!="idle"}[5m]))) * 100 > 75'
+            description: CPU load (15m) is high
+            query: 'node_load15 / (count without (cpu, mode) (node_cpu_seconds_total{mode="system"})) > 2'
             severity: warning
           - name: Context switching
             description: Context switching is growing on node (> 1000 / s)
-            query: 'rate(node_context_switches[5m]) > 1000'
+            query: 'rate(node_context_switches_total[5m]) > 1000'
+            severity: warning
+          - name: Node has swap
+            description: Node has swap
+            query: 'node_memory_SwapTotal_bytes > 0'
             severity: warning
 
   - name: Docker containers
