@@ -1,4 +1,4 @@
-# Awesome Prometheus alerting rules [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
+# Awesome Prometheus Alerts [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
 > Most alerting rules are common to any Prometheus setup. We need a place to find them. 🤘 🚨 📊
 
