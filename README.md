@@ -1,10 +1,5 @@
 # Awesome Prometheus alerting rules [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
-<!-- ![Awesome logo](./assets/awesome.png) -->
-<p align="center">
-    <img src="./assets/awesome.png">
-</p>
-
 > Most alerting rules are common to any Prometheus setup. We need a place to find them. 🤘 🚨 📊
 
 Collection available here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
