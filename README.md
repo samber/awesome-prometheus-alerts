@@ -34,6 +34,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Linkerd](https://awesome-prometheus-alerts.grep.to/rules#linkerd)
 - [Istio](https://awesome-prometheus-alerts.grep.to/rules#istio)
 - [Blackbox](https://awesome-prometheus-alerts.grep.to/rules#blackbox)
+- [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 
 ## Contributing
 
