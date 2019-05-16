@@ -370,11 +370,8 @@ services:
           description: The switch appears to be down
           query: junos_up == 0
           severity: critical
-        - name: High Bandwith Usage 1GiB
-          description: Interfaceis highly saturated for at least 2 min. (> 0.95GiB/s)
-          query: 'irate(junos_interface_transmit_bytes[2m]) * 8 > 9.5e+09'
           severity: warning
         - name: High Bandwith Usage 10GiB
           description: Interface is highly saturated for at least 2 min. (> 9.5GiB/s)
-          query: 'irate(junos_interface_transmit_bytes[2m]) * 8 > 9.5e+08'
-          severity: warning
+          query: 'irate(junos_interface_transmit_bytes[2m]) * 8 > 1e+09 * 0.95'
+          severity: critical
