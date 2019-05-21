@@ -1,9 +1,4 @@
-# Awesome Prometheus alerting rules [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
-
-<!-- ![Awesome logo](./assets/awesome.png) -->
-<p align="center">
-    <img src="./assets/awesome.png">
-</p>
+# Awesome Prometheus Alerts [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
 > Most alerting rules are common to any Prometheus setup. We need a place to find them. 🤘 🚨 📊
 
@@ -39,6 +34,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Linkerd](https://awesome-prometheus-alerts.grep.to/rules#linkerd)
 - [Istio](https://awesome-prometheus-alerts.grep.to/rules#istio)
 - [Blackbox](https://awesome-prometheus-alerts.grep.to/rules#blackbox)
+- [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 
 ## Contributing
 

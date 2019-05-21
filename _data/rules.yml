@@ -302,6 +302,14 @@ services:
       - name: prometheus/consul_exporter
         doc_url: https://github.com/prometheus/consul_exporter
         rules:
+          - name: Service healthcheck failed
+            description: 'Service: `{{ $labels.service_name }}` Healthcheck: `{{ $labels.service_id }}`'
+            query: 'consul_catalog_service_node_healthy == 0'
+            severity: error
+          - name: Missing Consul master node
+            description: Numbers of consul raft peers less then expected <https://example.ru/ui/{{ $labels.dc }}/services/consul|Consul masters>
+            query: 'consul_raft_peers < number_of_consul_master'
+            severity: error
 
   - name: Etcd
     exporters:
@@ -392,3 +400,29 @@ services:
       - name: prometheus/blackbox_exporter
         doc_url: https://github.com/prometheus/blackbox_exporter
         rules:
+          - name: Status Code
+            description: HTTP status code is not 200-299
+            query: 'probe_http_status_code <= 199 AND probe_http_status_code >= 300'
+            severity: error
+          - name: SSL certificate will expire soon
+            description: SSL certificate expires in 30 days
+            query: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 30'
+            severity: warning
+          - name: SSL certificate has expired
+            description: SSL certificate has expired already
+            query: 'probe_ssl_earliest_cert_expiry - time()  <= 0'
+            severity: error
+
+  - name: Juniper
+    exporters: 
+      - name: czerwonk/junos_exporter
+        doc_url: https://github.com/czerwonk/junos_exporter
+        rules:
+        - name: Switch is down
+          description: The switch appears to be down
+          query: junos_up == 0
+          severity: critical
+        - name: High Bandwith Usage 10GiB
+          description: Interface is highly saturated for at least 2 min. (> 9.5GiB/s)
+          query: 'irate(junos_interface_transmit_bytes[2m]) * 8 > 1e+10 * 0.95'
+          severity: critical
