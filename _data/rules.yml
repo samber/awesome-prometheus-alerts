@@ -414,15 +414,19 @@ services:
             severity: error
 
   - name: Juniper
-    exporters: 
+    exporters:
       - name: czerwonk/junos_exporter
         doc_url: https://github.com/czerwonk/junos_exporter
         rules:
         - name: Switch is down
           description: The switch appears to be down
           query: junos_up == 0
-          severity: critical
-        - name: High Bandwith Usage 10GiB
-          description: Interface is highly saturated for at least 2 min. (> 9.5GiB/s)
-          query: 'irate(junos_interface_transmit_bytes[2m]) * 8 > 1e+10 * 0.95'
-          severity: critical
+          severity: error
+        - name: High Bandwith Usage 1GiB
+          description: Interface is highly saturated for at least 1 min. (> 0.90GiB/s)
+          query: 'irate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.90'
+          severity: error
+        - name: High Bandwith Usage 1GiB
+          description: Interface is getting saturated for at least 1 min. (> 0.80GiB/s)
+          query: 'irate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80'
+          severity: warning
