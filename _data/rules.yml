@@ -11,6 +11,7 @@ services:
   - name: Host
     exporters:
       - name: node-exporter
+        doc_url: https://github.com/prometheus/node_exporter
         rules:
           - name: Out of memory
             description: Node memory is filling up (< 10% left)
@@ -59,6 +60,10 @@ services:
           - name: Node has swap
             description: Node has swap
             query: 'node_memory_SwapTotal_bytes > 0'
+            severity: warning
+          - name: SystemD service failed
+            description: 'Service {{ $labels.name }} failed'
+            query: 'node_systemd_unit_state{state="failed"} == 1'
             severity: warning
 
   - name: Docker containers
