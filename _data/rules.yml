@@ -294,7 +294,12 @@ services:
 
   - name: Kubernetes
     exporters:
-      - rules:
+      - name: kubelet
+        rules:
+          - name: Volume out of disk space
+            description: Volume is almost full (< 10% left)
+            query: 'kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes * 100 < 10'
+            severity: warning
 
   - name: Nomad
     exporters:
