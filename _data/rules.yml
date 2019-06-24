@@ -3,6 +3,10 @@ services:
   - name: Prometheus
     exporters:
       - rules:
+          - name: Prometheus configuration reload
+            description: Prometheus configuration reload error
+            query: 'prometheus_config_last_reload_successful != 1'
+            severity: error
           - name: Exporter down
             description: Prometheus exporter down
             query: 'up == 0'
