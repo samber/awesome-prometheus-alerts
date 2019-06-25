@@ -295,6 +295,22 @@ services:
   - name: Kubernetes
     exporters:
       - rules:
+          - name: KubeClientErrors
+            description: "Kubernetes API server client '{{ $labels.job }}/{{ $labels.instance }}' is experiencing {{ printf \"%0.0f\" $value }}% errors.'"
+            query: '(sum(rate(rest_client_requests_total{job=~"kubernetes-.*",code=~"5.."}[5m])) by (instance, job) / sum(rate(rest_client_requests_total[5m])) by (instance, job)) * 100 > 1'
+            severity: warning
+          - name: KubeNodeNotReady
+            description: "{{ $labels.node }} has been unready for more than an hour."
+            query: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
+            severity: warning
+          - name: KubeVersionMismatch
+            description: "There are {{ $value }} different semantic versions of Kubernetes components running."
+            query: 'count(count by (gitVersion) (label_replace(kubernetes_build_info{job!="coredns"},"gitVersion","$1","gitVersion","(v[0-9]*.[0-9]*.[0-9]*).*"))) > 1'
+            severity: warning
+          - name: KubeletTooManyPods
+            description: "Kubelet {{ $labels.instance }} is running {{ $value }} pods, close to the limit of 110."
+            query: 'kubelet_running_pod_count{job="kubernetes-nodes"} > (110 * 0.9)'
+            severity: warning
 
   - name: Nomad
     exporters:
