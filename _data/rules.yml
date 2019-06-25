@@ -7,6 +7,42 @@ services:
             description: Prometheus exporter down
             query: 'up == 0'
             severity: warning
+          - name: Prometheus rule evaluation failures
+            description: 'Prometheus encountered {{ $value }} rule evaluation failures'
+            query: 'prometheus_rule_evaluation_failures_total > 0'
+            severity: error
+          - name: Prometheus template text expansion failures
+            description: 'Prometheus encountered {{ $value }} template text expansion failures'
+            query: 'prometheus_template_text_expansion_failures_total > 0'
+            severity: error
+          - name: Prometheus TSDB checkpoint creation failures
+            description: 'Prometheus encountered {{ $value }} checkpoint creation failures'
+            query: 'prometheus_tsdb_checkpoint_creations_failed_total > 0'
+            severity: error
+          - name: Prometheus TSDB checkpoint deletion failures
+            description: 'Prometheus encountered {{ $value }} checkpoint deletion failures'
+            query: 'prometheus_tsdb_checkpoint_deletions_failed_total > 0'
+            severity: error
+          - name: Prometheus TSDB compactions failed
+            description: 'Prometheus encountered {{ $value }} TSDB compactions failures'
+            query: 'prometheus_tsdb_compactions_failed_total > 0'
+            severity: error
+          - name: Prometheus TSDB head truncations failed
+            description: 'Prometheus encountered {{ $value }} TSDB head truncation failures'
+            query: 'prometheus_tsdb_head_truncations_failed_total > 0'
+            severity: error
+          - name: Prometheus TSDB reload failures
+            description: 'Prometheus encountered {{ $value }} TSDB reload failures'
+            query: 'prometheus_tsdb_reloads_failures_total > 0'
+            severity: error
+          - name: Prometheus TSDB WAL corruptions
+            description: 'Prometheus encountered {{ $value }} TSDB WAL corruptions'
+            query: 'prometheus_tsdb_wal_corruptions_total > 0'
+            severity: error
+          - name: Prometheus TSDB WAL truncations failed
+            description: 'Prometheus encountered {{ $value }} TSDB WAL truncation failures'
+            query: 'prometheus_tsdb_wal_truncations_failed_total > 0'
+            severity: error
 
   - name: Host
     exporters:
