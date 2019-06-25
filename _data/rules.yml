@@ -299,8 +299,16 @@ services:
             description: "Kubernetes API has disappeared from Prometheus target discovery."
             query: 'absent(up{job="kubernetes-apiservers"}) == 1'
             severity: critical
+          - name: KubeAPIServerLatency
+            description: "Kubernetes API server has a 99th percentile latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}."
+            query: 'histogram_quantile(0.99, sum(apiserver_request_latencies_bucket{verb!~"CONNECT|WATCHLIST|WATCH|PROXY"}) WITHOUT (instance, resource)) / 1e+06 > 1'
+            severity: warning
+          - name: KubeAPIServerLatencyHigh
+            description: "Kubernetes API server has a 99th percentile latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}."
+            query: 'histogram_quantile(0.99, sum(apiserver_request_latencies_bucket{verb!~"CONNECT|WATCHLIST|WATCH|PROXY"}) WITHOUT (instance, resource)) / 1e+06 > 4'
+            severity: critical
           - name: KubeClientErrors
-            description: "Kubernetes API server client '{{ $labels.job }}/{{ $labels.instance }}' is experiencing {{ printf "%0.0f" $value }}% errors.'"
+            description: "Kubernetes API server client '{{ $labels.job }}/{{ $labels.instance }}' is experiencing {{ printf '%0.0f' $value }}% errors.'"
             query: '(sum(rate(rest_client_requests_total{job=~"kubernetes-.*",code=~"5.."}[5m])) by (instance, job) / sum(rate(rest_client_requests_total[5m])) by (instance, job)) * 100 > 1'
             severity: warning
           - name: KubeControllerManagerDown
