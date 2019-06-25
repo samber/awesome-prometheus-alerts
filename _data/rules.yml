@@ -329,7 +329,7 @@ services:
             severity: critical
           - name: KubeVersionMismatch
             description: "There are {{ $value }} different semantic versions of Kubernetes components running."
-            query: 'count(count by (gitVersion) (label_replace(kubernetes_build_info{job!="coredns"},"gitVersion","$1","gitVersion","(v[0-9]*.[0-9]*.[0-9]*).*"))) > 1'
+            query: 'count(count(kubernetes_build_info{job!="coredns"}) by (gitVersion)) > 1'
             severity: warning
           - name: KubeletDown
             description: "Kubelet has disappeared from Prometheus target discovery."
