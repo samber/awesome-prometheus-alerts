@@ -426,6 +426,16 @@ services:
             query: 'probe_ssl_earliest_cert_expiry - time()  <= 0'
             severity: error
 
+  - name: wmi_exporter
+    exporters:
+      - name: martinlindhe/wmi_exporter
+        doc_url: https://github.com/martinlindhe/wmi_exporter
+        rules:
+          - name: Service Status
+            description: Windows Service state is not OK. This example uses IIS web server named "w3svc".
+            query: 'wmi_service_status{name="w3svc",status="ok"} != 1'
+            severity: error
+
   - name: Juniper
     exporters:
       - name: czerwonk/junos_exporter
