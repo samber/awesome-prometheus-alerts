@@ -426,7 +426,7 @@ services:
             query: 'probe_ssl_earliest_cert_expiry - time()  <= 0'
             severity: error
 
-  - name: wmi_exporter
+  - name: Windows Server
     exporters:
       - name: martinlindhe/wmi_exporter
         doc_url: https://github.com/martinlindhe/wmi_exporter
