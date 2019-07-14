@@ -445,7 +445,7 @@ services:
             severity: warning
           - name: Disk Space Usage
             description: Disk Space on Drive is used more than 80%
-            query: '100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1000 / 1000 ) / (wmi_logical_disk_size_bytes{}  / 1024 / 1024)) > 80'
+            query: '100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1024 / 1024 ) / (wmi_logical_disk_size_bytes{}  / 1024 / 1024)) > 80'
             severity: error
 
   - name: Juniper
