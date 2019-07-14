@@ -474,3 +474,11 @@ services:
           description: Interface is getting saturated for at least 1 min. (> 0.80GiB/s)
           query: 'irate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80'
           severity: warning
+
+  - name: CoreDNS
+    exporters:
+      - rules:
+          - name: CoreDNS Panic Count
+            description: Number of CoreDNS panics encountered
+            query: 'increase(coredns_panic_count_total[10min]) > 0'
+            severity: error
