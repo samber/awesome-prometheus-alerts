@@ -82,7 +82,7 @@ groups:
 {% highlight yaml %}
 - alert: {{ ruleNameCamelcase | remove: ' ' }}
   expr: {{ rule.query }}
-  for: 30m
+  for: 5m
   labels:
     severity: warning
   annotations:
