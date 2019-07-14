@@ -441,5 +441,5 @@ services:
       - rules:
           - name: CoreDNS Panic Count
             description: Number of CoreDNS panics encountered
-            query: 'coredns_panic_count_total > 0'
+            query: 'increase(coredns_panic_count_total[10min]) > 0'
             severity: error
