@@ -65,9 +65,9 @@ services:
             description: Context switching is growing on node (> 1000 / s)
             query: 'rate(node_context_switches_total[5m]) > 1000'
             severity: warning
-          - name: Node has swap
-            description: Node has swap
-            query: 'node_memory_SwapTotal_bytes > 0'
+          - name: Swap is filling up
+            description: Swap is filling up (>80%)
+            query: '(((node_memory_SwapTotal - node_memory_SwapFree) / node_memory_SwapTotal) * 100) > 80'
             severity: warning
           - name: SystemD service failed
             description: 'Service {{ $labels.name }} failed'
@@ -82,6 +82,22 @@ services:
           - name: Container killed
             description: A container has disappeared
             query: 'time() - container_last_seen > 60'
+            severity: warning
+          - name: Container CPU usage
+            description: Container CPU usage is above 80%
+            query: '(sum(rate(container_cpu_usage_seconds_total[3m])) BY (ip, name) * 100) > 80'
+            severity: warning
+          - name: Container Memory usage
+            description: Container Memory usage is above 80%
+            query: '(sum(container_memory_usage_bytes) BY (ip) / sum(container_spec_memory_limit_bytes) BY (ip) * 100) > 80'
+            severity: warning
+          - name: Container Volume usage
+            description: Container Volume usage is above 80%
+            query: '(sum(container_fs_inodes_total) BY (ip) / sum(container_fs_inodes_total) BY (ip) * 100) > 80'
+            severity: warning
+          - name: Container Volume IO usage
+            description: Container Volume IO usage is above 80%
+            query: '(sum(container_fs_io_current) BY (ip, name) * 100) > 80'
             severity: warning
 
   - name: Nginx
@@ -187,6 +203,10 @@ services:
             description: PostgreSQL has dead-locks
             query: 'rate(pg_stat_database_deadlocks{pg_stat_database_de}[1m]) > 0'
             severity: warning
+          - name: Slow queries
+            description: PostgreSQL executes slow queries (> 1min)
+            query: 'avg(rate(pg_stat_activity_max_tx_duration{datname!~"template.*"}[1m])) BY (datname) > 60'
+            severity: warning
 
   - name: Redis
     exporters:
@@ -225,8 +245,52 @@ services:
   - name: MongoDB
     exporters:
       - name: dcu/mongodb_exporter
-        doc_url: https://github.com/dcu/mongodb_exporter
+        doc_url: https://github.com/percona/mongodb_exporter
         rules:
+          - name: MongoDB replication lag
+            description: Mongodb replication lag is more than 10s
+            query: 'avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}) > 10'
+            severity: error
+          - name: MongoDB replication headroom
+            description: MongoDB replication headroom is <= 0
+            query: '(avg(mongodb_replset_oplog_tail_timestamp - mongodb_replset_oplog_head_timestamp) - (avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}))) <= 0'
+            severity: error
+          - name: MongoDB replication Status 3
+            description: MongoDB Replication set member either perform startup self-checks, or transition from completing a rollback or resync
+            query: 'mongodb_replset_member_state == 3'
+            severity: error
+          - name: MongoDB replication Status 6
+            description: MongoDB Replication set member as seen from another member of the set, is not yet known
+            query: 'mongodb_replset_member_state == 6'
+            severity: error
+          - name: MongoDB replication Status 8
+            description: MongoDB Replication set member as seen from another member of the set, is unreachable
+            query: 'mongodb_replset_member_state == 8'
+            severity: error
+          - name: MongoDB replication Status 9
+            description: MongoDB Replication set member is actively performing a rollback. Data is not available for reads
+            query: 'mongodb_replset_member_state == 9'
+            severity: error
+          - name: MongoDB replication Status 10
+            description: MongoDB Replication set member was once in a replica set but was subsequently removed
+            query: 'mongodb_replset_member_state == 10'
+            severity: error
+          - name: MongoDB number cursors open
+            description: Too many cursors opened by MongoDB for clients (> 10k)
+            query: 'mongodb_metrics_cursor_open{state="total_open"} > 10000'
+            severity: warning
+          - name: MongoDB cursors timeouts
+            description: Too many cursors are timing out
+            query: 'increase(mongodb_metrics_cursor_timed_out_total[10min]) > 100'
+            severity: warning
+          - name: MongoDB too many connections
+            description: Too many connections
+            query: 'mongodb_connections{state="current"} > 500'
+            severity: warning
+          - name: MongoDB virtual memory usage
+            description: High memory usage
+            query: '(sum(mongodb_memory{type="virtual"}) BY (ip) / sum(mongodb_memory{type="mapped"}) BY (ip)) > 3'
+            severity: warning
 
   - name: Elasticsearch
     exporters:
@@ -300,6 +364,22 @@ services:
         doc_url: https://github.com/bakins/php-fpm-exporter
         rules:
 
+  - name: Java
+    exporters:
+      - name: java-client
+        doc_url: https://github.com/prometheus/client_java
+        rules:
+          - name: JVM memory filling up
+            description: JVM memory is filling up (> 80%)
+            query: 'jvm_memory_bytes_used / jvm_memory_bytes_max{area="heap"} > 0.8'
+            severity: warning
+
+  - name: ZFS
+    exporters:
+      - name: node-exporteer
+        doc_url: https://github.com/prometheus/node_exporter
+        rules:
+
   - name: Kubernetes
     exporters:
       - name: kubelet
@@ -311,6 +391,10 @@ services:
           - name: Volume full in four days
             description: "{{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is expected to fill up within four days. Currently {{ $value | humanize }}% is available."
             query: '100 * (kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) < 15 and predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0'
+            severity: error
+          - name: StatefulSet down
+            description: A StatefulSet went down
+            query: '(kube_statefulset_status_replicas_ready / kube_statefulset_status_replicas_current) != 1'
             severity: error
 
   - name: Nomad
@@ -434,6 +518,14 @@ services:
             description: SSL certificate has expired already
             query: 'probe_ssl_earliest_cert_expiry - time()  <= 0'
             severity: error
+          - name: Blackbox slow requests
+            description: Blackbox request took more than 2s
+            query: 'probe_http_duration_seconds > 2'
+            severity: warning
+          - name: Blackbox slow ping
+            description: Blackbox ping took more than 2s
+            query: 'probe_icmp_duration_seconds > 2'
+            severity: warning
 
   - name: Windows Server
     exporters:
