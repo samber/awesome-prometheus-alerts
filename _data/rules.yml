@@ -432,8 +432,20 @@ services:
         doc_url: https://github.com/martinlindhe/wmi_exporter
         rules:
           - name: Service Status
-            description: Windows Service state is not OK. This example uses IIS web server named "w3svc".
-            query: 'wmi_service_status{name="w3svc",status="ok"} != 1'
+            description: Windows Service state is not OK
+            query: 'wmi_service_status{status="ok"} != 1'
+            severity: error
+          - name: CPU Usage
+            description: CPU Usage is more than 80%
+            query: '100 - (avg by (instance) (irate(wmi_cpu_time_total{mode="idle"}[2m])) * 100) > 80'
+            severity: warning
+          - name: Memory Usage
+            description: Memory Usage is more than 90%
+            query: '100*(wmi_os_physical_memory_free_bytes) / wmi_cs_physical_memory_bytes > 90'
+            severity: warning
+          - name: Disk Space Usage
+            description: Disk Space on Drive is used more than 80%
+            query: '100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1000 / 1000 ) / (wmi_logical_disk_size_bytes{}  / 1024 / 1024)) > 80'
             severity: error
 
   - name: Juniper
