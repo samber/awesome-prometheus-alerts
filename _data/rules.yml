@@ -57,9 +57,9 @@ services:
             description: Disk latency is growing (write operations > 100ms)
             query: 'rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 100'
             severity: warning
-          - name: CPU load
-            description: CPU load (15m) is high
-            query: 'node_load15 / (count without (cpu, mode) (node_cpu_seconds_total{mode="system"})) > 2'
+          - name: High CPU load
+            description: CPU load is > 80%
+            query: '100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80'
             severity: warning
           - name: Context switching
             description: Context switching is growing on node (> 1000 / s)
