@@ -25,6 +25,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [HaProxy](https://awesome-prometheus-alerts.grep.to/rules#haproxy)
 - [Traefik](https://awesome-prometheus-alerts.grep.to/rules#traefik)
 - [PHP-FPM](https://awesome-prometheus-alerts.grep.to/rules#php-fpm)
+- [Java-Client](https://awesome-prometheus-alerts.grep.to/rules#java-client)
 - [Kubernetes](https://awesome-prometheus-alerts.grep.to/rules#kubernetes)
 - [Nomad](https://awesome-prometheus-alerts.grep.to/rules#nomad)
 - [Consul](https://awesome-prometheus-alerts.grep.to/rules#consul)
@@ -35,6 +36,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Istio](https://awesome-prometheus-alerts.grep.to/rules#istio)
 - [Blackbox](https://awesome-prometheus-alerts.grep.to/rules#blackbox)
 - [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
+- [Windows](https://awesome-prometheus-alerts.grep.to/rules#windows-server)
 
 ## Contributing
 
