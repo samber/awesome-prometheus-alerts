@@ -67,7 +67,7 @@ services:
             severity: warning
           - name: Swap is filling up
             description: Swap is filling up (>80%)
-            query: '(((node_memory_SwapTotal - node_memory_SwapFree) / node_memory_SwapTotal) * 100) > 80'
+            query: '(1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80'
             severity: warning
           - name: SystemD service failed
             description: 'Service {{ $labels.name }} failed'
