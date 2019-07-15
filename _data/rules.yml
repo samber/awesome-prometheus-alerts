@@ -93,7 +93,7 @@ services:
             severity: warning
           - name: Container Volume usage
             description: Container Volume usage is above 80%
-            query: '(sum(container_fs_inodes_total) BY (ip) / sum(container_fs_inodes_total) BY (ip) * 100) > 80'
+            query: '(sum(container_fs_inodes_free) BY (ip) / sum(container_fs_inodes_total) BY (ip) * 100) > 80'
             severity: warning
           - name: Container Volume IO usage
             description: Container Volume IO usage is above 80%
