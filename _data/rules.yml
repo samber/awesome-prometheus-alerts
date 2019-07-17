@@ -67,7 +67,7 @@ services:
             severity: warning
           - name: Swap is filling up
             description: Swap is filling up (>80%)
-            query: '(((node_memory_SwapTotal - node_memory_SwapFree) / node_memory_SwapTotal) * 100) > 80'
+            query: '(1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80'
             severity: warning
           - name: SystemD service failed
             description: 'Service {{ $labels.name }} failed'
@@ -89,11 +89,11 @@ services:
             severity: warning
           - name: Container Memory usage
             description: Container Memory usage is above 80%
-            query: '(sum(container_memory_usage_bytes) BY (ip) / sum(container_spec_memory_limit_bytes) BY (ip) * 100) > 80'
+            query: '(sum(container_memory_usage_bytes) BY (ip) / sum(container_memory_max_usage_bytes) BY (ip) * 100) > 80'
             severity: warning
           - name: Container Volume usage
             description: Container Volume usage is above 80%
-            query: '(sum(container_fs_inodes_total) BY (ip) / sum(container_fs_inodes_total) BY (ip) * 100) > 80'
+            query: '(1 - (sum(container_fs_inodes_free) BY (ip) / sum(container_fs_inodes_total) BY (ip)) * 100) > 80'
             severity: warning
           - name: Container Volume IO usage
             description: Container Volume IO usage is above 80%
