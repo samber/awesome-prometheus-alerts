@@ -44,6 +44,9 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 
 Contributions for common alerting rules are most welcome!
 
+For few months, many exporters have changed metric names, in order to follow community conventions.
+Please create an issue or a small pull-request with corrected metric name. 🙏
+
 [Instructions here](CONTRIBUTING.md)
 
 ## Improvements
