@@ -84,7 +84,7 @@ groups:
   expr: {{ rule.query }}
   for: 5m
   labels:
-    severity: warning
+    severity: {{ rule.severity }}
   annotations:
     summary: "{{ rule.name }} (instance {% raw %}{{ $labels.instance }}{% endraw %})"
     description: "{{ rule.description }}\n  VALUE = {% raw %}{{ $value }}{% endraw %}\n  LABELS: {% raw %}{{ $labels }}{% endraw %}"
