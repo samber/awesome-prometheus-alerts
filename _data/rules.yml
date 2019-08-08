@@ -357,6 +357,14 @@ services:
   - name: Traefik
     exporters:
       - rules:
+        - name: Traefik backend down
+          description: All Traefik backends are down
+          query: 'count(traefik_backend_server_up) by (backend) == 0'
+          severity: critical
+        - name: Traefik backend errors
+          description: Traefik backend error rate is above 10%
+          query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[5m])) by (backend) / sum(rate(traefik_backend_requests_total[5m])) by (backend) > 0.1'
+          severity: critical
 
   - name: PHP-FPM
     exporters:
