@@ -544,6 +544,10 @@ services:
       - name: martinlindhe/wmi_exporter
         doc_url: https://github.com/martinlindhe/wmi_exporter
         rules:
+          - name: Collector Error
+            description: 'Collector {{ $labels.collector }} was not successful'
+            query: 'wmi_exporter_collector_success == 0'
+            severity: error
           - name: Service Status
             description: Windows Service state is not OK
             query: 'wmi_service_status{status="ok"} != 1'
