@@ -519,8 +519,8 @@ services:
             query: probe_success == 0
             severity: error
           - name: Status Code
-            description: HTTP status code is not 200-299
-            query: 'probe_http_status_code <= 199 OR probe_http_status_code >= 300'
+            description: HTTP status code is not 200-399
+            query: 'probe_http_status_code <= 199 OR probe_http_status_code >= 400'
             severity: error
           - name: SSL certificate will expire soon
             description: SSL certificate expires in 30 days
