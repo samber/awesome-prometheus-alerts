@@ -281,7 +281,7 @@ services:
             severity: warning
           - name: MongoDB cursors timeouts
             description: Too many cursors are timing out
-            query: 'increase(mongodb_metrics_cursor_timed_out_total[10min]) > 100'
+            query: 'increase(mongodb_metrics_cursor_timed_out_total[10m]) > 100'
             severity: warning
           - name: MongoDB too many connections
             description: Too many connections
@@ -588,5 +588,5 @@ services:
       - rules:
           - name: CoreDNS Panic Count
             description: Number of CoreDNS panics encountered
-            query: 'increase(coredns_panic_count_total[10min]) > 0'
+            query: 'increase(coredns_panic_count_total[10m]) > 0'
             severity: error
