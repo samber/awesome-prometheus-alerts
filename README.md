@@ -39,6 +39,8 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Windows](https://awesome-prometheus-alerts.grep.to/rules#windows-server)
 - [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 - [CoreDNS](https://awesome-prometheus-alerts.grep.to/rules#coredns)
+- [OpenEBS](https://awesome-prometheus-alerts.grep.to/rules#openebs)
+- [Minio](https://awesome-prometheus-alerts.grep.to/rules#minio)
 
 ## Contributing
 
