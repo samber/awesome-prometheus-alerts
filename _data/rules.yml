@@ -565,6 +565,25 @@ services:
             query: '100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1024 / 1024 ) / (wmi_logical_disk_size_bytes{}  / 1024 / 1024)) > 80'
             severity: error
 
+  - name: OpenEBS
+    exporters:
+      - name: OpenEBS
+        rules:
+          - name: Used pool capacity
+            description: 'OpenEBS Pool use more than 80% of his capacity\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}'
+            query: '(openebs_used_pool_capacity_percent) > 80'
+            severity: warning
+
+  - name: Minio
+    exporters:
+      - name: Minio
+        rules:
+          - name: Disk down
+            description: 'Minio Disk is down\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}'
+            query: 'minio_offline_disks > 0'
+            severity: error
+
+
   - name: Juniper
     exporters:
       - name: czerwonk/junos_exporter
