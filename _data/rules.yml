@@ -354,7 +354,7 @@ services:
         doc_url: https://github.com/prometheus/haproxy_exporter
         rules:
 
-  - name: Traefik
+  - name: Traefik v1.*
     exporters:
       - rules:
         - name: Traefik backend down
