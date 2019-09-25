@@ -69,8 +69,8 @@ services:
             description: Swap is filling up (>80%)
             query: '(1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80'
             severity: warning
-          - name: SystemD service failed
-            description: 'Service {{ $labels.name }} failed'
+          - name: SystemD service crashed
+            description: 'SystemD service crashed'
             query: 'node_systemd_unit_state{state="failed"} == 1'
             severity: warning
 
@@ -567,8 +567,7 @@ services:
 
   - name: OpenEBS
     exporters:
-      - name: OpenEBS
-        rules:
+      - rules:
           - name: Used pool capacity
             description: 'OpenEBS Pool use more than 80% of his capacity\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}'
             query: '(openebs_used_pool_capacity_percent) > 80'
@@ -576,13 +575,11 @@ services:
 
   - name: Minio
     exporters:
-      - name: Minio
-        rules:
+      - rules:
           - name: Disk down
             description: 'Minio Disk is down\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}'
             query: 'minio_offline_disks > 0'
             severity: error
-
 
   - name: Juniper
     exporters:
