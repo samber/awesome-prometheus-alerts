@@ -201,7 +201,7 @@ services:
             severity: warning
           - name: Dead locks
             description: PostgreSQL has dead-locks
-            query: 'rate(pg_stat_database_deadlocks{pg_stat_database_de}[1m]) > 0'
+            query: 'rate(pg_stat_database_deadlocks{datname!~"template.*|postgres"}[1m]) > 0'
             severity: warning
           - name: Slow queries
             description: PostgreSQL executes slow queries (> 1min)
