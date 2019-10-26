@@ -21,6 +21,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Redis](https://awesome-prometheus-alerts.grep.to/rules#redis)
 - [MongoDB](https://awesome-prometheus-alerts.grep.to/rules#mongodb)
 - [Elasticsearch](https://awesome-prometheus-alerts.grep.to/rules#elasticsearch)
+- [Cassandra](https://awesome-prometheus-alerts.grep.to/rules#cassandra)
 - [Apache](https://awesome-prometheus-alerts.grep.to/rules#apache)
 - [HaProxy](https://awesome-prometheus-alerts.grep.to/rules#haproxy)
 - [Traefik](https://awesome-prometheus-alerts.grep.to/rules#traefik)

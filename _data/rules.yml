@@ -346,6 +346,12 @@ services:
             query: 'rate(elasticsearch_indices_docs{es_master_node="false"}[10m]) < 1'
             severity: warning
 
+  - name: Cassandra
+    exporters:
+      - name: criteo/cassandra_exporter
+        doc_url: https://github.com/criteo/cassandra_exporter
+        rules:
+
   - name: Apache
     exporters:
       - name: Lusitaniae/apache_exporter
