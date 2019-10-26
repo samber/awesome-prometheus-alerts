@@ -522,7 +522,11 @@ services:
             description: Probe failed
             query: probe_success == 0
             severity: error
-          - name: Status Code
+          - name: Slow probe
+            description: Blackbox probe took more than 1s to complete
+            query: 'avg_over_time(probe_duration_seconds[1m]) > 1'
+            severity: warning
+          - name: HTTP Status Code
             description: HTTP status code is not 200-399
             query: 'probe_http_status_code <= 199 OR probe_http_status_code >= 400'
             severity: error
@@ -534,13 +538,13 @@ services:
             description: SSL certificate has expired already
             query: 'probe_ssl_earliest_cert_expiry - time()  <= 0'
             severity: error
-          - name: Blackbox slow requests
-            description: Blackbox request took more than 2s
-            query: 'probe_http_duration_seconds > 2'
+          - name: HTTP slow requests
+            description: HTTP request took more than 1s
+            query: 'avg_over_time(probe_http_duration_seconds[1m]) > 1'
             severity: warning
-          - name: Blackbox slow ping
-            description: Blackbox ping took more than 2s
-            query: 'probe_icmp_duration_seconds > 2'
+          - name: Slow ping
+            description: Blackbox ping took more than 1s
+            query: 'avg_over_time(probe_icmp_duration_seconds[1m]) > 1'
             severity: warning
 
   - name: Windows Server
