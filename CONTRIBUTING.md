@@ -10,7 +10,19 @@ Rules are here: `_data/rules.yml`.
 ```
 gem install bundler
 bundle install
-bundle exec jekyll serve
+jekyll serve
+```
+
+Or with Docker:
+
+```
+docker run --rm -it -p 4000:4000 -v $(pwd):/srv/jekyll jekyll/jekyll jekyll serve
+```
+
+Or with Docker-Compose:
+
+```
+docker-compose up -d
 ```
 
 ## Guidelines

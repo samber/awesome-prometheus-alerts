@@ -1,0 +1,11 @@
+.clipboard-single,
+.clipboard-multiple {
+    float: right;
+    cursor: pointer;
+    font-size: 14px;
+    color: #606c71;
+}
+
+details summary {
+    cursor: pointer;
+}

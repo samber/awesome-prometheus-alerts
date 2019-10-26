@@ -41,6 +41,7 @@ groups:
   {% for service in site.data.rules.services %}
   {% assign serviceIndex = forloop.index %}
     {% for exporter in service.exporters %}
+    {% assign nbrRules = exporter.rules | size %}
     <li>
       <h2 id="{{ service.name | replace: " ", "-" | downcase }}">
         {{ serviceIndex }}.
@@ -55,9 +56,12 @@ groups:
         {{ exporter.name }}
         {% endif %}
         {% endif %}
+
+        {% if nbrRules > 0 %}
+          <span class="clipboard-multiple" data-clipboard-target-id="service-{{ serviceIndex }}">[copy all]</span>
+        {% endif %}
       </h2>
 
-      {% assign nbrRules = exporter.rules | size %}
       {% if nbrRules == 0 %}
 {% highlight javascript %}
 // @TODO
@@ -71,11 +75,13 @@ groups:
           <h4>
             {{ serviceIndex }}.{{ ruleIndex }}.
             {{ rule.name }}
-          </h4>
-          <details {% if true || (serviceIndex == 1 && ruleIndex == 1) %} open {% endif %}>
-            <summary>{{ rule.description }}</summary>
+             </h4>
+          <details id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" {% if true || (serviceIndex == 1 && ruleIndex == 1) %} open {% endif %}>
+            <summary>
+              {{ rule.description }}
+              <span class="clipboard-single" data-clipboard-target-id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
+            </summary>
             <p>
-
             {% assign ruleName = rule.name | split: ' ' %}
             {% capture ruleNameCamelcase %}{% for word in ruleName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
 
