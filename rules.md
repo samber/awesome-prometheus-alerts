@@ -71,6 +71,7 @@ groups:
       <ul>
         {% for rule in exporter.rules %}
         {% assign ruleIndex = forloop.index %}
+        {% assign comments = rule.comments | strip | newline_to_br | split: '<br />' %}
         <li>
           <h4>
             {{ serviceIndex }}.{{ ruleIndex }}.
@@ -86,6 +87,8 @@ groups:
             {% capture ruleNameCamelcase %}{% for word in ruleName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
 
 {% highlight yaml %}
+{% for comment in comments %}# {{ comment | strip }}
+{% endfor %}
 - alert: {{ ruleNameCamelcase | remove: ' ' }}
   expr: {{ rule.query }}
   for: 5m

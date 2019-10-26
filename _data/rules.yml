@@ -65,6 +65,10 @@ services:
             description: Context switching is growing on node (> 1000 / s)
             query: 'rate(node_context_switches_total[5m]) > 1000'
             severity: warning
+            comments: |
+              1000 context switches is an arbitrary number.
+              Alert threshold depends on nature of application.
+              Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
           - name: Swap is filling up
             description: Swap is filling up (>80%)
             query: '(1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80'
