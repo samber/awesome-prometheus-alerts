@@ -370,11 +370,11 @@ services:
         - name: Traefik backend down
           description: All Traefik backends are down
           query: 'count(traefik_backend_server_up) by (backend) == 0'
-          severity: critical
+          severity: error
         - name: Traefik backend errors
           description: Traefik backend error rate is above 10%
           query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[5m])) by (backend) / sum(rate(traefik_backend_requests_total[5m])) by (backend) > 0.1'
-          severity: critical
+          severity: error
 
   - name: PHP-FPM
     exporters:
@@ -400,36 +400,21 @@ services:
 
   - name: Kubernetes
     exporters:
-      - name: kubelet
-        rules:
-          - name: Volume out of disk space
-            description: Volume is almost full (< 10% left)
-            query: 'kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes * 100 < 10'
-            severity: warning
-          - name: Volume full in four days
-            description: "{{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is expected to fill up within four days. Currently {{ $value | humanize }}% is available."
-            query: '100 * (kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) < 15 and predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0'
-            severity: error
-          - name: StatefulSet down
-            description: A StatefulSet went down
-            query: '(kube_statefulset_status_replicas_ready / kube_statefulset_status_replicas_current) != 1'
-            severity: error
-
       - name: kube-state-metrics
         doc_url: https://github.com/kubernetes/kube-state-metrics/tree/master/docs
         rules:
           - name: Kubernetes MemoryPressure
             description: '{{ $labels.node }} has MemoryPressure condition'
             query: 'kube_node_status_condition{condition="MemoryPressure",status="true"} == 1'
-            severity: critical
+            severity: error
           - name: Kubernetes DiskPressure
             description: '{{ $labels.node }} has DiskPressure condition'
             query: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
-            severity: critical
+            severity: error
           - name: Kubernetes OutOfDisk
             description: '{{ $labels.node }} has OutOfDisk condition'
             query: 'kube_node_status_condition{condition="OutOfDisk",status="true"} == 1'
-            severity: critical
+            severity: error
           - name: Kubernetes Job failed
             description: 'Job {{$labels.namespace}}/{{$labels.exported_job}} failed to complete'
             query: 'kube_job_status_failed > 0'
@@ -442,6 +427,18 @@ services:
             description: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is pending'
             query: 'kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1'
             severity: warning
+          - name: Volume out of disk space
+            description: Volume is almost full (< 10% left)
+            query: 'kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes * 100 < 10'
+            severity: warning
+          - name: Volume full in four days
+            description: "{{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is expected to fill up within four days. Currently {{ $value | humanize }}% is available."
+            query: '100 * (kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) < 15 and predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0'
+            severity: error
+          - name: StatefulSet down
+            description: A StatefulSet went down
+            query: '(kube_statefulset_status_replicas_ready / kube_statefulset_status_replicas_current) != 1'
+            severity: error
 
   - name: Nomad
     exporters:
