@@ -565,7 +565,7 @@ services:
             description: SSL certificate expires in 30 days
             query: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 30'
             severity: warning
-          - name: SSL certificate has expired
+          - name: SSL certificate expired
             description: SSL certificate has expired already
             query: 'probe_ssl_earliest_cert_expiry - time()  <= 0'
             severity: error
