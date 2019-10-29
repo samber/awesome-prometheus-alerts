@@ -415,6 +415,34 @@ services:
             query: '(kube_statefulset_status_replicas_ready / kube_statefulset_status_replicas_current) != 1'
             severity: error
 
+      - name: kube-state-metrics
+        doc_url: https://github.com/kubernetes/kube-state-metrics/tree/master/docs
+        rules:
+          - name: Kubernetes MemoryPressure
+            description: '{{ $labels.node }} has MemoryPressure condition'
+            query: 'kube_node_status_condition{condition="MemoryPressure",status="true"} == 1'
+            severity: critical
+          - name: Kubernetes DiskPressure
+            description: '{{ $labels.node }} has DiskPressure condition'
+            query: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
+            severity: critical
+          - name: Kubernetes OutOfDisk
+            description: '{{ $labels.node }} has OutOfDisk condition'
+            query: 'kube_node_status_condition{condition="OutOfDisk",status="true"} == 1'
+            severity: critical
+          - name: Kubernetes Job failed
+            description: 'Job {{$labels.namespace}}/{{$labels.exported_job}} failed to complete'
+            query: 'kube_job_status_failed > 0'
+            severity: warning
+          - name: Kubernetes CronJob suspended
+            description: 'CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is suspended'
+            query: 'kube_cronjob_spec_suspend != 0'
+            severity: info
+          - name: Kubernetes PersistentVolumeClaim pending
+            description: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is pending'
+            query: 'kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1'
+            severity: warning
+
   - name: Nomad
     exporters:
       - name: samber/prometheus-nomad-exporter
