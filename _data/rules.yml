@@ -394,7 +394,7 @@ services:
 
   - name: ZFS
     exporters:
-      - name: node-exporteer
+      - name: node-exporter
         doc_url: https://github.com/prometheus/node_exporter
         rules:
 
