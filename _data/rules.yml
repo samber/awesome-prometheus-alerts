@@ -347,7 +347,7 @@ services:
             severity: warning
           - name: Elastic no new documents
             description: No new documents for 10 min!
-            query: 'rate(elasticsearch_indices_docs{es_master_node="false"}[10m]) < 1'
+            query: 'rate(elasticsearch_indices_docs{es_data_node="true"}[10m]) < 1'
             severity: warning
 
   - name: Cassandra
