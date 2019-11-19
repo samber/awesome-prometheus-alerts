@@ -15,7 +15,7 @@ route:
   # notification.
   group_wait: 10s
 
-  # When the first notification was sent, wait 'group_interval' to send a betch
+  # When the first notification was sent, wait 'group_interval' to send a batch
   # of new alerts that started firing for that group.
   group_interval: 5m
 
