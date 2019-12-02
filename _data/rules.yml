@@ -129,7 +129,7 @@ services:
             severity: error
           - name: Cluster down
             description: Less than 3 nodes running in RabbitMQ cluster
-            query: 'rabbitmq_running < 3'
+            query: 'sum(rabbitmq_running) < 3'
             severity: error
           - name: Cluster partition
             description: Cluster partition
