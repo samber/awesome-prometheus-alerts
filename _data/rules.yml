@@ -77,6 +77,15 @@ services:
             description: 'SystemD service crashed'
             query: 'node_systemd_unit_state{state="failed"} == 1'
             severity: warning
+          - name: Physical component too hot
+            description: 'Physical hardware component too hot'
+            query: 'node_hwmon_temp_celsius > 75'
+            severity: warning
+          - name: Node overtemperature alarm
+            description: 'Physical node temperature alarm triggered'
+            query: 'node_hwmon_temp_alarm == 1'
+            severity: critical
+
 
   - name: Docker containers
     exporters:
