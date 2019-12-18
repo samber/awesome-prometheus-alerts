@@ -45,6 +45,10 @@ services:
             description: Disk is almost full (< 10% left)
             query: 'node_filesystem_free_bytes{mountpoint ="/rootfs"} / node_filesystem_size_bytes{mountpoint ="/rootfs"} * 100 < 10'
             severity: warning
+          - name: Disk will fill in 4 hours
+            description: Disk will fill in 4 hours at current write rate
+            query: 'predict_linear(node_filesystem_free_bytes[1h], 4 * 3600) < 0'
+            severity: warning
           - name: Out of inodes
             description: Disk is almost running out of available inodes (< 10% left)
             query: 'node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint ="/rootfs"} * 100 < 10'
