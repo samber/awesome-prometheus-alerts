@@ -7,6 +7,10 @@ services:
             description: Prometheus configuration reload error
             query: 'prometheus_config_last_reload_successful != 1'
             severity: error
+          - name: Prometheus not connected to alertmanager
+            description: Prometheus cannot connect the alertmanager 
+            query: 'prometheus_notifications_alertmanagers_discovered < 1'
+            severity: error
           - name: AlertManager configuration reload
             description: AlertManager configuration reload error
             query: 'alertmanager_config_last_reload_successful != 1'
