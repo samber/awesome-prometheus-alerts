@@ -7,6 +7,10 @@ services:
             description: Prometheus configuration reload error
             query: 'prometheus_config_last_reload_successful != 1'
             severity: error
+          - name: Prometheus not connected to alertmanager
+            description: Prometheus cannot connect the alertmanager 
+            query: 'prometheus_notifications_alertmanagers_discovered < 1'
+            severity: error
           - name: AlertManager configuration reload
             description: AlertManager configuration reload error
             query: 'alertmanager_config_last_reload_successful != 1'
@@ -44,6 +48,10 @@ services:
           - name: Out of disk space
             description: Disk is almost full (< 10% left)
             query: 'node_filesystem_free_bytes{mountpoint ="/rootfs"} / node_filesystem_size_bytes{mountpoint ="/rootfs"} * 100 < 10'
+            severity: warning
+          - name: Disk will fill in 4 hours
+            description: Disk will fill in 4 hours at current write rate
+            query: 'predict_linear(node_filesystem_free_bytes[1h], 4 * 3600) < 0'
             severity: warning
           - name: Out of inodes
             description: Disk is almost running out of available inodes (< 10% left)
