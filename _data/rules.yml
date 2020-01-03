@@ -484,7 +484,7 @@ services:
       - rules:
           - name: Insufficient Members
             description: Etcd cluster should have an odd number of members
-            query: "count(etcd_server_id) > (count(etcd_server_id) / 2 - 1)"
+            query: "count(etcd_server_id) % 2 == 0"
             severity: error
           - name: No Leader
             description: Etcd cluster have no leader
