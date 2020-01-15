@@ -46,7 +46,7 @@ services:
             severity: warning
           - name: Out of disk space
             description: Disk is almost full (< 10% left)
-            query: 'node_filesystem_free_bytes{mountpoint ="/rootfs"} / node_filesystem_size_bytes{mountpoint ="/rootfs"} * 100 < 10'
+            query: '(node_filesystem_avail_bytes{mountpoint="/rootfs"}  * 100) / node_filesystem_size_bytes{mountpoint="/rootfs"} < 10'
             severity: warning
           - name: Disk will fill in 4 hours
             description: Disk will fill in 4 hours at current write rate
