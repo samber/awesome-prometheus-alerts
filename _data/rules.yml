@@ -376,9 +376,60 @@ services:
 
   - name: Cassandra
     exporters:
+      - name: instaclustr/cassandra-exporter
+        doc_url: https://github.com/instaclustr/cassandra-exporter
+        rules:
       - name: criteo/cassandra_exporter
         doc_url: https://github.com/criteo/cassandra_exporter
         rules:
+          - name: Cassandra hints count
+            description: Cassandra hints count was changed to {{ $value | printf "%.0f" }} on {{ $labels.instance }} some nodes may go down
+            query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:totalhints:count"}[1m]) > 3'
+            severity: critical
+          - name: Cassandra compaction task pending
+            description: Many Cassandra compaction tasks are pending. You might need to increase I/O capacity by adding nodes to the cluster.
+            query: 'avg_over_time(cassandra_stats{name="org:apache:cassandra:metrics:compaction:pendingtasks:value"}[30m]) > 100'
+            severity: warning
+          - name: Cassandra viewwrite latency
+            description: High viewwrite latency on {{ $labels.instance }} cassandra node
+            query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:viewwrite:viewwritelatency:99thpercentile",service="cas"} > 100000'
+            severity: warning
+          - name: Cassandra cool hacker
+            description: Increase of Cassandra authentication failures
+            query: 'irate(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
+            severity: warning
+          - name: Cassandra node down
+            description: Cassandra node down
+            query: 'sum(cassandra_stats{name="org:apache:cassandra:net:failuredetector:downendpointcount"}) by (service,group,cluster,env) > 0'
+            severity: critical
+          - name: Cassandra commitlog pending tasks
+            description: Unexpected number of Cassandra commitlog pending tasks
+            query: 'cassandra_stats{name="org:apache:cassandra:metrics:commitlog:pendingtasks:value"} > 15'
+            severity: warning
+          - name: Cassandra compaction executor blocked tasks
+            description: Some Cassandra compaction executor tasks are blocked
+            query: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:compactionexecutor:currentlyblockedtasks:count"} > 0'
+            severity: warning
+          - name: Cassandra flush writer blocked tasks
+            description: Some Cassandra flush writer tasks are blocked
+            query: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:memtableflushwriter:currentlyblockedtasks:count"} > 0'
+            severity: warning
+          - name: Cassandra repair pending tasks
+            description: Some Cassandra repair tasks are pending
+            query: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:antientropystage:pendingtasks:value"} > 2'
+            severity: warning
+          - name: Cassandra repair blocked tasks
+            description: Some Cassandra repair tasks are blocked
+            query: 'cassandra_stats{name="org:apache:cassandra:metrics:threadpools:internal:antientropystage:currentlyblockedtasks:count"} > 0'
+            severity: warning
+          - name: Cassandra connection timeouts total
+            description: Some connection between nodes are ending in timeout
+            query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
+            severity: critical
+          - name: Cassandra storage exceptions
+            description: Something is going wrong with cassandra storage
+            query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:exceptions:count"}[1m]) > 1'
+            severity: critical
 
   - name: Apache
     exporters:
