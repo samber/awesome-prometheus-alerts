@@ -8,9 +8,9 @@
   <h2 style="text-align:center;">⚠️ Disclamer ⚠️</h2>
 
   <p style="text-align:center;">
-    Alert threshold depends on nature of application.
+    Alert thresholds depend on nature of applications.
     <br>
-    Some query may have arbitrary tolerance threshold.
+    Some queries may have arbitrary tolerance threshold.
     <br><br>
     Building an efficient an battle-tested monitoring platform takes time. 😉
   </p>
