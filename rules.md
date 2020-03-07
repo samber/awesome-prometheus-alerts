@@ -64,7 +64,7 @@ groups:
 
       {% if nbrRules == 0 %}
 {% highlight javascript %}
-// @TODO: Please <a href="https://github.com/samber/awesome-prometheus-alerts">contribute</a>! 👋
+// @TODO: Please contribute => https://github.com/samber/awesome-prometheus-alerts 👋
 {% endhighlight %}
       {% endif %}
 
