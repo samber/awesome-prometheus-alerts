@@ -11,8 +11,8 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 
 ## Rules
 
-- [Prometheus](https://awesome-prometheus-alerts.grep.to/rules#prometheus)
-- [Host](https://awesome-prometheus-alerts.grep.to/rules#host)
+- [Prometheus internals](https://awesome-prometheus-alerts.grep.to/rules#prometheus-internals)
+- [Host/Hardware](https://awesome-prometheus-alerts.grep.to/rules#host-and-hardware)
 - [Docker Containers](https://awesome-prometheus-alerts.grep.to/rules#docker-containers)
 - [Nginx](https://awesome-prometheus-alerts.grep.to/rules#nginx)
 - [RabbitMQ](https://awesome-prometheus-alerts.grep.to/rules#rabbitmq)

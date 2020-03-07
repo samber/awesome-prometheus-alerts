@@ -1,5 +1,5 @@
 services:
-  - name: Prometheus
+  - name: Prometheus internals
     exporters:
       - rules:
           - name: Prometheus configuration reload
@@ -19,7 +19,7 @@ services:
             query: "up == 0"
             severity: warning
 
-  - name: Host
+  - name: Host and hardware
     exporters:
       - name: node-exporter
         doc_url: https://github.com/prometheus/node_exporter
