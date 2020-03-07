@@ -207,10 +207,15 @@ services:
             description: PostgreSQL instance is down
             query: "pg_up == 0"
             severity: error
-          - name: Replication lag
+          - name: Postgresql replication lag
             description: PostgreSQL replication lag is going up (> 10s)
             query: "pg_replication_lag > 10"
             severity: warning
+            comments: |
+              A label excluding master nodes should be added to this query,
+              in order to monitor lag on standby servers only.
+              Exporter does not guarantee a NaN value for pg_replication_log on promoted master nodes.
+              See https://github.com/samber/awesome-prometheus-alerts/issues/74
           - name: Table not vaccumed
             description: Table has not been vaccum for 24 hours
             query: "time() - pg_stat_user_tables_last_autovacuum > 60 * 60 * 24"
