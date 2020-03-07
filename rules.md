@@ -4,6 +4,20 @@
   }
 </style>
 
+<div style="padding: 20px 20px 10px 20px; border: solid grey 1px; border-radius: 10px;">
+  <h2 style="text-align:center;">⚠️ Disclamer ⚠️</h2>
+
+  <p style="text-align:center;">
+    Alert threshold depends on nature of application.
+    <br>
+    Some query may have arbitrary tolerance threshold.
+    <br><br>
+    Building an efficient an battle-tested monitoring platform takes time. 😉
+  </p>
+</div>
+
+<h2>0. Prometheus global configuration</h2>
+
 {% highlight yaml %}
 # prometheus.yml
 
