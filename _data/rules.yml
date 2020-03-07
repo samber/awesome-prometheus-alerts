@@ -92,6 +92,15 @@ services:
             description: "Physical node temperature alarm triggered"
             query: "node_hwmon_temp_alarm == 1"
             severity: critical
+          - name: RAID array got inactive
+            description: 'RAID array "{{ $labels.device }}" is in degraded state due to one or more disks failures. Number of spare drives is insufficient to fix issue automatically.'
+            query: 'node_md_state{state="inactive"} > 0'
+            severity: critical
+          - name: RAID disk failure
+            description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array "{{ $labels.md_device }}" needs attention and possibly a disk swap'
+            query: 'node_md_disks{state="fail"} > 0'
+            severity: warning
+
 
   - name: Docker containers
     exporters:
