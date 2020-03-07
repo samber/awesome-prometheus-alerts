@@ -383,7 +383,7 @@ services:
         doc_url: https://github.com/criteo/cassandra_exporter
         rules:
           - name: Cassandra hints count
-            description: Cassandra hints count was changed to {{ $value | printf "%.0f" }} on {{ $labels.instance }} some nodes may go down
+            description: Cassandra hints count has changed on {{ $labels.instance }} some nodes may go down
             query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:totalhints:count"}[1m]) > 3'
             severity: critical
           - name: Cassandra compaction task pending
