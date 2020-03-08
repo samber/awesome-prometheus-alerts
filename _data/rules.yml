@@ -482,15 +482,12 @@ services:
         doc_url: https://github.com/Lusitaniae/apache_exporter
         rules:
 
-  - name: HaProxy v2.*
+  - name: HaProxy
     exporters:
-      - name: Embedded exporter
+      - name: Embedded exporter (HAProxy >= v2)
         doc_url: https://github.com/haproxy/haproxy/tree/master/contrib/prometheus-exporter
         rules:
-
-  - name: HaProxy v1.*
-    exporters:
-      - name: prometheus/haproxy_exporter
+      - name: prometheus/haproxy_exporter (HAProxy < v2)
         doc_url: https://github.com/prometheus/haproxy_exporter
         rules:
           - name: HAProxy down
@@ -558,10 +555,10 @@ services:
             query: 'increase(haproxy_server_check_failures_total) > 0'
             severity: warning
 
-  - name: Traefik v1.*
+  - name: Traefik
     exporters:
       - name: Embedded exporter
-        doc_url: https://docs.traefik.io/v1.7/configuration/metrics/
+        doc_url: https://docs.traefik.io/observability/metrics/prometheus/
         rules:
           - name: Traefik backend down
             description: All Traefik backends are down
@@ -576,19 +573,13 @@ services:
             query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
             severity: error
 
-  - name: Traefik v2.*
-    exporters:
-      - name: Embedded exporter
-        doc_url: https://docs.traefik.io/observability/metrics/prometheus/
-        rules:
-
   - name: PHP-FPM
     exporters:
       - name: bakins/php-fpm-exporter
         doc_url: https://github.com/bakins/php-fpm-exporter
         rules:
 
-  - name: Java
+  - name: JVM
     exporters:
       - name: java-client
         doc_url: https://github.com/prometheus/client_java

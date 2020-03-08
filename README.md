@@ -29,7 +29,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [HaProxy](https://awesome-prometheus-alerts.grep.to/rules#haproxy)
 - [Traefik](https://awesome-prometheus-alerts.grep.to/rules#traefik)
 - [PHP-FPM](https://awesome-prometheus-alerts.grep.to/rules#php-fpm)
-- [Java-Client](https://awesome-prometheus-alerts.grep.to/rules#java-client)
+- [JVM](https://awesome-prometheus-alerts.grep.to/rules#jvm)
 - [ZFS](https://awesome-prometheus-alerts.grep.to/rules#zfs)
 - [Kubernetes](https://awesome-prometheus-alerts.grep.to/rules#kubernetes)
 - [Nomad](https://awesome-prometheus-alerts.grep.to/rules#nomad)
@@ -44,6 +44,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 - [OpenEBS](https://awesome-prometheus-alerts.grep.to/rules#openebs)
 - [Minio](https://awesome-prometheus-alerts.grep.to/rules#minio)
+- [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 - [CoreDNS](https://awesome-prometheus-alerts.grep.to/rules#coredns)
 
 ## 🤝 Contributing
