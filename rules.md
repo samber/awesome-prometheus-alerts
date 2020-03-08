@@ -10,46 +10,14 @@
   <p style="text-align:center;">
     Alert thresholds depend on nature of applications.
     <br>
-    Some queries may have arbitrary tolerance threshold.
+    Some queries in this page may have arbitrary tolerance threshold.
     <br><br>
-    Building an efficient an battle-tested monitoring platform takes time. 😉
+    Building an efficient and battle-tested monitoring platform takes time. 😉
   </p>
 </div>
 
-<h2>0. Prometheus global configuration</h2>
-
-{% highlight yaml %}
-# prometheus.yml
-
-global:
-  scrape_interval:     15s
-  ...
-
-rule_files:
-  - 'alerts/*.yml'
-
-scrape_configs:
-  ...
-
-{% endhighlight %}
-
-{% highlight yaml %}
-# alerts/example-redis.yml
-
-groups:
-
-- name: ExampleRedisGroup
-  rules:
-  - alert: ExampleRedisDown
-    expr: redis_up{} == 0
-    for: 2m
-    labels:
-      severity: error
-    annotations:
-      summary: "Redis instance ($instance) down"
-      description: "Whatever"
-
-{% endhighlight %}
+<br>
+<br>
 
 <ul>
   {% for service in site.data.rules.services %}

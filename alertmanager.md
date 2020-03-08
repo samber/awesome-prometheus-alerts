@@ -1,3 +1,39 @@
+<h2>
+  Prometheus configuration
+</h2>
+
+{% highlight yaml %}
+# prometheus.yml
+
+global:
+  scrape_interval:     15s
+  ...
+
+rule_files:
+  - 'alerts/*.yml'
+
+scrape_configs:
+  ...
+
+{% endhighlight %}
+
+{% highlight yaml %}
+# alerts/example-redis.yml
+
+groups:
+
+- name: ExampleRedisGroup
+  rules:
+  - alert: ExampleRedisDown
+    expr: redis_up{} == 0
+    for: 2m
+    labels:
+      severity: error
+    annotations:
+      summary: "Redis instance down"
+      description: "Whatever"
+
+{% endhighlight %}
 
 <h2>
   AlertManager configuration
@@ -51,7 +87,7 @@ receivers:
 
   - name: "sms"
     webhook_config:
-      - url: http://a.b.c:8080/send/sms
+      - url: http://a.b.c.d:8080/send/sms
         send_resolved: true
 
 {% endraw %}
