@@ -5,7 +5,18 @@
 
 Rules are here: `_data/rules.yml`.
 
-## Run localy
+### Guidelines
+
+Please ensure your pull request adheres to the following guidelines:
+
+- Search previous suggestions before making a new one, as yours may be a duplicate.
+- Keep descriptions short and simple, but descriptive.
+- Description must be factual (the "what?") and should provide root cause suggestions (the "why?"), for faster resolution.
+- Queries must be tested on latest exporter version.
+
+## Improving Github page
+
+### Run localy
 
 ```
 gem install bundler
@@ -24,11 +35,3 @@ Or with Docker-Compose:
 ```
 docker-compose up -d
 ```
-
-## Guidelines
-
-Please ensure your pull request adheres to the following guidelines:
-
-- Search previous suggestions before making a new one, as yours may be a duplicate.
-- Keep descriptions short and simple, but descriptive.
-- Queries must be tested on latest exporter version.

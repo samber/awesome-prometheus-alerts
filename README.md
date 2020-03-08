@@ -1,15 +1,18 @@
-# Awesome Prometheus Alerts [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
+# 👋 Awesome Prometheus Alerts [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
 > Most alerting rules are common to any Prometheus setup. We need a place to find them all. 🤘 🚨 📊
 
 Collection available here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
 
-## Contents
+## ✨ Contents
 
 - [Rules](#rules)
+- [Contributing](#-contributing)
 - [Improvements](#improvements)
+- [Help us](#-show-your-support)
+- [License](#-license)
 
-## Rules
+## 🚨 Rules
 
 - [Prometheus internals](https://awesome-prometheus-alerts.grep.to/rules#prometheus-internals)
 - [Host/Hardware](https://awesome-prometheus-alerts.grep.to/rules#host-and-hardware)
@@ -43,20 +46,26 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Minio](https://awesome-prometheus-alerts.grep.to/rules#minio)
 - [CoreDNS](https://awesome-prometheus-alerts.grep.to/rules#coredns)
 
-## Contributing
+## 🤝 Contributing
 
-Contributions for common alerting rules are most welcome!
+Contributions from community (you!) are most welcome!
 
-For few months, many exporters have changed metric names, in order to follow community conventions.
-Please create an issue or a small pull-request with corrected metric name. 🙏
+There are many ways to contribute: writing code, alerting rules, documentation, reporting issues, discussing better error tracking...
 
 [Instructions here](CONTRIBUTING.md)
 
-## Improvements
+## 🏋️ Improvements
 
 - Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances...)
+- Add resolution suggestions to rule descriptions, for faster incident resolution ([#85](https://github.com/samber/awesome-prometheus-alerts/issues/85)).
 
-## License
+## 💫 Show your support
+
+Give a ⭐️ if this project helped you!
+
+[![support us](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/samber)
+
+## 📝 License
 
 [![CC4](https://mirrors.creativecommons.org/presskit/cc.srr.primary.svg)](https://creativecommons.org/licenses/by/4.0/legalcode)
 
