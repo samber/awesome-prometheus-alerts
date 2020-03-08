@@ -2,57 +2,57 @@ services:
   - name: Prometheus internals
     exporters:
       - rules:
-          - name: Prometheus configuration reload
+          - name: Prometheus configuration reload failure
             description: Prometheus configuration reload error
             query: "prometheus_config_last_reload_successful != 1"
-            severity: error
+            severity: warning
+          - name: AlertManager configuration reload failure
+            description: AlertManager configuration reload error
+            query: "alertmanager_config_last_reload_successful != 1"
+            severity: warning
           - name: Prometheus not connected to alertmanager
             description: Prometheus cannot connect the alertmanager
             query: "prometheus_notifications_alertmanagers_discovered < 1"
             severity: error
-          - name: AlertManager configuration reload
-            description: AlertManager configuration reload error
-            query: "alertmanager_config_last_reload_successful != 1"
-            severity: error
           - name: Exporter down
             description: Prometheus exporter down
             query: "up == 0"
-            severity: warning
+            severity: error
           - name: Prometheus rule evaluation failures
-            description: 'Prometheus encountered {{ $value }} rule evaluation failures'
-            query: 'prometheus_rule_evaluation_failures_total > 0'
+            description: 'Prometheus encountered {{ $value }} rule evaluation failures. leading to potentially ignored alerts.'
+            query: 'increase(prometheus_rule_evaluation_failures_total[3m]) > 0'
             severity: error
           - name: Prometheus template text expansion failures
             description: 'Prometheus encountered {{ $value }} template text expansion failures'
-            query: 'prometheus_template_text_expansion_failures_total > 0'
+            query: 'increase(prometheus_template_text_expansion_failures_total[3m]) > 0'
             severity: error
           - name: Prometheus TSDB checkpoint creation failures
             description: 'Prometheus encountered {{ $value }} checkpoint creation failures'
-            query: 'prometheus_tsdb_checkpoint_creations_failed_total > 0'
+            query: 'increase(prometheus_tsdb_checkpoint_creations_failed_total[3m]) > 0'
             severity: error
           - name: Prometheus TSDB checkpoint deletion failures
             description: 'Prometheus encountered {{ $value }} checkpoint deletion failures'
-            query: 'prometheus_tsdb_checkpoint_deletions_failed_total > 0'
+            query: 'increase(prometheus_tsdb_checkpoint_deletions_failed_total[3m]) > 0'
             severity: error
           - name: Prometheus TSDB compactions failed
             description: 'Prometheus encountered {{ $value }} TSDB compactions failures'
-            query: 'prometheus_tsdb_compactions_failed_total > 0'
+            query: 'increase(prometheus_tsdb_compactions_failed_total[3m]) > 0'
             severity: error
           - name: Prometheus TSDB head truncations failed
             description: 'Prometheus encountered {{ $value }} TSDB head truncation failures'
-            query: 'prometheus_tsdb_head_truncations_failed_total > 0'
+            query: 'increase(prometheus_tsdb_head_truncations_failed_total[3m]) > 0'
             severity: error
           - name: Prometheus TSDB reload failures
             description: 'Prometheus encountered {{ $value }} TSDB reload failures'
-            query: 'prometheus_tsdb_reloads_failures_total > 0'
+            query: 'increase(prometheus_tsdb_reloads_failures_total[3m]) > 0'
             severity: error
           - name: Prometheus TSDB WAL corruptions
             description: 'Prometheus encountered {{ $value }} TSDB WAL corruptions'
-            query: 'prometheus_tsdb_wal_corruptions_total > 0'
+            query: 'increase(prometheus_tsdb_wal_corruptions_total[3m]) > 0'
             severity: error
           - name: Prometheus TSDB WAL truncations failed
             description: 'Prometheus encountered {{ $value }} TSDB WAL truncation failures'
-            query: 'prometheus_tsdb_wal_truncations_failed_total > 0'
+            query: 'increase(prometheus_tsdb_wal_truncations_failed_total[3m]) > 0'
             severity: error
 
   - name: Host and hardware
@@ -127,16 +127,15 @@ services:
           - name: Node overtemperature alarm
             description: "Physical node temperature alarm triggered"
             query: "node_hwmon_temp_alarm == 1"
-            severity: critical
+            severity: error
           - name: RAID array got inactive
             description: 'RAID array {{ $labels.device }} is in degraded state due to one or more disks failures. Number of spare drives is insufficient to fix issue automatically.'
             query: 'node_md_state{state="inactive"} > 0'
-            severity: critical
+            severity: error
           - name: RAID disk failure
             description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap'
             query: 'node_md_disks{state="fail"} > 0'
             severity: warning
-
 
   - name: Docker containers
     exporters:
@@ -426,7 +425,7 @@ services:
           - name: Cassandra hints count
             description: Cassandra hints count has changed on {{ $labels.instance }} some nodes may go down
             query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:totalhints:count"}[1m]) > 3'
-            severity: critical
+            severity: error
           - name: Cassandra compaction task pending
             description: Many Cassandra compaction tasks are pending. You might need to increase I/O capacity by adding nodes to the cluster.
             query: 'avg_over_time(cassandra_stats{name="org:apache:cassandra:metrics:compaction:pendingtasks:value"}[30m]) > 100'
@@ -442,7 +441,7 @@ services:
           - name: Cassandra node down
             description: Cassandra node down
             query: 'sum(cassandra_stats{name="org:apache:cassandra:net:failuredetector:downendpointcount"}) by (service,group,cluster,env) > 0'
-            severity: critical
+            severity: error
           - name: Cassandra commitlog pending tasks
             description: Unexpected number of Cassandra commitlog pending tasks
             query: 'cassandra_stats{name="org:apache:cassandra:metrics:commitlog:pendingtasks:value"} > 15'
@@ -466,11 +465,11 @@ services:
           - name: Cassandra connection timeouts total
             description: Some connection between nodes are ending in timeout
             query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
-            severity: critical
+            severity: error
           - name: Cassandra storage exceptions
             description: Something is going wrong with cassandra storage
             query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:exceptions:count"}[1m]) > 1'
-            severity: critical
+            severity: error
 
   - name: Apache
     exporters:
