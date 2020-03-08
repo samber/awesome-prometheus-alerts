@@ -6,7 +6,7 @@ services:
             description: Prometheus configuration reload error
             query: "prometheus_config_last_reload_successful != 1"
             severity: warning
-          - name: AlertManager configuration reload failure
+          - name: Prometheus AlertManager configuration reload failure
             description: AlertManager configuration reload error
             query: "alertmanager_config_last_reload_successful != 1"
             severity: warning
@@ -14,7 +14,7 @@ services:
             description: Prometheus cannot connect the alertmanager
             query: "prometheus_notifications_alertmanagers_discovered < 1"
             severity: error
-          - name: Exporter down
+          - name: Prometheus Exporter down
             description: Prometheus exporter down
             query: "up == 0"
             severity: error
@@ -228,7 +228,7 @@ services:
       - name: wrouesnel/postgres_exporter
         doc_url: https://github.com/wrouesnel/postgres_exporter/
         rules:
-          - name: PostgreSQL down
+          - name: Postgresql down
             description: PostgreSQL instance is down
             query: "pg_up == 0"
             severity: error
@@ -653,8 +653,12 @@ services:
             query: "consul_catalog_service_node_healthy == 0"
             severity: error
           - name: Consul missing master node
-            description: Numbers of consul raft peers less then expected <https://example.ru/ui/{{ $labels.dc }}/services/consul|Consul masters>
-            query: "consul_raft_peers < number_of_consul_master"
+            description: Numbers of consul raft peers should be 3, in order to preserve quorum.
+            query: "consul_raft_peers < 3"
+            severity: error
+          - name: Consul agent unhealthy
+            description: A Consul agent is down
+            query: 'consul_health_node_status{status="critical"} == 1'
             severity: error
 
   - name: Etcd
@@ -724,7 +728,7 @@ services:
       - name: danielqsj/kafka_exporter
         doc_url: https://github.com/danielqsj/kafka_exporter
         rules:
-          - name: Kafka Topics
+          - name: Kafka topics replicas
             description: Kafka topic in-sync partition
             query: "sum(kafka_topic_partition_in_sync_replica) by (topic) < 3"
             severity: error
