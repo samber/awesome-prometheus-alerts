@@ -5,7 +5,7 @@
 </style>
 
 <div style="padding: 20px 20px 10px 20px; border: solid grey 1px; border-radius: 10px;">
-  <h2 style="text-align:center;">⚠️ Disclaimer ⚠️</h2>
+  <h2 style="text-align:center;">⚠️ Caution ⚠️</h2>
 
   <p style="text-align:center;">
     Alert thresholds depend on nature of applications.
