@@ -19,12 +19,16 @@ services:
             query: "up == 0"
             severity: error
           - name: Prometheus rule evaluation failures
-            description: 'Prometheus encountered {{ $value }} rule evaluation failures. leading to potentially ignored alerts.'
+            description: 'Prometheus encountered {{ $value }} rule evaluation failures, leading to potentially ignored alerts.'
             query: 'increase(prometheus_rule_evaluation_failures_total[3m]) > 0'
             severity: error
           - name: Prometheus template text expansion failures
             description: 'Prometheus encountered {{ $value }} template text expansion failures'
             query: 'increase(prometheus_template_text_expansion_failures_total[3m]) > 0'
+            severity: error
+          - name: Prometheus rule evaluation slow
+            description: 'Prometheus rule evaluation took more time than the scheduled interval. I indicates a slower storage backend access or too complex query.'
+            query: 'prometheus_rule_group_last_duration_seconds < prometheus_rule_group_interval_seconds'
             severity: error
           - name: Prometheus TSDB checkpoint creation failures
             description: 'Prometheus encountered {{ $value }} checkpoint creation failures'
