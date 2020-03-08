@@ -639,8 +639,7 @@ services:
 
   - name: Nomad
     exporters:
-      - name: samber/prometheus-nomad-exporter
-        doc_url: https://github.com/samber/prometheus-nomad-exporter
+      - name: Embedded exporter
         rules:
 
   - name: Consul
@@ -807,7 +806,8 @@ services:
 
   - name: OpenEBS
     exporters:
-      - rules:
+      - name: Embedded exporter
+        rules:
           - name: OpenEBS used pool capacity
             description: 'OpenEBS Pool use more than 80% of his capacity\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}'
             query: "(openebs_used_pool_capacity_percent) > 80"
@@ -815,7 +815,8 @@ services:
 
   - name: Minio
     exporters:
-      - rules:
+      - name: Embedded exporter
+        rules:
           - name: Minio disk offline
             description: 'Minio disk is offline'
             query: "minio_offline_disks > 0"
@@ -845,7 +846,8 @@ services:
 
   - name: CoreDNS
     exporters:
-      - rules:
+      - name: Embedded exporter
+        rules:
           - name: CoreDNS Panic Count
             description: Number of CoreDNS panics encountered
             query: "increase(coredns_panic_count_total[10m]) > 0"
