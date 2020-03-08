@@ -6,9 +6,9 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 
 ## ✨ Contents
 
-- [Rules](#rules)
+- [Rules](#-rules)
 - [Contributing](#-contributing)
-- [Improvements](#improvements)
+- [Improvements](#-improvements)
 - [Help us](#-show-your-support)
 - [License](#-license)
 
