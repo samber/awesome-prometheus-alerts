@@ -466,11 +466,11 @@ services:
       - name: nginx-lua-prometheus
         doc_url: https://github.com/knyar/nginx-lua-prometheus
         rules:
-          - name: HTTP errors 4xx
+          - name: Nginx high HTTP 4xx error rate
             description: Too many HTTP requests with status 4xx (> 5%)
             query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
             severity: error
-          - name: HTTP errors 5xx
+          - name: Nginx high HTTP 5xx error rate
             description: Too many HTTP requests with status 5xx (> 5%)
             query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
             severity: error
@@ -492,6 +492,70 @@ services:
       - name: prometheus/haproxy_exporter
         doc_url: https://github.com/prometheus/haproxy_exporter
         rules:
+          - name: HAProxy down
+            description: HAProxy down
+            query: 'haproxy_up = 0'
+            severity: error
+          - name: HAProxy high HTTP 4xx error rate backend
+            description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
+            query: 'sum by (backend) irate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+            severity: error
+          - name: HAProxy high HTTP 4xx error rate backend
+            description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
+            query: 'sum by (backend) irate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+            severity: error
+          - name: HAProxy high HTTP 4xx error rate server
+            description: Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}
+            query: 'sum by (server) irate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+            severity: error
+          - name: HAProxy high HTTP 5xx error rate server
+            description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
+            query: 'sum by (server) irate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+            severity: error
+          - name: HAProxy backend connection errors
+            description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 5%). Request throughput may be to high.
+            query: 'sum by (backend) rate(haproxy_backend_connection_errors_total[1m]) * 100 > 5'
+            severity: error
+          - name: HAProxy server response errors
+            description: Too many response errors to {{ $labels.server }} server (> 5%).
+            query: 'sum by (server) rate(haproxy_server_response_errors_total[1m]) * 100 > 5'
+            severity: error
+          - name: HAProxy server connection errors
+            description: Too many connection errors to {{ $labels.server }} server (> 5%). Request throughput may be to high.
+            query: 'sum by (server) rate(haproxy_server_connection_errors_total[1m]) * 100 > 5'
+            severity: error
+          - name: HAProxy backend max active session
+            description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
+            query: 'avg_over_time((sum by (backend) (haproxy_server_max_sessions) / sum by (backend) (haproxy_server_limit_sessions)) [2m]) * 100 > 80'
+            severity: warning
+          - name: HAProxy pending requests
+            description: Some HAProxy requests are pending on {{ $labels.fqdn }}/{{ $labels.backend }} backend
+            query: 'sum by (backend) haproxy_backend_current_queue > 0'
+            severity: warning
+          - name: HAProxy HTTP slowing down
+            description: Average request time is increasing
+            query: 'avg by (backend) (haproxy_backend_http_total_time_average_seconds) > 2'
+            severity: warning
+          - name: HAProxy retry high
+            description: High rate of retry on {{ $labels.fqdn }}/{{ $labels.backend }} backend
+            query: 'rate(sum by (backend) (haproxy_backend_retry_warnings_total)) > 10'
+            severity: warning
+          - name: HAProxy backend down
+            description: HAProxy backend is down
+            query: 'haproxy_backend_up = 0'
+            severity: error
+          - name: HAProxy server down
+            description: HAProxy server is down
+            query: 'haproxy_server_up = 0'
+            severity: error
+          - name: HAProxy frontend security blocked requests
+            description: HAProxy is blocking requests for security reason
+            query: 'rate(sum by (frontend) (haproxy_frontend_requests_denied_total)) > 10'
+            severity: warning
+          - name: HAProxy server healthcheck failure
+            description: Some server healthcheck are failing on {{ $labels.server }}
+            query: 'increase(haproxy_server_check_failures_total) > 0'
+            severity: warning
 
   - name: Traefik v1.*
     exporters:
@@ -502,9 +566,13 @@ services:
             description: All Traefik backends are down
             query: "count(traefik_backend_server_up) by (backend) == 0"
             severity: error
-          - name: Traefik backend errors
-            description: Traefik backend error rate is above 10%
-            query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[5m])) by (backend) / sum(rate(traefik_backend_requests_total[5m])) by (backend) > 0.1'
+          - name: Traefik high HTTP 4xx error rate backend
+            description: Traefik backend 4xx error rate is above 5%
+            query: 'sum(rate(traefik_backend_requests_total{code=~"4.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
+            severity: error
+          - name: Traefik high HTTP 5xx error rate backend
+            description: Traefik backend 5xx error rate is above 5%
+            query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
             severity: error
 
   - name: Traefik v2.*
