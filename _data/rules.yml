@@ -812,10 +812,14 @@ services:
   - name: Minio
     exporters:
       - rules:
-          - name: Minio disk down
-            description: 'Minio Disk is down\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}'
+          - name: Minio disk offline
+            description: 'Minio disk is offline'
             query: "minio_offline_disks > 0"
             severity: error
+          - name: Minio storage space exhausted
+            description: 'Minio storage space is low (< 10 GB)'
+            query: "minio_disk_storage_free_bytes / 1024 / 1024 / 1024 < 10"
+            severity: warning
 
   - name: Juniper
     exporters:
