@@ -1,6 +1,6 @@
 # 👋 Awesome Prometheus Alerts [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
-> Most alerting rules are common to any Prometheus setup. We need a place to find them all. 🤘 🚨 📊
+> Most alerting rules are common to every Prometheus setup. We need a place to find them all. 🤘 🚨 📊
 
 Collection available here: **[https://awesome-prometheus-alerts.grep.to](https://awesome-prometheus-alerts.grep.to)**
 

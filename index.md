@@ -20,7 +20,7 @@
 </a>
 
 <h2>
-  Prometheus alerting rules
+  Out of the box prometheus alerting rules
 </h2>
 
 <ul>
