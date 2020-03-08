@@ -167,20 +167,6 @@ services:
             query: "(sum(container_fs_io_current) BY (instance, name) * 100) > 80"
             severity: warning
 
-  - name: Nginx
-    exporters:
-      - name: nginx-lua-prometheus
-        doc_url: https://github.com/knyar/nginx-lua-prometheus
-        rules:
-          - name: HTTP errors 4xx
-            description: Too many HTTP requests with status 4xx (> 5%)
-            query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
-            severity: error
-          - name: HTTP errors 5xx
-            description: Too many HTTP requests with status 5xx (> 5%)
-            query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
-            severity: error
-
   - name: RabbitMQ
     exporters:
       - name: kbudde/rabbitmq-exporter
@@ -475,13 +461,33 @@ services:
             query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:exceptions:count"}[1m]) > 1'
             severity: error
 
+  - name: Nginx
+    exporters:
+      - name: nginx-lua-prometheus
+        doc_url: https://github.com/knyar/nginx-lua-prometheus
+        rules:
+          - name: HTTP errors 4xx
+            description: Too many HTTP requests with status 4xx (> 5%)
+            query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
+            severity: error
+          - name: HTTP errors 5xx
+            description: Too many HTTP requests with status 5xx (> 5%)
+            query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
+            severity: error
+
   - name: Apache
     exporters:
       - name: Lusitaniae/apache_exporter
         doc_url: https://github.com/Lusitaniae/apache_exporter
         rules:
 
-  - name: HaProxy
+  - name: HaProxy v2.*
+    exporters:
+      - name: Embedded exporter
+        doc_url: https://github.com/haproxy/haproxy/tree/master/contrib/prometheus-exporter
+        rules:
+
+  - name: HaProxy v1.*
     exporters:
       - name: prometheus/haproxy_exporter
         doc_url: https://github.com/prometheus/haproxy_exporter
@@ -489,7 +495,9 @@ services:
 
   - name: Traefik v1.*
     exporters:
-      - rules:
+      - name: Embedded exporter
+        doc_url: https://docs.traefik.io/v1.7/configuration/metrics/
+        rules:
           - name: Traefik backend down
             description: All Traefik backends are down
             query: "count(traefik_backend_server_up) by (backend) == 0"
@@ -498,6 +506,12 @@ services:
             description: Traefik backend error rate is above 10%
             query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[5m])) by (backend) / sum(rate(traefik_backend_requests_total[5m])) by (backend) > 0.1'
             severity: error
+
+  - name: Traefik v2.*
+    exporters:
+      - name: Embedded exporter
+        doc_url: https://docs.traefik.io/observability/metrics/prometheus/
+        rules:
 
   - name: PHP-FPM
     exporters:
