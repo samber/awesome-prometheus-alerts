@@ -19,78 +19,83 @@
 <br>
 <br>
 
+<h1></h1>
+
 <ul>
-  {% for service in site.data.rules.services %}
-  {% assign serviceIndex = forloop.index %}
-    {% for exporter in service.exporters %}
-    {% assign nbrRules = exporter.rules | size %}
-    <li>
-      <h2 id="{{ service.name | replace: " ", "-" | downcase }}">
-        {{ serviceIndex }}.
-        {{ service.name }}
-        {% if exporter.name %}
-        :
-        {% if exporter.doc_url %}
-        <a href="{{ exporter.doc_url }}">
+  {% for group in site.data.rules.groups %}
+    {% for service in group.services %}
+    {% assign serviceIndex = forloop.index %}
+      {% for exporter in service.exporters %}
+      {% assign nbrRules = exporter.rules | size %}
+      <li>
+        <h2 id="{{ service.name | replace: " ", "-" | downcase }}">
+          {{ serviceIndex }}.
+          {{ service.name }}
+          {% if exporter.name %}:
+          {% if exporter.doc_url %}
+          <a href="{{ exporter.doc_url }}">
+            {{ exporter.name }}
+          </a>
+          {% else %}
           {{ exporter.name }}
-        </a>
-        {% else %}
-        {{ exporter.name }}
-        {% endif %}
+          {% endif %}
+          {% endif %}
+
+          {% if nbrRules > 0 %}
+            <small style="font-size: 60%; vertical-align: middle; margin-left: 10px;">
+              ({{ nbrRules }} rules)
+            </small>
+            <span class="clipboard-multiple" data-clipboard-target-id="service-{{ serviceIndex }}">[copy all]</span>
+          {% endif %}
+        </h2>
+
+        {% if nbrRules == 0 %}
+  {% highlight javascript %}
+  // @TODO: Please contribute => https://github.com/samber/awesome-prometheus-alerts 👋
+  {% endhighlight %}
         {% endif %}
 
-        {% if nbrRules > 0 %}
-          <span class="clipboard-multiple" data-clipboard-target-id="service-{{ serviceIndex }}">[copy all]</span>
-        {% endif %}
-      </h2>
+        <ul>
+          {% for rule in exporter.rules %}
+          {% assign ruleIndex = forloop.index %}
+          {% assign comments = rule.comments | strip | newline_to_br | split: '<br />' %}
+          <li>
+            <h4>
+              {{ serviceIndex }}.{{ ruleIndex }}.
+              {{ rule.name }}
+              </h4>
+            <details id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" {% if true || (serviceIndex == 1 && ruleIndex == 1) %} open {% endif %}>
+              <summary>
+                {{ rule.description }}
+                <span class="clipboard-single" data-clipboard-target-id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
+              </summary>
+              <p>
+              {% assign ruleName = rule.name | split: ' ' %}
+              {% capture ruleNameCamelcase %}{% for word in ruleName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
 
-      {% if nbrRules == 0 %}
-{% highlight javascript %}
-// @TODO: Please contribute => https://github.com/samber/awesome-prometheus-alerts 👋
+  {% highlight yaml %}
+  {% for comment in comments %}# {{ comment | strip }}
+  {% endfor %}- alert: {{ ruleNameCamelcase | remove: ' ' }}
+    expr: {{ rule.query }}
+    for: 5m
+    labels:
+      severity: {{ rule.severity }}
+    annotations:
+      summary: "{{ rule.name }} (instance {% raw %}{{ $labels.instance }}{% endraw %})"
+      description: "{{ rule.description }}\n  VALUE = {% raw %}{{ $value }}{% endraw %}\n  LABELS: {% raw %}{{ $labels }}{% endraw %}"
+
 {% endhighlight %}
-      {% endif %}
 
-      <ul>
-        {% for rule in exporter.rules %}
-        {% assign ruleIndex = forloop.index %}
-        {% assign comments = rule.comments | strip | newline_to_br | split: '<br />' %}
-        <li>
-          <h4>
-            {{ serviceIndex }}.{{ ruleIndex }}.
-            {{ rule.name }}
-             </h4>
-          <details id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" {% if true || (serviceIndex == 1 && ruleIndex == 1) %} open {% endif %}>
-            <summary>
-              {{ rule.description }}
-              <span class="clipboard-single" data-clipboard-target-id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
-            </summary>
-            <p>
-            {% assign ruleName = rule.name | split: ' ' %}
-            {% capture ruleNameCamelcase %}{% for word in ruleName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
+              </p>
+            </details>
+            <br/>
+          </li>
+          {% endfor %}
+        </ul>
 
-{% highlight yaml %}
-{% for comment in comments %}# {{ comment | strip }}
-{% endfor %}
-- alert: {{ ruleNameCamelcase | remove: ' ' }}
-  expr: {{ rule.query }}
-  for: 5m
-  labels:
-    severity: {{ rule.severity }}
-  annotations:
-    summary: "{{ rule.name }} (instance {% raw %}{{ $labels.instance }}{% endraw %})"
-    description: "{{ rule.description }}\n  VALUE = {% raw %}{{ $value }}{% endraw %}\n  LABELS: {% raw %}{{ $labels }}{% endraw %}"
-
-{% endhighlight %}
-
-            </p>
-          </details>
-          <br/>
-        </li>
-        {% endfor %}
-      </ul>
-
-    <hr/>
-    </li>
-  {% endfor %}
+      <hr/>
+      </li>
+    {% endfor %}
+    {% endfor %}
   {% endfor %}
 </ul>
