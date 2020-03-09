@@ -963,6 +963,11 @@ groups:
                 description: A client certificate used to authenticate to the apiserver is expiring in less than 24.0 hours.
                 query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60'
                 severity: error
+              - name: Kubernetes API server latency
+                description: 'Kubernetes API server has a 99th percentile latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}.'
+                query: 'histogram_quantile(0.99, sum(apiserver_request_latencies_bucket{verb!~"CONNECT|WATCHLIST|WATCH|PROXY"}) WITHOUT (instance, resource)) / 1e+06 > 1'
+                severity: warning
+
 
       - name: Nomad
         exporters:
