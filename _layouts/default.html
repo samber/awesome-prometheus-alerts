@@ -1,78 +1,138 @@
 <!DOCTYPE html>
 <html lang="{{ site.lang | default: "en-US" }}">
-  <head>
-    <meta charset="UTF-8">
-    {% seo %}
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#157878">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
-    <link rel="stylesheet" href="{{ '/assets/css/app.css?v=' | append: site.github.build_revision | relative_url }}">
-    <link rel="icon" type="image/png" href="/assets/favicon.ico">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js"></script>
-    <script src="{{ '/assets/js/app.js?v=' | append: site.github.build_revision | relative_url }}"></script>
-    
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-118604063-2"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+<head>
+  <meta charset="UTF-8">
+  {% seo %}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#157878">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/app.css?v=' | append: site.github.build_revision | relative_url }}">
+  <link rel="icon" type="image/png" href="/assets/favicon.ico">
 
-      gtag('config', 'UA-118604063-2');
-    </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js"></script>
+  <script src="{{ '/assets/js/app.js?v=' | append: site.github.build_revision | relative_url }}"></script>
 
-  </head>
-  <body>
-    <style>
-      #skip-to-content {
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-118604063-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-118604063-2');
+  </script>
+
+</head>
+
+<body>
+  <style>
+    #skip-to-content {
       height: 1px;
       width: 1px;
       position: absolute;
       overflow: hidden;
       top: -10px;
+
       &:focus {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      height: auto;
-      width: auto;
-      background: invert($body-link-color);
-      outline: thick solid invert($body-link-color);
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        height: auto;
+        width: auto;
+        background: invert($body-link-color);
+        outline: thick solid invert($body-link-color);
       }
-      }
-      </style>
-    <a id="skip-to-content" href="#content">Skip to the content.</a>
+    }
 
-    <header class="page-header" role="banner">
-      <h1 class="project-name">
-        <a href="/" style="color: white">
-          {{ site.title | default: site.github.repository_name }}
-        </a>
-      </h1>
-      <h2 class="project-tagline">{{ site.description | default: site.github.project_tagline }}</h2>
-      <a href="/alertmanager" class="btn">AlertManager config</a>
-      <a href="/rules" class="btn">Rules</a>
+    ul.github-buttons-cta li {
+      display: inline-block;
+      height: 20px;
+      padding: 0px 15px;
+    }
+
+    ul.github-buttons-cta li a {
+      /* width: 100px; */
+      text-decoration: none;
+    }
+
+    .fa {
+      /* padding: 14px;
+      width: 50px;
+      height: 50px; */
+      font-size: 25px;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 50%;
+    }
+
+    .fa:hover {
+      opacity: 0.8;
+    }
+
+    .fa-twitter,
+    .fa-linkedin {
+      /* background: #55ACEE; */
+      color: white;
+    }
+  </style>
+  <a id="skip-to-content" href="#content">Skip to the content.</a>
+
+  <header class="page-header" role="banner">
+    <h1 class="project-name">
+      <a href="/" style="color: white">
+        {{ site.title | default: site.github.repository_name }}
+      </a>
+    </h1>
+    <h2 class="project-tagline">{{ site.description | default: site.github.project_tagline }}</h2>
+    <a href="/alertmanager" class="btn">AlertManager config</a>
+    <a href="/rules" class="btn">Rules</a>
+    <a href="https://github.com/samber/awesome-prometheus-alerts/blob/master/CONTRIBUTING.md" class="btn">Contribute on
+      GitHub
+    </a>
+
+    <ul class="github-buttons-cta">
+      <li>
+        <iframe
+          src="https://ghbtns.com/github-btn.html?user=samber&repo=awesome-prometheus-alerts&type=watch&count=true&v=2"
+          frameborder="0" scrolling="0" width="100px" height="20px"></iframe>
+      </li>
+      <li>
+        <iframe src="https://ghbtns.com/github-btn.html?user=samber&repo=awesome-prometheus-alerts&type=star&count=true"
+          frameborder="0" scrolling="0" width="100px" height="20px"></iframe>
+      </li>
+      <li>
+        <iframe
+          src="https://ghbtns.com/github-btn.html?user=samber&repo=awesome-prometheus-alerts&type=fork&count=true&v=2"
+          frameborder="0" scrolling="0" width="100px" height="20px"></iframe>
+      </li>
+      <li>
+        <a href="https://twitter.com/share?via=samber&related=samber&text=🚨 📊 Here is a collection of Awesome Prometheus Alerts&url=https://awesome-prometheus-alerts.grep.to"
+          class="fa fa-twitter" target="_blank"></a>
+      </li>
+      <li>
+        <a href="http://www.linkedin.com/shareArticle?mini=true&url=https://awesome-prometheus-alerts.grep.to"
+          class="fa fa-linkedin" target="_blank"></a>
+      </li>
+    </ul>
+  </header>
+
+  <main id="content" class="main-content" role="main">
+    {{ content }}
+
+    <footer class="site-footer">
       {% if site.github.is_project_page %}
-        <a href="{{ site.github.repository_url }}" class="btn">View on GitHub</a>
+      <span class="site-footer-owner"><a href="{{ site.github.repository_url }}">{{ site.title }}</a> is maintained by
+        <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a>.</span>
       {% endif %}
-      {% if site.show_downloads %}
-        <a href="{{ site.github.zip_url }}" class="btn">Download .zip</a>
-        <a href="{{ site.github.tar_url }}" class="btn">Download .tar.gz</a>
-      {% endif %}
-    </header>
+    </footer>
+  </main>
+</body>
 
-    <main id="content" class="main-content" role="main">
-      {{ content }}
-
-      <footer class="site-footer">
-        {% if site.github.is_project_page %}
-          <span class="site-footer-owner"><a href="{{ site.github.repository_url }}">{{ site.title }}</a> is maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a>.</span>
-        {% endif %}
-        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a>.</span>
-      </footer>
-    </main>
-  </body>
 </html>

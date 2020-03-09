@@ -462,6 +462,10 @@ groups:
 
       - name: MongoDB
         exporters:
+          - name: percona/mongodb_exporter
+            doc_url: https://github.com/percona/mongodb_exporter
+            rules:
+
           - name: dcu/mongodb_exporter
             doc_url: https://github.com/dcu/mongodb_exporter
             rules:
