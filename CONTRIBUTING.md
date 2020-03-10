@@ -3,6 +3,8 @@
 
 ## Adding alerting rule
 
+If you don't have time to write a PR, just copy and paste some alerts into an issue. We will format it accordingly.
+
 Rules are here: `_data/rules.yml`.
 
 ### Guidelines
