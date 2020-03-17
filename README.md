@@ -58,6 +58,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 
 #### Network and storage
 
+- [Ceph](https://awesome-prometheus-alerts.grep.to/rules#ceph)
 - [ZFS](https://awesome-prometheus-alerts.grep.to/rules#zfs)
 - [OpenEBS](https://awesome-prometheus-alerts.grep.to/rules#openebs)
 - [Minio](https://awesome-prometheus-alerts.grep.to/rules#minio)
