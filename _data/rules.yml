@@ -38,7 +38,7 @@ groups:
               severity: error
             - name: Prometheus rule evaluation slow
               description: 'Prometheus rule evaluation took more time than the scheduled interval. I indicates a slower storage backend access or too complex query.'
-              query: 'prometheus_rule_group_last_duration_seconds < prometheus_rule_group_interval_seconds'
+              query: 'prometheus_rule_group_last_duration_seconds > prometheus_rule_group_interval_seconds'
               severity: warning
             - name: Prometheus notifications backlog
               description: The Prometheus notification queue has not been empty for 10 minutes
