@@ -4,6 +4,18 @@ groups:
       - name: Prometheus self-monitoring
         exporters:
           - rules:
+            - name: Prometheus job missing
+              description: A Prometheus job has disappeared
+              query: 'absent(up{job="my-job"})'
+              severity: warning
+            - name: Prometheus target missing
+              description: A Prometheus target has disappeared. An exporter might be crashed.
+              query: 'up == 0'
+              severity: error
+            - name: Prometheus all targets missing
+              description: A Prometheus job does not have living target anymore.
+              query: 'count by (job) (up) == 0'
+              severity: error
             - name: Prometheus configuration reload failure
               description: Prometheus configuration reload error
               query: 'prometheus_config_last_reload_successful != 1'
@@ -16,6 +28,10 @@ groups:
               description: AlertManager configuration reload error
               query: 'alertmanager_config_last_reload_successful != 1'
               severity: warning
+            - name: Prometheus AlertManager config not synced
+              description: Configurations of AlertManager cluster instances are out of sync
+              query: 'count(count_values("config_hash", alertmanager_config_hash)) > 1'
+              severity: warning
             - name: Prometheus AlertManager E2E dead man snitch
               description: Prometheus DeadManSnitch is an always-firing alert. It's used as an end-to-end test of Prometheus through the Alertmanager.
               query: 'vector(1)'
@@ -23,10 +39,6 @@ groups:
             - name: Prometheus not connected to alertmanager
               description: Prometheus cannot connect the alertmanager
               query: "prometheus_notifications_alertmanagers_discovered < 1"
-              severity: error
-            - name: Prometheus Exporter down
-              description: Prometheus exporter down
-              query: "up == 0"
               severity: error
             - name: Prometheus rule evaluation failures
               description: 'Prometheus encountered {{ $value }} rule evaluation failures, leading to potentially ignored alerts.'
@@ -59,6 +71,10 @@ groups:
             - name: Prometheus large scrape
               description: Prometheus has many scrapes that exceed the sample limit
               query: 'increase(prometheus_target_scrapes_exceeded_sample_limit_total[10m]) > 10'
+              severity: warning
+            - name: Prometheus target scrape duplicate
+              description: Prometheus has many samples rejected due to duplicate timestamps but different values
+              query: 'increase(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m]) > 0'
               severity: warning
             - name: Prometheus TSDB checkpoint creation failures
               description: 'Prometheus encountered {{ $value }} checkpoint creation failures'
@@ -266,15 +282,15 @@ groups:
                 severity: error
               - name: Windows Server CPU Usage
                 description: CPU Usage is more than 80%
-                query: '100 - (avg by (instance) (irate(wmi_cpu_time_total{mode="idle"}[2m])) * 100) > 80'
+                query: '100 - (avg by (instance) (rate(wmi_cpu_time_total{mode="idle"}[2m])) * 100) > 80'
                 severity: warning
               - name: Windows Server memory Usage
-                description: Memory Usage is more than 90%
-                query: "100*(wmi_os_physical_memory_free_bytes) / wmi_cs_physical_memory_bytes > 90"
+                description: Memory usage is more than 90%
+                query: "100 * (wmi_os_physical_memory_free_bytes) / wmi_cs_physical_memory_bytes > 90"
                 severity: warning
               - name: Windows Server disk Space Usage
-                description: Disk Space on Drive is used more than 80%
-                query: "100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1024 / 1024 ) / (wmi_logical_disk_size_bytes{}  / 1024 / 1024)) > 80"
+                description: Disk usage is more than 80%
+                query: "100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1024 / 1024 ) / (wmi_logical_disk_size_bytes{} / 1024 / 1024)) > 80"
                 severity: error
 
 
