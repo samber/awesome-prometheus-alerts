@@ -185,7 +185,7 @@ groups:
 
       - name: Docker containers
         exporters:
-          - name: cAdvisor
+          - name: google/cAdvisor
             doc_url: https://github.com/google/cadvisor
             rules:
               - name: Container killed
@@ -1063,6 +1063,64 @@ groups:
 
   - name: Network and storage
     services:
+      - name: Ceph
+        exporters:
+          - name: Embedded exporter
+            doc_url: https://docs.ceph.com/docs/luminous/mgr/prometheus/
+            rules:
+              - name: Ceph State
+                description: Ceph instance unhealthy
+                query: 'ceph_health_status != 0'
+                severity: error
+              - name: Ceph monitor clock skew
+                description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
+                query: 'abs(ceph_monitor_clock_skew_seconds) > 0.2'
+                severity: warning
+              - name: Ceph monitor low space
+                description: Ceph monitor storage is low.
+                query: 'ceph_monitor_avail_percent < 10'
+                severity: warning
+              - name: Ceph OSD Down
+                description: Ceph Object Storage Daemon Down
+                query: 'ceph_osd_up == 0'
+                severity: error
+              - name: Ceph high OSD latency
+                description: "Ceph Object Storage Daemon latetncy is high. Please check if it doesn't stuck in weird state."
+                query: 'ceph_osd_perf_apply_latency_seconds > 10'
+                severity: warning
+              - name: Ceph OSD low space
+                description: Ceph Object Storage Daemon is going out of space. Please add more disks.
+                query: ceph_osd_utilization > 90
+                severity: warning
+              - name: Ceph OSD reweighted
+                description: Ceph Object Storage Daemon take ttoo much time to resize.
+                query: 'ceph_osd_weight < 1'
+                severity: warning
+              - name: Ceph PG down
+                description: Some Ceph placement groups are down. Please ensure that all the data are available.
+                query: 'ceph_pg_down > 0'
+                severity: error
+              - name: Ceph PG incomplete
+                description: Some Ceph placement groups are incomplete. Please ensure that all the data are available.
+                query: 'ceph_pg_incomplete > 0'
+                severity: error
+              - name: Ceph PG inconsistant
+                description: Some Ceph placement groups are inconsitent. Data is available but inconsistent across nodes.
+                query: ceph_pg_inconsistent > 0
+                severity: warning
+              - name: Ceph PG activation long
+                description: Some Ceph placement groups are too long to activate.
+                query: 'ceph_pg_activating > 0'
+                severity: warning
+              - name: Ceph PG backfill full
+                description: Some Ceph placement groups are located on full Object Storage Daemon on cluster. Those PGs can be unavailable shortly. Please check OSDs, change weight or reconfigure CRUSH rules.
+                query: 'ceph_pg_backfill_toofull > 0'
+                severity: warning
+              - name: Ceph PG unavailable
+                description: Some Ceph placement groups are unavailable.
+                query: 'ceph_pg_total - ceph_pg_active > 0
+                severity: error
+
       - name: ZFS
         exporters:
           - name: node-exporter
