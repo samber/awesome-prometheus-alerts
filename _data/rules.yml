@@ -593,6 +593,14 @@ groups:
                 description: "The heap usage is over 80% for 5m"
                 query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
                 severity: warning
+              - name: Elasticsearch disk space low
+                description: The disk usage is over 80%
+                query: 'elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 20'
+                severity: warning
+              - name: Elasticsearch disk out of space
+                description: The disk usage is over 90%
+                query: 'elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 10'
+                severity: error
               - name: Elasticsearch Cluster Red
                 description: Elastic Cluster Red status
                 query: 'elasticsearch_cluster_health_status{color="red"} == 1'
