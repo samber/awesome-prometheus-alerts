@@ -732,6 +732,10 @@ groups:
                 description: Too many HTTP requests with status 5xx (> 5%)
                 query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
                 severity: error
+              - name: Nginx latency high
+                description: Nginx p99 latency is higher than 10 seconds
+                query: 'histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[30m])) by (host, node)) > 10'
+                severity: warning
 
       - name: Apache
         exporters:
