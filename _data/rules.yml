@@ -32,8 +32,8 @@ groups:
               description: Configurations of AlertManager cluster instances are out of sync
               query: 'count(count_values("config_hash", alertmanager_config_hash)) > 1'
               severity: warning
-            - name: Prometheus AlertManager E2E dead man snitch
-              description: Prometheus DeadManSnitch is an always-firing alert. It's used as an end-to-end test of Prometheus through the Alertmanager.
+            - name: Prometheus AlertManager E2E dead man switch
+              description: Prometheus DeadManSwitch is an always-firing alert. It's used as an end-to-end test of Prometheus through the Alertmanager.
               query: 'vector(1)'
               severity: error
             - name: Prometheus not connected to alertmanager
