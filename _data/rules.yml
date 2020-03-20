@@ -742,6 +742,18 @@ groups:
           - name: Lusitaniae/apache_exporter
             doc_url: https://github.com/Lusitaniae/apache_exporter
             rules:
+              - name: Apache down
+                description: Apache down
+                query: 'apache_up = 0'
+                severity: error            
+              - name: Apache workers load
+                description: Apache workers in busy state approach the max workers count 80% workers busy on {{ $labels.instance }}
+                query: '(sum by (instance) (apache_workers{state="busy"}) / sum by (instance) (apache_scoreboard) ) * 100 > 80'
+                severity: error
+              - name: Apache restart
+                description: Apache has just been restarted, less than one minute ago.
+                query: 'apache_uptime_seconds_total / 60 < 1'
+                severity: warning
 
       - name: HaProxy
         exporters:
