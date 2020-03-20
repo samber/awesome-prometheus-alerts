@@ -744,7 +744,7 @@ groups:
             rules:
               - name: Apache down
                 description: Apache down
-                query: 'apache_up = 0'
+                query: 'apache_up == 0'
                 severity: error            
               - name: Apache workers load
                 description: Apache workers in busy state approach the max workers count 80% workers busy on {{ $labels.instance }}
