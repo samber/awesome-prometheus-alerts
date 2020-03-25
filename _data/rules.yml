@@ -302,18 +302,18 @@ groups:
             doc_url: https://github.com/prometheus/mysqld_exporter
             rules:
               - name: MySQL down
-                description: MySQL down on {{ $labels.instance }}
+                description: MySQL instance is down on {{ $labels.instance }}
                 query: 'mysql_up == 0'
-                severity: error            
-              - name: MySQL connections number is high
-                description: MySQL connections numbers approach the maximum number of connexion possible : more than 80% of connection are in use on {{ $labels.instance }}
-                query: '(mysql_global_status_threads_connected / mysql_global_variables_max_connections) * 100 > 80'
                 severity: error
-              - name: MySQL slow query count
-                description: MySQL server is having some slow query. The count is higher than 0 on {{ $labels.instance }}
-                query: '(mysql_global_status_slow_queries > 0'
-                severity: warning                
-              - name: MySQL restart
+              - name: MySQL too many connections
+                description: 'More than 80% of MySQL connections are in use on {{ $labels.instance }}'
+                query: '(mysql_global_status_threads_connected / mysql_global_variables_max_connections) * 100 > 80'
+                severity: warning
+              - name: MySQL slow queries
+                description: MySQL server is having some slow queries.
+                query: 'mysql_global_status_slow_queries > 0'
+                severity: warning
+              - name: MySQL restarted
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
                 query: 'mysql_global_status_uptime < 60'
                 severity: warning
@@ -360,8 +360,8 @@ groups:
                 query: 'rate(pg_stat_database_deadlocks{datname!~"template.*|postgres"}[1m]) > 0'
                 severity: warning
               - name: Postgresql slow queries
-                description: PostgreSQL executes slow queries (> 1min)
-                query: 'rate(pg_slow_queries[1m]) * 60 > 10'
+                description: PostgreSQL executes slow queries
+                query: 'pg_slow_queries > 0'
                 severity: warning
               - name: Postgresql high rollback rate
                 description: Ratio of transactions being aborted compared to committed is > 2 %
@@ -761,7 +761,7 @@ groups:
               - name: Apache down
                 description: Apache down
                 query: 'apache_up == 0'
-                severity: error            
+                severity: error
               - name: Apache workers load
                 description: Apache workers in busy state approach the max workers count 80% workers busy on {{ $labels.instance }}
                 query: '(sum by (instance) (apache_workers{state="busy"}) / sum by (instance) (apache_scoreboard) ) * 100 > 80'
