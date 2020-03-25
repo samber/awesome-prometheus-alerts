@@ -311,7 +311,7 @@ groups:
                 severity: error
               - name: MySQL slow query count
                 description: MySQL server is having some slow query. The count is higher than 0 on {{ $labels.instance }}
-                query: 'rate(mysql_global_status_slow_queries[5m]) > 0'
+                query: '(mysql_global_status_slow_queries > 0'
                 severity: warning                
               - name: MySQL restart
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
