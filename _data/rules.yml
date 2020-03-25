@@ -301,6 +301,22 @@ groups:
           - name: prometheus/mysqld_exporter
             doc_url: https://github.com/prometheus/mysqld_exporter
             rules:
+              - name: MySQL down
+                description: MySQL down on {{ $labels.instance }}
+                query: 'mysql_up == 0'
+                severity: error            
+              - name: MySQL connections number is high
+                description: MySQL connections numbers approach the maximum number of connexion possible : more than 80% of connection are in use on {{ $labels.instance }}
+                query: '(mysql_global_status_threads_connected / mysql_global_variables_max_connections) * 100 > 80'
+                severity: error
+              - name: MySQL slow query count
+                description: MySQL server is having some slow query. The count is higher than 0 on {{ $labels.instance }}
+                query: 'rate(mysql_global_status_slow_queries[5m]) > 0'
+                severity: warning                
+              - name: MySQL restart
+                description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
+                query: 'mysql_global_status_uptime < 60'
+                severity: warning
 
       - name: PostgreSQL
         exporters:
