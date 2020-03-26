@@ -961,7 +961,7 @@ groups:
                 severity: warning
               - name: Kubernetes Pod not healthy
                 description: Pod has been in a non-ready state for longer than an hour.
-                query: 'min_over_time(sum by (namespace, pod, env, stage) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[1h]) > 0'
+                query: 'min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[1h:])'
                 severity: error
               - name: Kubernetes pod crash looping
                 description: Pod {{ $labels.pod }} is crash looping
