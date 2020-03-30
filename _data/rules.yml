@@ -312,11 +312,27 @@ groups:
             rules:
               - name: MySQL down
                 description: MySQL instance is down on {{ $labels.instance }}
-                query: 'mysql_up == 0'
+                query: 'avg by (instance) (mysql_up) == 0'
                 severity: error
               - name: MySQL too many connections
                 description: 'More than 80% of MySQL connections are in use on {{ $labels.instance }}'
-                query: '(mysql_global_status_threads_connected / mysql_global_variables_max_connections) * 100 > 80'
+                query: 'avg by(instance) (max_over_time(mysql_global_status_threads_connected[5m])) / avg by(instance) (mysql_global_variables_max_connections) * 100 > 80'
+                severity: warning
+              - name: MySQL high threads running
+                description: 'More than 60% of MySQL connections are in running state on {{ $labels.instance }}'
+                query: 'avg by(instance) (max_over_time(mysql_global_status_threads_running[5m])) / avg by(instance) (mysql_global_variables_max_connections) * 100 > 60'
+                severity: warning
+              - name: MySQL Slave IO thread not running on {{ $instance.instance }}
+                description: 'MySQL Slave IO thread not running on {{ $labels.instance }}'
+                query: 'avg by(instance) (mysql_slave_status_master_server_id) > 0 and avg by (instance) (mysql_slave_status_slave_io_running) == 0'
+                severity: error
+              - name: MySQL Slave SQL thread not running on {{ $instance.instance }}
+                description: 'MySQL Slave SQL thread not running on {{ $labels.instance }}'
+                query: 'avg by(instance) (mysql_slave_status_master_server_id) > 0 and avg by (instance) (mysql_slave_status_slave_sql_running) == 0'
+                severity: error
+              - name: MySQL Slave replication lag {{ $instance.instance }}
+                description: 'MysqL replication lag on {{ $labels.instance }}'
+                query: 'avg by(instance) (mysql_slave_status_master_server_id) > 0 and (avg by (instance) (max_over_time(mysql_slave_status_seconds_behind_master[1m])) - avg by (instance) (mysql_slave_status_sql_delay)) > 300'
                 severity: warning
               - name: MySQL slow queries
                 description: MySQL server is having some slow queries.
