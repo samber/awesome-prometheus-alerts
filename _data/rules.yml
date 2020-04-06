@@ -1135,7 +1135,14 @@ groups:
 
       - name: Linkerd
         exporters:
-          - rules:
+          - name: Embedded exporter
+            doc_url: https://linkerd.io/2/tasks/exporting-metrics/
+            rules:
+              - name: Linkerd high error rate
+                description: Linkerd error rate for {{ $labels.deployment | $labels.statefulset | $labels.daemonset }} is over 10%
+                query: 'sum(rate(request_errors_total[5m])) by (deployment, statefulset, daemonset) / sum(rate(request_total[5m])) by (deployment, statefulset, daemonset) * 100 > 10'
+                severity: warning
+
 
       - name: Istio
         exporters:
