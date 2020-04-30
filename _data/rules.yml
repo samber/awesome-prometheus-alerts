@@ -113,6 +113,10 @@ groups:
               description: 'Prometheus encountered {{ $value }} TSDB WAL truncation failures'
               query: 'increase(prometheus_tsdb_wal_truncations_failed_total[3m]) > 0'
               severity: error
+            - name: Prove Monitoring
+              description: 'This is a TEST ALERT to prove that the monitoring system is fully functioning.  There is no action to be taken and it will resolve in about 5 mins.'
+              query: 'day_of_week() == 1 and count(hour() == 9 and minute() > 45 < 50 ) != 0'
+              severity: error
 
       - name: Host and hardware
         exporters:
