@@ -362,7 +362,7 @@ groups:
                 severity: warning
               - name: Postgresql replication lag
                 description: PostgreSQL replication lag is going up (> 10s)
-                query: '(pg_replication_lag > 10 and ON(instance) (pg_replication_is_replica == 1)'
+                query: '(pg_replication_lag) > 10 and ON(instance) (pg_replication_is_replica == 1)'
                 severity: warning
               - name: Postgresql table not vaccumed
                 description: Table has not been vaccum for 24 hours
