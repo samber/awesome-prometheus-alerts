@@ -169,7 +169,7 @@ groups:
                 severity: warning
               - name: Host context switching
                 description: Context switching is growing on node (> 1000 / s)
-                query: "rate(node_context_switches_total[5m]) > 1000"
+                query: "(rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000"
                 severity: warning
                 comments: |
                   1000 context switches is an arbitrary number.
