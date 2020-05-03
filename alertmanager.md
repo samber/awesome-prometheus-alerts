@@ -71,7 +71,7 @@ route:
         severity: error|warning
       continue: true
 
-    - receiver: "sms"
+    - receiver: "pager"
       group_wait: 10s
       match_re:
         severity: error
@@ -85,7 +85,7 @@ receivers:
         channel: 'monitoring'
         text: "{{ range .Alerts }}<!channel> {{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}"
 
-  - name: "sms"
+  - name: "pager"
     webhook_config:
       - url: http://a.b.c.d:8080/send/sms
         send_resolved: true
