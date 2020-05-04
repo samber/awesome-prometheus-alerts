@@ -210,10 +210,10 @@ groups:
               - name: Host EDAC Correctable Errors detected
                 description: '{{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 5 minutes.'
                 query: 'increase(node_edac_correctable_errors_total[5m])'
-                severity: warning
+                severity: info
               - name: Host EDAC Uncorrectable Errors detected
                 description: '{{ $labels.instance }} has had {{ printf "%.0f" $value }} uncorrectable memory errors reported by EDAC in the last 5 minutes.'
-                query: 'increase(node_edac_uncorrectable_errors_total[5m])'
+                query: 'node_edac_uncorrectable_errors_total > 1'
                 severity: warning
 
       - name: Docker containers
