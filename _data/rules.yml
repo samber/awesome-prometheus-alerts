@@ -322,15 +322,15 @@ groups:
                 description: 'More than 60% of MySQL connections are in running state on {{ $labels.instance }}'
                 query: 'avg by (instance) (max_over_time(mysql_global_status_threads_running[5m])) / avg by (instance) (mysql_global_variables_max_connections) * 100 > 60'
                 severity: warning
-              - name: MySQL Slave IO thread not running on {{ $instance.instance }}
+              - name: MySQL Slave IO thread not running
                 description: 'MySQL Slave IO thread not running on {{ $labels.instance }}'
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) mysql_slave_status_slave_io_running == 0'
                 severity: error
-              - name: MySQL Slave SQL thread not running on {{ $instance.instance }}
+              - name: MySQL Slave SQL thread not running
                 description: 'MySQL Slave SQL thread not running on {{ $labels.instance }}'
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) mysql_slave_status_slave_sql_running == 0'
                 severity: error
-              - name: MySQL Slave replication lag {{ $instance.instance }}
+              - name: MySQL Slave replication lag
                 description: 'MysqL replication lag on {{ $labels.instance }}'
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) > 300'
                 severity: warning
