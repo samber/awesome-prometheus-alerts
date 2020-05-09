@@ -215,7 +215,15 @@ groups:
                 description: '{{ $labels.instance }} has had {{ printf "%.0f" $value }} uncorrectable memory errors reported by EDAC in the last 5 minutes.'
                 query: 'node_edac_uncorrectable_errors_total > 0'
                 severity: warning
-
+              - name: Host Network Receive Errors
+                description: '{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} receive errors in the last five minutes.'
+                query: 'increase(node_network_receive_errs_total[5m]) > 0'
+                severity: warning
+              - name: Host Network Transmit Errors
+                description: '{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last five minutes.'
+                query: 'increase(node_network_transmit_errs_total[5m]) > 0'
+                severity: warning
+                
       - name: Docker containers
         exporters:
           - name: google/cAdvisor
