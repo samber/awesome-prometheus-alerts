@@ -1209,6 +1209,8 @@ groups:
                 query: 'ceph_pg_total - ceph_pg_active > 0'
                 severity: error
 
+      - name: SpeedTest
+        exporters:
           - name: Speedtest exporter
             doc_url: https://github.com/nlamirault/speedtest_exporter
             rules:
