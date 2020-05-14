@@ -223,6 +223,10 @@ groups:
                 description: '{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last five minutes.'
                 query: 'increase(node_network_transmit_errs_total[5m]) > 0'
                 severity: warning
+              - name: Host filesystem readonly
+                description: '{{ $labels.instance }} partition {{ $labels.device }} has become readonly.'
+                query: 'node_filesystem_readonly{fstype!~"(tmpfs|proc|aufs|rpc_pipefs)"} == 1'
+                severity: error
                 
       - name: Docker containers
         exporters:
