@@ -223,6 +223,10 @@ groups:
                 description: '{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last five minutes.'
                 query: 'increase(node_network_transmit_errs_total[5m]) > 0'
                 severity: warning
+              - name: Host Network Not 1Gb Speed
+                description: 'The network interface "{{ $labels.device }}" on "{{ $labels.instance }}" is not connected at 1Gb.'
+                query: 'node_network_speed_bytes != 125000000'
+                severity: warning
                 
       - name: Docker containers
         exporters:
