@@ -542,7 +542,7 @@ services:
             severity: warning
           - name: Memory Usage
             description: Memory Usage is more than 90%
-            query: '100*(wmi_os_physical_memory_free_bytes) / wmi_cs_physical_memory_bytes > 90'
+            query: '100 - (wmi_os_physical_memory_free_bytes/wmi_cs_physical_memory_bytes) * 100 > 90'
             severity: warning
           - name: Disk Space Usage
             description: Disk Space on Drive is used more than 80%
