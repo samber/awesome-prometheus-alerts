@@ -145,8 +145,11 @@ groups:
                 severity: warning
               - name: Host out of disk space
                 description: Disk is almost full (< 10% left)
-                query: '(node_filesystem_avail_bytes{mountpoint="/rootfs"}  * 100) / node_filesystem_size_bytes{mountpoint="/rootfs"} < 10'
+                query: '(node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10'
                 severity: warning
+                comments: |
+                  please add ignored mountpoints in node_exporter parameters like
+                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)"
               - name: Host disk will fill in 4 hours
                 description: Disk will fill in 4 hours at current write rate
                 query: 'predict_linear(node_filesystem_free_bytes{fstype!~"tmpfs"}[1h], 4 * 3600) < 0'
