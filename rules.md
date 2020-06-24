@@ -31,6 +31,7 @@
       <li>
         {% assign serviceId = service.name | replace: " ", "-" | downcase %}
         <h2 id="{{ serviceId }}">
+          {{ groupIndex }}.
           {{ serviceIndex }}.
           {{ service.name }}
           {% if exporter.name %}:
@@ -63,7 +64,7 @@
           {% assign comments = rule.comments | strip | newline_to_br | split: '<br />' %}
           <li>
             <h4>
-              {{ serviceIndex }}.{{ ruleIndex }}.
+              {{ groupIndex}}.{{ serviceIndex }}.{{ ruleIndex }}.
               {{ rule.name }}
               </h4>
             <details id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}" {% if true || (serviceIndex == 1 && ruleIndex == 1) %} open {% endif %}>
