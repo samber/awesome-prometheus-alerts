@@ -587,6 +587,32 @@ groups:
                 query: '(sum(mongodb_memory{type="virtual"}) BY (ip) / sum(mongodb_memory{type="mapped"}) BY (ip)) > 3'
                 severity: warning
 
+      - name: RabbitMQ (official exporter)
+        exporters:
+          - name: rabbitmq/rabbitmq-prometheus
+            doc_url: https://github.com/rabbitmq/rabbitmq-prometheus
+            rules:
+              - name: Rabbitmq node down
+                description: Less than 3 nodes running in RabbitMQ cluster
+                query: "sum(rabbitmq_build_info) < 3"
+                severity: critical
+              - name: Rabbitmq memory high
+                description: A node use more than 90% of allocated RAM
+                query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90"
+                severity: warning
+              - name: Rabbitmq too much unack
+                description: Total unacknowledged messages are too high
+                query: "sum(rabbitmq_queue_messages_unacked) > 1000"
+                severity: warning
+              - name: Rabbitmq too much connections
+                description: The total connections of a node is too high
+                query: "rabbitmq_connections > 1000"
+                severity: warning
+              - name: Rabbitmq no queue consumer
+                description: A queue has less than 1 consumer
+                query: "rabbitmq_queue_consumers < 1"
+                severity: warning
+
       - name: RabbitMQ
         exporters:
           - name: kbudde/rabbitmq-exporter
