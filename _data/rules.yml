@@ -990,11 +990,11 @@ groups:
                 severity: critical
               - name: Kubernetes HPA scaling ability
                 description: Pod is unable to scale
-                query: 'kube_hpa_status_condition{condition="false", status="AbleToScale"} == 1'
+                query: 'kube_hpa_status_condition{status="false", condition ="AbleToScale"} == 1'
                 severity: warning
               - name: Kubernetes HPA metric availability
-                description: HPA is not able to colelct metrics
-                query: 'kube_hpa_status_condition{condition="false", status="ScalingActive"} == 1'
+                description: HPA is not able to collect metrics
+                query: 'kube_hpa_status_condition{status="false", condition="ScalingActive"} == 1'
                 severity: warning
               - name: Kubernetes HPA scale capability
                 description: The maximum number of desired Pods has been hit
