@@ -1163,8 +1163,26 @@ groups:
       - name: Istio
         exporters:
           - rules:
-
-
+              - name: Total Request quantity rate
+                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}}, {{.operation}}, {{.threshold}} with your case.
+                query: "sum(rate(istio_requests_total{namespace = '{{.namespace}}', source_app = '{{.svcName}}', reporter = '{{.reporter}}'}[{{.span}}m])) by (namespace, prometheus_replica)"
+                severity: warning
+              - name:   Latency avg
+                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}}, {{.operation}}, {{.threshold}} with your case.
+                query: "(sum(rate(istio_request_duration_milliseconds_sum{namespace = '{{.namespace}}', source_app= '{{.svcName}}', reporter = '{{.reporter}}'}[{{.span}}m])) by (namespace, prometheus_replica))  / sum(rate(istio_request_duration_milliseconds_count{namespace = '{{.namespace}}', source_app= "{{.svcName}}', reporter = '{{.reporter}}'}[{{.span}}m])) by (namespace, prometheus_replica)  {{.operation}} {{.threshold}}"
+                severity: warning
+              - name: Latency 50%
+                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}},  {{.operation}}, {{.threshold}} with your case.
+                query: "histogram_quantile(0.5, sum(rate(istio_request_duration_milliseconds_bucket{namespace = '{{.namespace}}', destination_app = '{{.svcName}}'}[{{.span}}m])) by (namespace, le, prometheus_replica)) {{.operation}} {{.threshold}}"
+                severity: warning
+              - name: Latency 90%
+                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}}, {{.operation}}, {{.threshold}}with your case.
+                query: "histogram_quantile(0.9, sum(rate(istio_request_duration_milliseconds_bucket{namespace = '{{.namespace}}', destination_app = '{{.svcName}}'}[{{.span}}m])) by (namespace, le, prometheus_replica)) {{.operation}} {{.threshold}}"
+                severity: warning
+              - name: Latency 99%
+                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}} with your case.
+                query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{namespace = '{{.namespace}}', destination_app = '{{.svcName}}'}[{{.span}}m])) by (namespace, le, prometheus_replica)) {{.operation}} {{.threshold}}"
+                severity: warning
   - name: Network and storage
     services:
       - name: Ceph
