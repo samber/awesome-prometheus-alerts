@@ -28,7 +28,7 @@ groups:
     expr: redis_up{} == 0
     for: 2m
     labels:
-      severity: error
+      severity: critical
     annotations:
       summary: "Redis instance down"
       description: "Whatever"
@@ -68,13 +68,13 @@ route:
     - receiver: "slack"
       group_wait: 10s
       match_re:
-        severity: error|warning
+        severity: critical|warning
       continue: true
 
     - receiver: "pager"
       group_wait: 10s
       match_re:
-        severity: error
+        severity: critial
       continue: true
 
 receivers:

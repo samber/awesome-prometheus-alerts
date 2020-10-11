@@ -23,12 +23,15 @@
 
 <ul>
   {% for group in site.data.rules.groups %}
+  {% assign groupIndex = forloop.index %}
     {% for service in group.services %}
     {% assign serviceIndex = forloop.index %}
       {% for exporter in service.exporters %}
       {% assign nbrRules = exporter.rules | size %}
       <li>
-        <h2 id="{{ service.name | replace: " ", "-" | downcase }}">
+        {% assign serviceId = service.name | replace: " ", "-" | downcase %}
+        <h2 id="{{ serviceId }}">
+          {{ groupIndex }}.
           {{ serviceIndex }}.
           {{ service.name }}
           {% if exporter.name %}:
@@ -45,7 +48,7 @@
             <small style="font-size: 60%; vertical-align: middle; margin-left: 10px;">
               ({{ nbrRules }} rules)
             </small>
-            <span class="clipboard-multiple" data-clipboard-target-id="service-{{ serviceIndex }}">[copy all]</span>
+            <span class="clipboard-multiple" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}">[copy all]</span>
           {% endif %}
         </h2>
 
@@ -61,13 +64,13 @@
           {% assign comments = rule.comments | strip | newline_to_br | split: '<br />' %}
           <li>
             <h4>
-              {{ serviceIndex }}.{{ ruleIndex }}.
+              {{ groupIndex}}.{{ serviceIndex }}.{{ ruleIndex }}.
               {{ rule.name }}
-              </h4>
-            <details id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" {% if true || (serviceIndex == 1 && ruleIndex == 1) %} open {% endif %}>
+            </h4>
+            <details id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}" open="">
               <summary>
                 {{ rule.description }}
-                <span class="clipboard-single" data-clipboard-target-id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
+                <span class="clipboard-single" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
               </summary>
               <p>
               {% assign ruleName = rule.name | split: ' ' %}

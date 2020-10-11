@@ -15,16 +15,16 @@ groups:
           - rules:
             - name: Prometheus job missing
               description: A Prometheus job has disappeared
-              query: 'absent(up{job="my-job"})'
+              query: 'absent(up{job="prometheus"})'
               severity: warning
             - name: Prometheus target missing
               description: A Prometheus target has disappeared. An exporter might be crashed.
               query: 'up == 0'
-              severity: error
+              severity: critical
             - name: Prometheus all targets missing
               description: A Prometheus job does not have living target anymore.
               query: 'count by (job) (up) == 0'
-              severity: error
+              severity: critical
             - name: Prometheus configuration reload failure
               description: Prometheus configuration reload error
               query: 'prometheus_config_last_reload_successful != 1'
@@ -44,19 +44,19 @@ groups:
             - name: Prometheus AlertManager E2E dead man switch
               description: Prometheus DeadManSwitch is an always-firing alert. It's used as an end-to-end test of Prometheus through the Alertmanager.
               query: 'vector(1)'
-              severity: error
+              severity: critical
             - name: Prometheus not connected to alertmanager
               description: Prometheus cannot connect the alertmanager
               query: "prometheus_notifications_alertmanagers_discovered < 1"
-              severity: error
+              severity: critical
             - name: Prometheus rule evaluation failures
               description: 'Prometheus encountered {{ $value }} rule evaluation failures, leading to potentially ignored alerts.'
               query: 'increase(prometheus_rule_evaluation_failures_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus template text expansion failures
               description: 'Prometheus encountered {{ $value }} template text expansion failures'
               query: 'increase(prometheus_template_text_expansion_failures_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus rule evaluation slow
               description: 'Prometheus rule evaluation took more time than the scheduled interval. I indicates a slower storage backend access or too complex query.'
               query: 'prometheus_rule_group_last_duration_seconds > prometheus_rule_group_interval_seconds'
@@ -68,11 +68,11 @@ groups:
             - name: Prometheus AlertManager notification failing
               description: Alertmanager is failing sending notifications
               query: 'rate(alertmanager_notifications_failed_total[1m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus target empty
               description: Prometheus has no target in service discovery
               query: 'prometheus_sd_discovered_targets == 0'
-              severity: error
+              severity: critical
             - name: Prometheus target scraping slow
               description: Prometheus is scraping exporters slowly
               query: 'prometheus_target_interval_length_seconds{quantile="0.9"} > 60'
@@ -88,31 +88,31 @@ groups:
             - name: Prometheus TSDB checkpoint creation failures
               description: 'Prometheus encountered {{ $value }} checkpoint creation failures'
               query: 'increase(prometheus_tsdb_checkpoint_creations_failed_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus TSDB checkpoint deletion failures
               description: 'Prometheus encountered {{ $value }} checkpoint deletion failures'
               query: 'increase(prometheus_tsdb_checkpoint_deletions_failed_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus TSDB compactions failed
               description: 'Prometheus encountered {{ $value }} TSDB compactions failures'
               query: 'increase(prometheus_tsdb_compactions_failed_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus TSDB head truncations failed
               description: 'Prometheus encountered {{ $value }} TSDB head truncation failures'
               query: 'increase(prometheus_tsdb_head_truncations_failed_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus TSDB reload failures
               description: 'Prometheus encountered {{ $value }} TSDB reload failures'
               query: 'increase(prometheus_tsdb_reloads_failures_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus TSDB WAL corruptions
               description: 'Prometheus encountered {{ $value }} TSDB WAL corruptions'
               query: 'increase(prometheus_tsdb_wal_corruptions_total[3m]) > 0'
-              severity: error
+              severity: critical
             - name: Prometheus TSDB WAL truncations failed
               description: 'Prometheus encountered {{ $value }} TSDB WAL truncation failures'
               query: 'increase(prometheus_tsdb_wal_truncations_failed_total[3m]) > 0'
-              severity: error
+              severity: critical
 
       - name: Host and hardware
         exporters:
@@ -145,8 +145,11 @@ groups:
                 severity: warning
               - name: Host out of disk space
                 description: Disk is almost full (< 10% left)
-                query: '(node_filesystem_avail_bytes{mountpoint="/rootfs"}  * 100) / node_filesystem_size_bytes{mountpoint="/rootfs"} < 10'
+                query: '(node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10'
                 severity: warning
+                comments: |
+                  please add ignored mountpoints in node_exporter parameters like
+                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)"
               - name: Host disk will fill in 4 hours
                 description: Disk will fill in 4 hours at current write rate
                 query: 'predict_linear(node_filesystem_free_bytes{fstype!~"tmpfs"}[1h], 4 * 3600) < 0'
@@ -157,11 +160,11 @@ groups:
                 severity: warning
               - name: Host unusual disk read latency
                 description: Disk latency is growing (read operations > 100ms)
-                query: "rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 100"
+                query: "rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0"
                 severity: warning
               - name: Host unusual disk write latency
                 description: Disk latency is growing (write operations > 100ms)
-                query: "rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 100"
+                query: "rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0"
                 severity: warning
               - name: Host high CPU load
                 description: CPU load is > 80%
@@ -190,14 +193,14 @@ groups:
               - name: Host node overtemperature alarm
                 description: "Physical node temperature alarm triggered"
                 query: "node_hwmon_temp_alarm == 1"
-                severity: error
+                severity: critical
               - name: Host RAID array got inactive
                 description: 'RAID array {{ $labels.device }} is in degraded state due to one or more disks failures. Number of spare drives is insufficient to fix issue automatically.'
                 query: 'node_md_state{state="inactive"} > 0'
-                severity: error
+                severity: critical
               - name: Host RAID disk failure
                 description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap'
-                query: 'node_md_disks{state="fail"} > 0'
+                query: 'node_md_disks{state="failed"} > 0'
                 severity: warning
               - name: Host kernel version deviations
                 description: Different kernel versions are running
@@ -227,7 +230,8 @@ groups:
                 description: 'The network interface "{{ $labels.interface }}" on "{{ $labels.instance }}" is getting overloaded.'
                 query: '(rate(node_network_receive_bytes_total{device!~"^tap.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*"} > 0.8'
                 severity: warning
-                
+
+
       - name: Docker containers
         exporters:
           - name: google/cAdvisor
@@ -243,8 +247,9 @@ groups:
                 severity: warning
               - name: Container Memory usage
                 description: Container Memory usage is above 80%
-                query: "(sum(container_memory_usage_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes) BY (instance, name) * 100) > 80"
+                query: "(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80"
                 severity: warning
+                comments: See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
                 query: "(1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance)) * 100) > 80"
@@ -266,7 +271,7 @@ groups:
               - name: Blackbox probe failed
                 description: Probe failed
                 query: probe_success == 0
-                severity: error
+                severity: critical
               - name: Blackbox slow probe
                 description: Blackbox probe took more than 1s to complete
                 query: "avg_over_time(probe_duration_seconds[1m]) > 1"
@@ -274,7 +279,7 @@ groups:
               - name: Blackbox probe HTTP failure
                 description: HTTP status code is not 200-399
                 query: "probe_http_status_code <= 199 OR probe_http_status_code >= 400"
-                severity: error
+                severity: critical
               - name: Blackbox SSL certificate will expire soon
                 description: SSL certificate expires in 30 days
                 query: "probe_ssl_earliest_cert_expiry - time() < 86400 * 30"
@@ -282,11 +287,11 @@ groups:
               - name: Blackbox SSL certificate will expire soon
                 description: SSL certificate expires in 3 days
                 query: "probe_ssl_earliest_cert_expiry - time() < 86400 * 3"
-                severity: error
+                severity: critical
               - name: Blackbox SSL certificate expired
                 description: SSL certificate has expired already
                 query: "probe_ssl_earliest_cert_expiry - time() <= 0"
-                severity: error
+                severity: critical
               - name: Blackbox probe slow HTTP
                 description: HTTP request took more than 1s
                 query: "avg_over_time(probe_http_duration_seconds[1m]) > 1"
@@ -304,23 +309,23 @@ groups:
               - name: Windows Server collector Error
                 description: "Collector {{ $labels.collector }} was not successful"
                 query: "wmi_exporter_collector_success == 0"
-                severity: error
+                severity: critical
               - name: Windows Server service Status
                 description: Windows Service state is not OK
                 query: 'wmi_service_status{status="ok"} != 1'
-                severity: error
+                severity: critical
               - name: Windows Server CPU Usage
                 description: CPU Usage is more than 80%
                 query: '100 - (avg by (instance) (rate(wmi_cpu_time_total{mode="idle"}[2m])) * 100) > 80'
                 severity: warning
               - name: Windows Server memory Usage
                 description: Memory usage is more than 90%
-                query: "100 * (wmi_os_physical_memory_free_bytes) / wmi_cs_physical_memory_bytes > 90"
+                query: "100 - ((wmi_os_physical_memory_free_bytes / wmi_cs_physical_memory_bytes) * 100) > 90"
                 severity: warning
               - name: Windows Server disk Space Usage
                 description: Disk usage is more than 80%
                 query: "100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1024 / 1024 ) / (wmi_logical_disk_size_bytes{} / 1024 / 1024)) > 80"
-                severity: error
+                severity: critical
 
 
   - name: Databases and brokers
@@ -333,7 +338,7 @@ groups:
               - name: MySQL down
                 description: MySQL instance is down on {{ $labels.instance }}
                 query: 'mysql_up == 0'
-                severity: error
+                severity: critical
               - name: MySQL too many connections
                 description: 'More than 80% of MySQL connections are in use on {{ $labels.instance }}'
                 query: 'avg by (instance) (max_over_time(mysql_global_status_threads_connected[5m])) / avg by (instance) (mysql_global_variables_max_connections) * 100 > 80'
@@ -345,18 +350,18 @@ groups:
               - name: MySQL Slave IO thread not running
                 description: 'MySQL Slave IO thread not running on {{ $labels.instance }}'
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) mysql_slave_status_slave_io_running == 0'
-                severity: error
+                severity: critical
               - name: MySQL Slave SQL thread not running
                 description: 'MySQL Slave SQL thread not running on {{ $labels.instance }}'
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) mysql_slave_status_slave_sql_running == 0'
-                severity: error
+                severity: critical
               - name: MySQL Slave replication lag
                 description: 'MysqL replication lag on {{ $labels.instance }}'
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) > 300'
                 severity: warning
               - name: MySQL slow queries
-                description: MySQL server is having some slow queries.
-                query: 'mysql_global_status_slow_queries > 0'
+                description: MySQL server mysql has some new slow query.
+                query: rate(mysql_global_status_slow_queries[2m]) > 0
                 severity: warning
               - name: MySQL restarted
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
@@ -371,11 +376,11 @@ groups:
               - name: Postgresql down
                 description: Postgresql instance is down
                 query: "pg_up == 0"
-                severity: error
+                severity: critical
               - name: Postgresql restarted
                 description: Postgresql restarted
                 query: "time() - pg_postmaster_start_time_seconds < 60"
-                severity: error
+                severity: critical
               - name: Postgresql exporter error
                 description: Postgresql exporter is showing errors. A query may be buggy in query.yaml
                 query: 'pg_exporter_last_scrape_error > 0'
@@ -415,7 +420,7 @@ groups:
               - name: Postgresql commit rate low
                 description: Postgres seems to be processing very few transactions
                 query: 'rate(pg_stat_database_xact_commit[1m]) < 10'
-                severity: error
+                severity: critical
               - name: Postgresql low XID consumption
                 description: Postgresql seems to be consuming transaction IDs very slowly
                 query: 'rate(pg_txid_current[1m]) < 5'
@@ -427,19 +432,19 @@ groups:
               - name: Postgresql WALE replication stopped
                 description: WAL-E replication seems to be stopped
                 query: 'rate(pg_xlog_position_bytes[1m]) == 0'
-                severity: error
+                severity: critical
               - name: Postgresql high rate statement timeout
                 description: Postgres transactions showing high rate of statement timeouts
                 query: 'rate(postgresql_errors_total{type="statement_timeout"}[5m]) > 3'
-                severity: error
+                severity: critical
               - name: Postgresql high rate deadlock
                 description: Postgres detected deadlocks
                 query: 'rate(postgresql_errors_total{type="deadlock_detected"}[1m]) * 60 > 1'
-                severity: error
+                severity: critical
               - name: Postgresql replication lab bytes
                 description: Postgres Replication lag (in bytes) is high
                 query: '(pg_xlog_position_bytes and pg_replication_is_replica == 0) - GROUP_RIGHT(instance) (pg_xlog_position_bytes and pg_replication_is_replica == 1) > 1e+09'
-                severity: error
+                severity: critical
               - name: Postgresql unused replication slot
                 description: Unused Replication Slots
                 query: 'pg_replication_slots_active == 0'
@@ -451,7 +456,7 @@ groups:
               - name: Postgresql split brain
                 description: Split Brain, too many primary Postgresql databases in read-write mode
                 query: 'count(pg_replication_is_replica == 0) != 1'
-                severity: error
+                severity: critical
               - name: Postgresql promoted node
                 description: Postgresql standby server has been promoted as primary node
                 query: 'pg_replication_is_replica and changes(pg_replication_is_replica[1m]) > 0'
@@ -463,11 +468,25 @@ groups:
               - name: Postgresql SSL compression active
                 description: Database connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.
                 query: 'sum(pg_stat_ssl_compression) > 0'
-                severity: error
+                severity: critical
               - name: Postgresql too many locks acquired
                 description: Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.
                 query: '((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
-                severity: error
+                severity: critical
+
+      - name: SQL Server
+        exporters:
+          - name: Ozarklake/prometheus-mssql-exporter
+            doc_url: https://github.com/Ozarklake/prometheus-mssql-exporter
+            rules:
+              - name: SQL Server down
+                description: SQl server instance is down
+                query: mssql_up == 0
+                severity: critical
+              - name: SQL Server deadlock
+                description: SQL Server is having some deadlock.
+                query: rate(mssql_deadlocks[1m]) > 0
+                severity: warning
 
       - name: PGBouncer
         exporters:
@@ -485,7 +504,7 @@ groups:
               - name: PGBouncer max connections
                 description: The number of PGBouncer client connections has reached max_client_conn.
                 query: 'rate(pgbouncer_errors_count{errmsg="no more connections allowed (max_client_conn)"}[1m]) > 0'
-                severity: error
+                severity: critical
 
       - name: Redis
         exporters:
@@ -495,31 +514,31 @@ groups:
               - name: Redis down
                 description: Redis instance is down
                 query: "redis_up == 0"
-                severity: error
+                severity: critical
               - name: Redis missing master
                 description: Redis cluster has no node marked as master.
                 query: 'count(redis_instance_info{role="master"}) == 0'
-                severity: error
+                severity: critical
               - name: Redis too many masters
                 description: Redis cluster has too many nodes marked as master.
                 query: 'count(redis_instance_info{role="master"}) > 1'
-                severity: error
+                severity: critical
               - name: Redis disconnected slaves
                 description: Redis not replicating for all slaves. Consider reviewing the redis replication status.
                 query: 'count without (instance, job) (redis_connected_slaves) - sum without (instance, job) (redis_connected_slaves) - 1 > 1'
-                severity: error
+                severity: critical
               - name: Redis replication broken
                 description: Redis instance lost a slave
                 query: "delta(redis_connected_slaves[1m]) < 0"
-                severity: error
+                severity: critical
               - name: Redis cluster flapping
                 description: Changes have been detected in Redis replica connection. This can occur when replica nodes lose connection to the master and reconnect (a.k.a flapping).
                 query: 'changes(redis_connected_slaves[5m]) > 2'
-                severity: error
+                severity: critical
               - name: Redis missing backup
                 description: Redis has not been backuped for 24 hours
                 query: "time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 24"
-                severity: error
+                severity: critical
               - name: Redis out of memory
                 description: Redis is running out of memory (> 90%)
                 query: "redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90"
@@ -535,7 +554,7 @@ groups:
               - name: Redis rejected connections
                 description: Some connections to Redis has been rejected
                 query: "increase(redis_rejected_connections_total[1m]) > 0"
-                severity: error
+                severity: critical
 
       - name: MongoDB
         exporters:
@@ -549,31 +568,31 @@ groups:
               - name: MongoDB replication lag
                 description: Mongodb replication lag is more than 10s
                 query: 'avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}) > 10'
-                severity: error
+                severity: critical
               - name: MongoDB replication headroom
                 description: MongoDB replication headroom is <= 0
                 query: '(avg(mongodb_replset_oplog_tail_timestamp - mongodb_replset_oplog_head_timestamp) - (avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}))) <= 0'
-                severity: error
+                severity: critical
               - name: MongoDB replication Status 3
                 description: MongoDB Replication set member either perform startup self-checks, or transition from completing a rollback or resync
                 query: "mongodb_replset_member_state == 3"
-                severity: error
+                severity: critical
               - name: MongoDB replication Status 6
                 description: MongoDB Replication set member as seen from another member of the set, is not yet known
                 query: "mongodb_replset_member_state == 6"
-                severity: error
+                severity: critical
               - name: MongoDB replication Status 8
                 description: MongoDB Replication set member as seen from another member of the set, is unreachable
                 query: "mongodb_replset_member_state == 8"
-                severity: error
+                severity: critical
               - name: MongoDB replication Status 9
                 description: MongoDB Replication set member is actively performing a rollback. Data is not available for reads
                 query: "mongodb_replset_member_state == 9"
-                severity: error
+                severity: critical
               - name: MongoDB replication Status 10
                 description: MongoDB Replication set member was once in a replica set but was subsequently removed
                 query: "mongodb_replset_member_state == 10"
-                severity: error
+                severity: critical
               - name: MongoDB number cursors open
                 description: Too many cursors opened by MongoDB for clients (> 10k)
                 query: 'mongodb_metrics_cursor_open{state="total_open"} > 10000'
@@ -591,23 +610,50 @@ groups:
                 query: '(sum(mongodb_memory{type="virtual"}) BY (ip) / sum(mongodb_memory{type="mapped"}) BY (ip)) > 3'
                 severity: warning
 
-      - name: RabbitMQ
+      - name: RabbitMQ (official exporter)
         exporters:
+          - name: rabbitmq/rabbitmq-prometheus
+            doc_url: https://github.com/rabbitmq/rabbitmq-prometheus
+            rules:
+              - name: Rabbitmq node down
+                description: Less than 3 nodes running in RabbitMQ cluster
+                query: "sum(rabbitmq_build_info) < 3"
+                severity: critical
+              - name: Rabbitmq instances different versions
+                description: Running different version of Rabbitmq in the same cluster, can lead to failure.
+                query: "count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1"
+                severity: warning
+              - name: Rabbitmq memory high
+                description: A node use more than 90% of allocated RAM
+                query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90"
+                severity: warning
+              - name: Rabbitmq too much unack
+                description: Too much unacknowledged messages
+                query: "sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000"
+                severity: warning
+              - name: Rabbitmq too much connections
+                description: The total connections of a node is too high
+                query: "rabbitmq_connections > 1000"
+                severity: warning
+              - name: Rabbitmq no queue consumer
+                description: A queue has less than 1 consumer
+                query: "rabbitmq_queue_consumers < 1"
+                severity: warning
           - name: kbudde/rabbitmq-exporter
             doc_url: https://github.com/kbudde/rabbitmq_exporter
             rules:
               - name: Rabbitmq down
                 description: RabbitMQ node down
                 query: "rabbitmq_up == 0"
-                severity: error
+                severity: critical
               - name: Rabbitmq cluster down
                 description: Less than 3 nodes running in RabbitMQ cluster
                 query: "sum(rabbitmq_running) < 3"
-                severity: error
+                severity: critical
               - name: Rabbitmq cluster partition
                 description: Cluster partition
                 query: "rabbitmq_partitions > 0"
-                severity: error
+                severity: critical
               - name: Rabbitmq out of memory
                 description: Memory available for RabbmitMQ is low (< 10%)
                 query: "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90"
@@ -619,7 +665,7 @@ groups:
               - name: Rabbitmq dead letter queue filling up
                 description: Dead letter queue is filling up (> 10 msgs)
                 query: 'rabbitmq_queue_messages{queue="my-dead-letter-queue"} > 10'
-                severity: error
+                severity: critical
               - name: Rabbitmq too many messages in queue
                 description: Queue is filling up (> 1000 msgs)
                 query: 'rabbitmq_queue_messages_ready{queue="my-queue"} > 1000'
@@ -631,11 +677,11 @@ groups:
               - name: Rabbitmq no consumer
                 description: Queue has no consumer
                 query: "rabbitmq_queue_consumers == 0"
-                severity: error
+                severity: critical
               - name: Rabbitmq too many consumers
                 description: Queue should have only 1 consumer
                 query: "rabbitmq_queue_consumers > 1"
-                severity: error
+                severity: critical
               - name: Rabbitmq unactive exchange
                 description: Exchange receive less than 5 msgs per second
                 query: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
@@ -649,7 +695,7 @@ groups:
               - name: Elasticsearch Heap Usage Too High
                 description: "The heap usage is over 90% for 5m"
                 query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90'
-                severity: error
+                severity: critical
               - name: Elasticsearch Heap Usage warning
                 description: "The heap usage is over 80% for 5m"
                 query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
@@ -661,11 +707,11 @@ groups:
               - name: Elasticsearch disk out of space
                 description: The disk usage is over 90%
                 query: 'elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 10'
-                severity: error
+                severity: critical
               - name: Elasticsearch Cluster Red
                 description: Elastic Cluster Red status
                 query: 'elasticsearch_cluster_health_status{color="red"} == 1'
-                severity: error
+                severity: critical
               - name: Elasticsearch Cluster Yellow
                 description: Elastic Cluster Yellow status
                 query: 'elasticsearch_cluster_health_status{color="yellow"} == 1'
@@ -673,15 +719,15 @@ groups:
               - name: Elasticsearch Healthy Nodes
                 description: "Number Healthy Nodes less then number_of_nodes"
                 query: "elasticsearch_cluster_health_number_of_nodes < number_of_nodes"
-                severity: error
+                severity: critical
               - name: Elasticsearch Healthy Data Nodes
                 description: "Number Healthy Data Nodes less then number_of_data_nodes"
                 query: "elasticsearch_cluster_health_number_of_data_nodes < number_of_data_nodes"
-                severity: error
+                severity: critical
               - name: Elasticsearch relocation shards
                 description: "Number of relocation shards for 20 min"
                 query: "elasticsearch_cluster_health_relocating_shards > 0"
-                severity: error
+                severity: critical
               - name: Elasticsearch initializing shards
                 description: "Number of initializing shards for 10 min"
                 query: "elasticsearch_cluster_health_initializing_shards > 0"
@@ -689,7 +735,7 @@ groups:
               - name: Elasticsearch unassigned shards
                 description: "Number of unassigned shards for 2 min"
                 query: "elasticsearch_cluster_health_unassigned_shards > 0"
-                severity: error
+                severity: critical
               - name: Elasticsearch pending tasks
                 description: "Number of pending tasks for 10 min. Cluster works slowly."
                 query: "elasticsearch_cluster_health_number_of_pending_tasks > 0"
@@ -711,7 +757,7 @@ groups:
               - name: Cassandra hints count
                 description: Cassandra hints count has changed on {{ $labels.instance }} some nodes may go down
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:totalhints:count"}[1m]) > 3'
-                severity: error
+                severity: critical
               - name: Cassandra compaction task pending
                 description: Many Cassandra compaction tasks are pending. You might need to increase I/O capacity by adding nodes to the cluster.
                 query: 'avg_over_time(cassandra_stats{name="org:apache:cassandra:metrics:compaction:pendingtasks:value"}[30m]) > 100'
@@ -727,7 +773,7 @@ groups:
               - name: Cassandra node down
                 description: Cassandra node down
                 query: 'sum(cassandra_stats{name="org:apache:cassandra:net:failuredetector:downendpointcount"}) by (service,group,cluster,env) > 0'
-                severity: error
+                severity: critical
               - name: Cassandra commitlog pending tasks
                 description: Unexpected number of Cassandra commitlog pending tasks
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:commitlog:pendingtasks:value"} > 15'
@@ -751,11 +797,11 @@ groups:
               - name: Cassandra connection timeouts total
                 description: Some connection between nodes are ending in timeout
                 query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
-                severity: error
+                severity: critical
               - name: Cassandra storage exceptions
                 description: Something is going wrong with cassandra storage
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:exceptions:count"}[1m]) > 1'
-                severity: error
+                severity: critical
 
       - name: Zookeeper
         exporters:
@@ -771,11 +817,11 @@ groups:
               - name: Kafka topics replicas
                 description: Kafka topic in-sync partition
                 query: "sum(kafka_topic_partition_in_sync_replica) by (topic) < 3"
-                severity: error
+                severity: critical
               - name: Kafka consumers group
                 description: Kafka consumers group
                 query: "sum(kafka_consumergroup_lag) by (consumergroup) > 50"
-                severity: error
+                severity: critical
 
 
   - name: Reverse proxies and load balancers
@@ -788,11 +834,11 @@ groups:
               - name: Nginx high HTTP 4xx error rate
                 description: Too many HTTP requests with status 4xx (> 5%)
                 query: 'sum(rate(nginx_http_requests_total{status=~"^4.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
-                severity: error
+                severity: critical
               - name: Nginx high HTTP 5xx error rate
                 description: Too many HTTP requests with status 5xx (> 5%)
                 query: 'sum(rate(nginx_http_requests_total{status=~"^5.."}[1m])) / sum(rate(nginx_http_requests_total[1m])) * 100 > 5'
-                severity: error
+                severity: critical
               - name: Nginx latency high
                 description: Nginx p99 latency is higher than 10 seconds
                 query: 'histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[30m])) by (host, node)) > 10'
@@ -806,11 +852,11 @@ groups:
               - name: Apache down
                 description: Apache down
                 query: 'apache_up == 0'
-                severity: error
+                severity: critical
               - name: Apache workers load
                 description: Apache workers in busy state approach the max workers count 80% workers busy on {{ $labels.instance }}
                 query: '(sum by (instance) (apache_workers{state="busy"}) / sum by (instance) (apache_scoreboard) ) * 100 > 80'
-                severity: error
+                severity: critical
               - name: Apache restart
                 description: Apache has just been restarted, less than one minute ago.
                 query: 'apache_uptime_seconds_total / 60 < 1'
@@ -826,36 +872,36 @@ groups:
             rules:
               - name: HAProxy down
                 description: HAProxy down
-                query: 'haproxy_up = 0'
-                severity: error
+                query: 'haproxy_up == 0'
+                severity: critical
               - name: HAProxy high HTTP 4xx error rate backend
                 description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
                 query: 'sum by (backend) irate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
-                severity: error
+                severity: critical
               - name: HAProxy high HTTP 4xx error rate backend
                 description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
                 query: 'sum by (backend) irate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
-                severity: error
+                severity: critical
               - name: HAProxy high HTTP 4xx error rate server
                 description: Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}
                 query: 'sum by (server) irate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
-                severity: error
+                severity: critical
               - name: HAProxy high HTTP 5xx error rate server
                 description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
                 query: 'sum by (server) irate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
-                severity: error
+                severity: critical
               - name: HAProxy backend connection errors
                 description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 5%). Request throughput may be to high.
                 query: 'sum by (backend) rate(haproxy_backend_connection_errors_total[1m]) * 100 > 5'
-                severity: error
+                severity: critical
               - name: HAProxy server response errors
                 description: Too many response errors to {{ $labels.server }} server (> 5%).
                 query: 'sum by (server) rate(haproxy_server_response_errors_total[1m]) * 100 > 5'
-                severity: error
+                severity: critical
               - name: HAProxy server connection errors
                 description: Too many connection errors to {{ $labels.server }} server (> 5%). Request throughput may be to high.
                 query: 'sum by (server) rate(haproxy_server_connection_errors_total[1m]) * 100 > 5'
-                severity: error
+                severity: critical
               - name: HAProxy backend max active session
                 description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
                 query: 'avg_over_time((sum by (backend) (haproxy_server_max_sessions) / sum by (backend) (haproxy_server_limit_sessions)) [2m]) * 100 > 80'
@@ -874,12 +920,12 @@ groups:
                 severity: warning
               - name: HAProxy backend down
                 description: HAProxy backend is down
-                query: 'haproxy_backend_up = 0'
-                severity: error
+                query: 'haproxy_backend_up == 0'
+                severity: critical
               - name: HAProxy server down
                 description: HAProxy server is down
-                query: 'haproxy_server_up = 0'
-                severity: error
+                query: 'haproxy_server_up == 0'
+                severity: critical
               - name: HAProxy frontend security blocked requests
                 description: HAProxy is blocking requests for security reason
                 query: 'rate(sum by (frontend) (haproxy_frontend_requests_denied_total)) > 10'
@@ -897,16 +943,30 @@ groups:
               - name: Traefik backend down
                 description: All Traefik backends are down
                 query: "count(traefik_backend_server_up) by (backend) == 0"
-                severity: error
+                severity: critical
               - name: Traefik high HTTP 4xx error rate backend
                 description: Traefik backend 4xx error rate is above 5%
                 query: 'sum(rate(traefik_backend_requests_total{code=~"4.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
-                severity: error
+                severity: critical
               - name: Traefik high HTTP 5xx error rate backend
                 description: Traefik backend 5xx error rate is above 5%
                 query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
-                severity: error
-
+                severity: critical
+          - name: Embedded exporter v2
+            doc_url: https://docs.traefik.io/observability/metrics/prometheus/
+            rules:
+              - name: Traefik service down
+                description: All Traefik services are down
+                query: "count(traefik_service_server_up) by (service) == 0"
+                severity: critical
+              - name: Traefik high HTTP 4xx error rate service
+                description: Traefik service 4xx error rate is above 5%
+                query: 'sum(rate(traefik_service_requests_total{code=~"4.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+                severity: critical
+              - name: Traefik high HTTP 5xx error rate service
+                description: Traefik service 5xx error rate is above 5%
+                query: 'sum(rate(traefik_service_requests_total{code=~"5.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+                severity: critical
 
   - name: Runtimes
     services:
@@ -938,7 +998,7 @@ groups:
               - name: Sidekiq scheduling latency too high
                 description: Sidekiq jobs are taking more than 2 minutes to be picked up. Users may be seeing delays in background processing.
                 query: 'max(sidekiq_queue_latency) > 120'
-                severity: error
+                severity: critical
 
 
   - name: Orchestrators
@@ -951,19 +1011,19 @@ groups:
               - name: Kubernetes Node ready
                 description: Node {{ $labels.node }} has been unready for a long time
                 query: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
-                severity: error
+                severity: critical
               - name: Kubernetes memory pressure
                 description: "{{ $labels.node }} has MemoryPressure condition"
                 query: 'kube_node_status_condition{condition="MemoryPressure",status="true"} == 1'
-                severity: error
+                severity: critical
               - name: Kubernetes disk pressure
                 description: "{{ $labels.node }} has DiskPressure condition"
                 query: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
-                severity: error
+                severity: critical
               - name: Kubernetes out of disk
                 description: "{{ $labels.node }} has OutOfDisk condition"
                 query: 'kube_node_status_condition{condition="OutOfDisk",status="true"} == 1'
-                severity: error
+                severity: critical
               - name: Kubernetes Job failed
                 description: "Job {{$labels.namespace}}/{{$labels.exported_job}} failed to complete"
                 query: "kube_job_status_failed > 0"
@@ -983,22 +1043,22 @@ groups:
               - name: Kubernetes Volume full in four days
                 description: "{{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is expected to fill up within four days. Currently {{ $value | humanize }}% is available."
                 query: 'predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0'
-                severity: error
+                severity: critical
               - name: Kubernetes PersistentVolume error
                 description: "Persistent volume is in bad state"
                 query: 'kube_persistentvolume_status_phase{phase=~"Failed|Pending",job="kube-state-metrics"} > 0'
-                severity: error
+                severity: critical
               - name: Kubernetes StatefulSet down
                 description: A StatefulSet went down
                 query: "(kube_statefulset_status_replicas_ready / kube_statefulset_status_replicas_current) != 1"
-                severity: error
+                severity: critical
               - name: Kubernetes HPA scaling ability
                 description: Pod is unable to scale
-                query: 'kube_hpa_status_condition{condition="false", status="AbleToScale"} == 1'
+                query: 'kube_hpa_status_condition{status="false", condition ="AbleToScale"} == 1'
                 severity: warning
               - name: Kubernetes HPA metric availability
-                description: HPA is not able to colelct metrics
-                query: 'kube_hpa_status_condition{condition="false", status="ScalingActive"} == 1'
+                description: HPA is not able to collect metrics
+                query: 'kube_hpa_status_condition{status="false", condition="ScalingActive"} == 1'
                 severity: warning
               - name: Kubernetes HPA scale capability
                 description: The maximum number of desired Pods has been hit
@@ -1007,7 +1067,7 @@ groups:
               - name: Kubernetes Pod not healthy
                 description: Pod has been in a non-ready state for longer than an hour.
                 query: 'min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[1h:]) > 0'
-                severity: error
+                severity: critical
               - name: Kubernetes pod crash looping
                 description: Pod {{ $labels.pod }} is crash looping
                 query: 'rate(kube_pod_container_status_restarts_total[15m]) * 60 * 5 > 5'
@@ -1027,23 +1087,23 @@ groups:
               - name: Kubernetes Deployment generation mismatch
                 description: A Deployment has failed but has not been rolled back.
                 query: 'kube_deployment_status_observed_generation != kube_deployment_metadata_generation'
-                severity: error
+                severity: critical
               - name: Kubernetes StatefulSet generation mismatch
                 description: A StatefulSet has failed but has not been rolled back.
                 query: 'kube_statefulset_status_observed_generation != kube_statefulset_metadata_generation'
-                severity: error
+                severity: critical
               - name: Kubernetes StatefulSet update not rolled out
                 description: StatefulSet update has not been rolled out.
                 query: 'max without (revision) (kube_statefulset_status_current_revision unless kube_statefulset_status_update_revision) * (kube_statefulset_replicas != kube_statefulset_status_replicas_updated)'
-                severity: error
+                severity: critical
               - name: Kubernetes DaemonSet rollout stuck
                 description: Some Pods of DaemonSet are not scheduled or not ready
                 query: 'kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 or kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_current_number_scheduled > 0'
-                severity: error
+                severity: critical
               - name: Kubernetes DaemonSet misscheduled
                 description: Some DaemonSet Pods are running where they are not supposed to run
                 query: 'kube_daemonset_status_number_misscheduled > 0'
-                severity: error
+                severity: critical
               - name: Kubernetes CronJob too long
                 description: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.
                 query: 'time() - kube_cronjob_next_schedule_time > 3600'
@@ -1051,15 +1111,15 @@ groups:
               - name: Kubernetes job completion
                 description: Kubernetes Job failed to complete
                 query: 'kube_job_spec_completions - kube_job_status_succeeded > 0 or kube_job_status_failed > 0'
-                severity: error
+                severity: critical
               - name: Kubernetes API server errors
                 description: Kubernetes API server is experiencing high error rate
                 query: 'sum(rate(apiserver_request_count{job="apiserver",code=~"^(?:5..)$"}[2m])) / sum(rate(apiserver_request_count{job="apiserver"}[2m])) * 100 > 3'
-                severity: error
+                severity: critical
               - name: Kubernetes API client errors
                 description: Kubernetes API client is experiencing high error rate
                 query: '(sum(rate(rest_client_requests_total{code=~"(4|5).."}[2m])) by (instance, job) / sum(rate(rest_client_requests_total[2m])) by (instance, job)) * 100 > 1'
-                severity: error
+                severity: critical
               - name: Kubernetes client certificate expires next week
                 description: A client certificate used to authenticate to the apiserver is expiring next week.
                 query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 7*24*60*60'
@@ -1067,7 +1127,7 @@ groups:
               - name: Kubernetes client certificate expires soon
                 description: A client certificate used to authenticate to the apiserver is expiring in less than 24.0 hours.
                 query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60'
-                severity: error
+                severity: critical
               - name: Kubernetes API server latency
                 description: 'Kubernetes API server has a 99th percentile latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}.'
                 query: 'histogram_quantile(0.99, sum(apiserver_request_latencies_bucket{verb!~"CONNECT|WATCHLIST|WATCH|PROXY"}) WITHOUT (instance, resource)) / 1e+06 > 1'
@@ -1087,15 +1147,15 @@ groups:
               - name: Consul service healthcheck failed
                 description: "Service: `{{ $labels.service_name }}` Healthcheck: `{{ $labels.service_id }}`"
                 query: "consul_catalog_service_node_healthy == 0"
-                severity: error
+                severity: critical
               - name: Consul missing master node
                 description: Numbers of consul raft peers should be 3, in order to preserve quorum.
                 query: "consul_raft_peers < 3"
-                severity: error
+                severity: critical
               - name: Consul agent unhealthy
                 description: A Consul agent is down
                 query: 'consul_health_node_status{status="critical"} == 1'
-                severity: error
+                severity: critical
 
       - name: Etcd
         exporters:
@@ -1103,11 +1163,11 @@ groups:
               - name: Etcd insufficient Members
                 description: Etcd cluster should have an odd number of members
                 query: "count(etcd_server_id) % 2 == 0"
-                severity: error
+                severity: critical
               - name: Etcd no Leader
                 description: Etcd cluster have no leader
                 query: "etcd_server_has_leader == 0"
-                severity: error
+                severity: critical
               - name: Etcd high number of leader changes
                 description: Etcd leader changed more than 3 times during last hour
                 query: "increase(etcd_server_leader_changes_seen_total[1h]) > 3"
@@ -1119,7 +1179,7 @@ groups:
               - name: Etcd high number of failed GRPC requests
                 description: More than 5% GRPC request failure detected in Etcd for 5 minutes
                 query: 'sum(rate(grpc_server_handled_total{grpc_code!="OK"}[5m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[5m])) BY (grpc_service, grpc_method) > 0.05'
-                severity: error
+                severity: critical
               - name: Etcd GRPC requests slow
                 description: GRPC requests slowing down, 99th percentil is over 0.15s for 5 minutes
                 query: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[5m])) by (grpc_service, grpc_method, le)) > 0.15'
@@ -1131,7 +1191,7 @@ groups:
               - name: Etcd high number of failed HTTP requests
                 description: More than 5% HTTP failure detected in Etcd for 5 minutes
                 query: "sum(rate(etcd_http_failed_total[5m])) BY (method) / sum(rate(etcd_http_received_total[5m])) BY (method) > 0.05"
-                severity: error
+                severity: critical
               - name: Etcd HTTP requests slow
                 description: HTTP requests slowing down, 99th percentil is over 0.15s for 5 minutes
                 query: "histogram_quantile(0.99, rate(etcd_http_successful_duration_seconds_bucket[5m])) > 0.15"
@@ -1179,7 +1239,7 @@ groups:
               - name: Ceph State
                 description: Ceph instance unhealthy
                 query: 'ceph_health_status != 0'
-                severity: error
+                severity: critical
               - name: Ceph monitor clock skew
                 description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
                 query: 'abs(ceph_monitor_clock_skew_seconds) > 0.2'
@@ -1191,7 +1251,7 @@ groups:
               - name: Ceph OSD Down
                 description: Ceph Object Storage Daemon Down
                 query: 'ceph_osd_up == 0'
-                severity: error
+                severity: critical
               - name: Ceph high OSD latency
                 description: "Ceph Object Storage Daemon latetncy is high. Please check if it doesn't stuck in weird state."
                 query: 'ceph_osd_perf_apply_latency_seconds > 10'
@@ -1207,11 +1267,11 @@ groups:
               - name: Ceph PG down
                 description: Some Ceph placement groups are down. Please ensure that all the data are available.
                 query: 'ceph_pg_down > 0'
-                severity: error
+                severity: critical
               - name: Ceph PG incomplete
                 description: Some Ceph placement groups are incomplete. Please ensure that all the data are available.
                 query: 'ceph_pg_incomplete > 0'
-                severity: error
+                severity: critical
               - name: Ceph PG inconsistant
                 description: Some Ceph placement groups are inconsitent. Data is available but inconsistent across nodes.
                 query: ceph_pg_inconsistent > 0
@@ -1227,7 +1287,7 @@ groups:
               - name: Ceph PG unavailable
                 description: Some Ceph placement groups are unavailable.
                 query: 'ceph_pg_total - ceph_pg_active > 0'
-                severity: error
+                severity: critical
 
       - name: SpeedTest
         exporters:
@@ -1265,7 +1325,7 @@ groups:
               - name: Minio disk offline
                 description: 'Minio disk is offline'
                 query: "minio_offline_disks > 0"
-                severity: error
+                severity: critical
               - name: Minio storage space exhausted
                 description: 'Minio storage space is low (< 10 GB)'
                 query: "minio_disk_storage_free_bytes / 1024 / 1024 / 1024 < 10"
@@ -1279,11 +1339,11 @@ groups:
               - name: Juniper switch down
                 description: The switch appears to be down
                 query: junos_up == 0
-                severity: error
+                severity: critical
               - name: Juniper high Bandwith Usage 1GiB
                 description: Interface is highly saturated for at least 1 min. (> 0.90GiB/s)
                 query: "irate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.90"
-                severity: error
+                severity: critical
               - name: Juniper high Bandwith Usage 1GiB
                 description: Interface is getting saturated for at least 1 min. (> 0.80GiB/s)
                 query: "irate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80"
@@ -1296,7 +1356,7 @@ groups:
               - name: CoreDNS Panic Count
                 description: Number of CoreDNS panics encountered
                 query: "increase(coredns_panic_count_total[10m]) > 0"
-                severity: error
+                severity: critical
 
 
   - name: Other
@@ -1307,12 +1367,12 @@ groups:
               - name: Thanos compaction halted
                 description: Thanos compaction has failed to run and is now halted.
                 query: 'thanos_compactor_halted == 1'
-                severity: error
+                severity: critical
               - name: Thanos compact bucket operation failure
                 description: Thanos compaction has failing storage operations
                 query: 'rate(thanos_objstore_bucket_operation_failures_total[1m]) > 0'
-                severity: error
+                severity: critical
               - name: Thanos compact not run
                 description: Thanos compaction has not run in 24 hours.
                 query: '(time() - thanos_objstore_bucket_last_successful_upload_time) > 24*60*60'
-                severity: error
+                severity: critical
