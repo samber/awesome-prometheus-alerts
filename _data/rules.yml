@@ -466,6 +466,20 @@ groups:
                 query: '((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
                 severity: critical
 
+      - name: SQL Server
+        exporters:
+          - name: Ozarklake/prometheus-mssql-exporter
+            doc_url: https://github.com/Ozarklake/prometheus-mssql-exporter
+            rules:
+              - name: SQL Server down
+                description: SQl server instance is down
+                query: mssql_up == 0
+                severity: critical
+              - name: SQL Server deadlock
+                description: SQL Server is having some deadlock.
+                query: rate(mssql_deadlocks[1m]) > 0
+                severity: warning
+
       - name: PGBouncer
         exporters:
           - name: spreaker/prometheus-pgbouncer-exporter
