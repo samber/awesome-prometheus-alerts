@@ -197,7 +197,7 @@ groups:
                 severity: critical
               - name: Host RAID disk failure
                 description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap'
-                query: 'node_md_disks{state="fail"} > 0'
+                query: 'node_md_disks{state="failed"} > 0'
                 severity: warning
               - name: Host kernel version deviations
                 description: Different kernel versions are running
@@ -239,8 +239,9 @@ groups:
                 severity: warning
               - name: Container Memory usage
                 description: Container Memory usage is above 80%
-                query: "(sum(container_memory_usage_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes) BY (instance, name) * 100) > 80"
+                query: "(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80"
                 severity: warning
+                comments: See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
                 query: "(1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance)) * 100) > 80"
