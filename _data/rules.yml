@@ -596,13 +596,17 @@ groups:
                 description: Less than 3 nodes running in RabbitMQ cluster
                 query: "sum(rabbitmq_build_info) < 3"
                 severity: critical
+              - name: Rabbitmq instances different versions
+                description: Running different version of Rabbitmq in the same cluster, can lead to failure.
+                query: "count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1"
+                severity: warning
               - name: Rabbitmq memory high
                 description: A node use more than 90% of allocated RAM
                 query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90"
                 severity: warning
               - name: Rabbitmq too much unack
-                description: Total unacknowledged messages are too high
-                query: "sum(rabbitmq_queue_messages_unacked) > 1000"
+                description: Too much unacknowledged messages
+                query: "sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000"
                 severity: warning
               - name: Rabbitmq too much connections
                 description: The total connections of a node is too high
@@ -612,9 +616,6 @@ groups:
                 description: A queue has less than 1 consumer
                 query: "rabbitmq_queue_consumers < 1"
                 severity: warning
-
-      - name: RabbitMQ
-        exporters:
           - name: kbudde/rabbitmq-exporter
             doc_url: https://github.com/kbudde/rabbitmq_exporter
             rules:
