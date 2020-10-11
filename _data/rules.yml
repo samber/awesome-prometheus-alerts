@@ -197,7 +197,7 @@ groups:
                 severity: critical
               - name: Host RAID disk failure
                 description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap'
-                query: 'node_md_disks{state="fail"} > 0'
+                query: 'node_md_disks{state="failed"} > 0'
                 severity: warning
               - name: Host kernel version deviations
                 description: Different kernel versions are running
