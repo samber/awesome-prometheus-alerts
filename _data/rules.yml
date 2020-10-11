@@ -245,6 +245,9 @@ groups:
                 description: Container CPU usage is above 80%
                 query: "(sum(rate(container_cpu_usage_seconds_total[3m])) BY (instance, name) * 100) > 80"
                 severity: warning
+                comments: |
+                  cAdvisor can sometimes consume a lot of CPU, so this alert will fire constantly.
+                  If you want to exclude it from this alert, just use: container_cpu_usage_seconds_total{name!=""}
               - name: Container Memory usage
                 description: Container Memory usage is above 80%
                 query: "(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80"
