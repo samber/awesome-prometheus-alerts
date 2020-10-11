@@ -239,7 +239,7 @@ groups:
                 severity: warning
               - name: Container Memory usage
                 description: Container Memory usage is above 80%
-                query: "(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes) BY (instance, name) * 100) > 80"
+                query: "(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80"
                 severity: warning
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
