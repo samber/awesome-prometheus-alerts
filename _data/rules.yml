@@ -802,6 +802,30 @@ groups:
                 description: Something is going wrong with cassandra storage
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:storage:exceptions:count"}[1m]) > 1'
                 severity: critical
+              - name: Cassandra tombstone dump
+                description: Too much tombstones scanned in queries
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:table:tombstonescannedhistogram:99thpercentile"} > 1000'
+                severity: critical
+              - name: Cassandra client request unvailable write
+                description: Write failures have occurred because too many nodes are unavailable
+                query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:unavailables:count"}[1m]) > 0'
+                severity: critical
+              - name: Cassandra client request unvailable read
+                description: Read failures have occurred because too many nodes are unavailable
+                query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:unavailables:count"}[1m]) > 0'
+                severity: critical
+              - name: Cassandra client request write failure
+                description: A lot of write failures encountered. A write failure is a non-timeout exception encountered during a write request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
+                query: 'increase(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"}[1m]) > 0'
+                severity: critical
+              - name: Cassandra client request read failure
+                description: A lot of read failures encountered. A read failure is a non-timeout exception encountered during a read request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
+                query: 'increase(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"}[1m]) > 0'
+                severity: critical
+              - name: Cassandra cache hit rate key cache
+                description: Key cache hit rate is below 85%
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:cache:keycache:hitrate:value"} < .85'
+                severity: critical
 
       - name: Zookeeper
         exporters:
