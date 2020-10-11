@@ -64,7 +64,7 @@
               {{ serviceIndex }}.{{ ruleIndex }}.
               {{ rule.name }}
               </h4>
-            <details id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" {% if true || (serviceIndex == 1 && ruleIndex == 1) %} open {% endif %}>
+            <details id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" open="">
               <summary>
                 {{ rule.description }}
                 <span class="clipboard-single" data-clipboard-target-id="service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
