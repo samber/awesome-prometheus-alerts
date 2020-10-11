@@ -15,7 +15,7 @@ groups:
           - rules:
             - name: Prometheus job missing
               description: A Prometheus job has disappeared
-              query: 'absent(up{job="my-job"})'
+              query: 'absent(up{job="prometheus"})'
               severity: warning
             - name: Prometheus target missing
               description: A Prometheus target has disappeared. An exporter might be crashed.
@@ -157,11 +157,11 @@ groups:
                 severity: warning
               - name: Host unusual disk read latency
                 description: Disk latency is growing (read operations > 100ms)
-                query: "rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 100"
+                query: "rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0"
                 severity: warning
               - name: Host unusual disk write latency
                 description: Disk latency is growing (write operations > 100ms)
-                query: "rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 100"
+                query: "rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0"
                 severity: warning
               - name: Host high CPU load
                 description: CPU load is > 80%
@@ -197,7 +197,7 @@ groups:
                 severity: critical
               - name: Host RAID disk failure
                 description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap'
-                query: 'node_md_disks{state="fail"} > 0'
+                query: 'node_md_disks{state="failed"} > 0'
                 severity: warning
               - name: Host kernel version deviations
                 description: Different kernel versions are running
@@ -239,8 +239,9 @@ groups:
                 severity: warning
               - name: Container Memory usage
                 description: Container Memory usage is above 80%
-                query: "(sum(container_memory_usage_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes) BY (instance, name) * 100) > 80"
+                query: "(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80"
                 severity: warning
+                comments: See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
                 query: "(1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance)) * 100) > 80"
@@ -351,8 +352,8 @@ groups:
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) > 300'
                 severity: warning
               - name: MySQL slow queries
-                description: MySQL server is having some slow queries.
-                query: 'mysql_global_status_slow_queries > 0'
+                description: MySQL server mysql has some new slow query.
+                query: rate(mysql_global_status_slow_queries[2m]) > 0
                 severity: warning
               - name: MySQL restarted
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
@@ -464,6 +465,20 @@ groups:
                 description: Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.
                 query: '((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
                 severity: critical
+
+      - name: SQL Server
+        exporters:
+          - name: Ozarklake/prometheus-mssql-exporter
+            doc_url: https://github.com/Ozarklake/prometheus-mssql-exporter
+            rules:
+              - name: SQL Server down
+                description: SQl server instance is down
+                query: mssql_up == 0
+                severity: critical
+              - name: SQL Server deadlock
+                description: SQL Server is having some deadlock.
+                query: rate(mssql_deadlocks[1m]) > 0
+                severity: warning
 
       - name: PGBouncer
         exporters:
@@ -587,8 +602,35 @@ groups:
                 query: '(sum(mongodb_memory{type="virtual"}) BY (ip) / sum(mongodb_memory{type="mapped"}) BY (ip)) > 3'
                 severity: warning
 
-      - name: RabbitMQ
+      - name: RabbitMQ (official exporter)
         exporters:
+          - name: rabbitmq/rabbitmq-prometheus
+            doc_url: https://github.com/rabbitmq/rabbitmq-prometheus
+            rules:
+              - name: Rabbitmq node down
+                description: Less than 3 nodes running in RabbitMQ cluster
+                query: "sum(rabbitmq_build_info) < 3"
+                severity: critical
+              - name: Rabbitmq instances different versions
+                description: Running different version of Rabbitmq in the same cluster, can lead to failure.
+                query: "count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1"
+                severity: warning
+              - name: Rabbitmq memory high
+                description: A node use more than 90% of allocated RAM
+                query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90"
+                severity: warning
+              - name: Rabbitmq too much unack
+                description: Too much unacknowledged messages
+                query: "sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000"
+                severity: warning
+              - name: Rabbitmq too much connections
+                description: The total connections of a node is too high
+                query: "rabbitmq_connections > 1000"
+                severity: warning
+              - name: Rabbitmq no queue consumer
+                description: A queue has less than 1 consumer
+                query: "rabbitmq_queue_consumers < 1"
+                severity: warning
           - name: kbudde/rabbitmq-exporter
             doc_url: https://github.com/kbudde/rabbitmq_exporter
             rules:
@@ -902,7 +944,21 @@ groups:
                 description: Traefik backend 5xx error rate is above 5%
                 query: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
                 severity: critical
-
+          - name: Embedded exporter v2
+            doc_url: https://docs.traefik.io/observability/metrics/prometheus/
+            rules:
+              - name: Traefik service down
+                description: All Traefik services are down
+                query: "count(traefik_service_server_up) by (service) == 0"
+                severity: critical
+              - name: Traefik high HTTP 4xx error rate service
+                description: Traefik service 4xx error rate is above 5%
+                query: 'sum(rate(traefik_service_requests_total{code=~"4.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+                severity: critical
+              - name: Traefik high HTTP 5xx error rate service
+                description: Traefik service 5xx error rate is above 5%
+                query: 'sum(rate(traefik_service_requests_total{code=~"5.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+                severity: critical
 
   - name: Runtimes
     services:
@@ -990,11 +1046,11 @@ groups:
                 severity: critical
               - name: Kubernetes HPA scaling ability
                 description: Pod is unable to scale
-                query: 'kube_hpa_status_condition{condition="false", status="AbleToScale"} == 1'
+                query: 'kube_hpa_status_condition{status="false", condition ="AbleToScale"} == 1'
                 severity: warning
               - name: Kubernetes HPA metric availability
-                description: HPA is not able to colelct metrics
-                query: 'kube_hpa_status_condition{condition="false", status="ScalingActive"} == 1'
+                description: HPA is not able to collect metrics
+                query: 'kube_hpa_status_condition{status="false", condition="ScalingActive"} == 1'
                 severity: warning
               - name: Kubernetes HPA scale capability
                 description: The maximum number of desired Pods has been hit
