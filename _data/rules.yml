@@ -476,7 +476,7 @@ groups:
                 severity: critical
               - name: SQL Server deadlock
                 description: SQL Server is having some deadlock.
-                query: irate(mssql_deadlocks[2m]) > 0
+                query: rate(mssql_deadlocks[1m]) > 0
                 severity: warning
 
       - name: PGBouncer
