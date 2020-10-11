@@ -157,11 +157,11 @@ groups:
                 severity: warning
               - name: Host unusual disk read latency
                 description: Disk latency is growing (read operations > 100ms)
-                query: "rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 100"
+                query: "rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0"
                 severity: warning
               - name: Host unusual disk write latency
                 description: Disk latency is growing (write operations > 100ms)
-                query: "rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 100"
+                query: "rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0"
                 severity: warning
               - name: Host high CPU load
                 description: CPU load is > 80%
@@ -197,7 +197,7 @@ groups:
                 severity: critical
               - name: Host RAID disk failure
                 description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap'
-                query: 'node_md_disks{state="fail"} > 0'
+                query: 'node_md_disks{state="failed"} > 0'
                 severity: warning
               - name: Host kernel version deviations
                 description: Different kernel versions are running
@@ -239,8 +239,9 @@ groups:
                 severity: warning
               - name: Container Memory usage
                 description: Container Memory usage is above 80%
-                query: "(sum(container_memory_usage_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes) BY (instance, name) * 100) > 80"
+                query: "(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80"
                 severity: warning
+                comments: See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
                 query: "(1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance)) * 100) > 80"
@@ -476,7 +477,7 @@ groups:
                 severity: critical
               - name: SQL Server deadlock
                 description: SQL Server is having some deadlock.
-                query: irate(mssql_deadlocks[2m]) > 0
+                query: rate(mssql_deadlocks[1m]) > 0
                 severity: warning
 
       - name: PGBouncer
@@ -1004,11 +1005,11 @@ groups:
                 severity: critical
               - name: Kubernetes HPA scaling ability
                 description: Pod is unable to scale
-                query: 'kube_hpa_status_condition{condition="false", status="AbleToScale"} == 1'
+                query: 'kube_hpa_status_condition{status="false", condition ="AbleToScale"} == 1'
                 severity: warning
               - name: Kubernetes HPA metric availability
-                description: HPA is not able to colelct metrics
-                query: 'kube_hpa_status_condition{condition="false", status="ScalingActive"} == 1'
+                description: HPA is not able to collect metrics
+                query: 'kube_hpa_status_condition{status="false", condition="ScalingActive"} == 1'
                 severity: warning
               - name: Kubernetes HPA scale capability
                 description: The maximum number of desired Pods has been hit
