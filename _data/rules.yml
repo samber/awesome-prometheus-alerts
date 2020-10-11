@@ -315,7 +315,7 @@ groups:
                 severity: warning
               - name: Windows Server memory Usage
                 description: Memory usage is more than 90%
-                query: "100 * (wmi_os_physical_memory_free_bytes) / wmi_cs_physical_memory_bytes > 90"
+                query: "100 - ((wmi_os_physical_memory_free_bytes / wmi_cs_physical_memory_bytes) * 100) > 90"
                 severity: warning
               - name: Windows Server disk Space Usage
                 description: Disk usage is more than 80%
