@@ -1,3 +1,39 @@
+<h2>
+  Prometheus configuration
+</h2>
+
+{% highlight yaml %}
+# prometheus.yml
+
+global:
+  scrape_interval:     15s
+  ...
+
+rule_files:
+  - 'alerts/*.yml'
+
+scrape_configs:
+  ...
+
+{% endhighlight %}
+
+{% highlight yaml %}
+# alerts/example-redis.yml
+
+groups:
+
+- name: ExampleRedisGroup
+  rules:
+  - alert: ExampleRedisDown
+    expr: redis_up{} == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Redis instance down"
+      description: "Whatever"
+
+{% endhighlight %}
 
 <h2>
   AlertManager configuration
@@ -15,7 +51,7 @@ route:
   # notification.
   group_wait: 10s
 
-  # When the first notification was sent, wait 'group_interval' to send a betch
+  # When the first notification was sent, wait 'group_interval' to send a batch
   # of new alerts that started firing for that group.
   group_interval: 5m
 
@@ -32,13 +68,13 @@ route:
     - receiver: "slack"
       group_wait: 10s
       match_re:
-        severity: error|warning
+        severity: critical|warning
       continue: true
 
-    - receiver: "sms"
+    - receiver: "pager"
       group_wait: 10s
       match_re:
-        severity: error
+        severity: critial
       continue: true
 
 receivers:
@@ -49,9 +85,9 @@ receivers:
         channel: 'monitoring'
         text: "{{ range .Alerts }}<!channel> {{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}"
 
-  - name: "sms"
+  - name: "pager"
     webhook_config:
-      - url: http://a.b.c:8080/send/sms
+      - url: http://a.b.c.d:8080/send/sms
         send_resolved: true
 
 {% endraw %}
