@@ -15,7 +15,7 @@ groups:
           - rules:
             - name: Prometheus job missing
               description: A Prometheus job has disappeared
-              query: 'absent(up{job="my-job"})'
+              query: 'absent(up{job="prometheus"})'
               severity: warning
             - name: Prometheus target missing
               description: A Prometheus target has disappeared. An exporter might be crashed.
