@@ -352,8 +352,8 @@ groups:
                 query: 'mysql_slave_status_master_server_id > 0 and ON (instance) (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) > 300'
                 severity: warning
               - name: MySQL slow queries
-                description: MySQL server is having some slow queries.
-                query: 'mysql_global_status_slow_queries > 0'
+                description: MySQL server mysql has some new slow query.
+                query: rate(mysql_global_status_slow_queries[2m]) > 0
                 severity: warning
               - name: MySQL restarted
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
