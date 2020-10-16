@@ -152,7 +152,7 @@ groups:
                   "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)"
               - name: Host disk will fill in 4 hours
                 description: Disk will fill in 4 hours at current write rate
-                query: 'predict_linear(node_filesystem_free_bytes{fstype!~"tmpfs"}[1h], 4 * 3600) < 0'
+                query: 'predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 4 * 3600) < 0'
                 severity: warning
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
