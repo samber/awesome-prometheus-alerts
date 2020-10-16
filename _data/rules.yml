@@ -1051,6 +1051,10 @@ groups:
                 description: "{{ $labels.node }} has OutOfDisk condition"
                 query: 'kube_node_status_condition{condition="OutOfDisk",status="true"} == 1'
                 severity: critical
+              - name: Kubernetes out of capacity
+                description: "{{ $labels.node }} is out of capacity"
+                query: 'sum(kube_pod_info) by (node) / sum(kube_node_status_allocatable_pods) by (node) * 100 > 90'
+                severity: warning
               - name: Kubernetes Job failed
                 description: "Job {{$labels.namespace}}/{{$labels.exported_job}} failed to complete"
                 query: "kube_job_status_failed > 0"
