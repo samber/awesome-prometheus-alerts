@@ -306,28 +306,28 @@ groups:
 
       - name: Windows Server
         exporters:
-          - name: martinlindhe/wmi_exporter
-            doc_url: https://github.com/martinlindhe/wmi_exporter
+          - name: prometheus-community/windows_exporter
+            doc_url: https://github.com/prometheus-community/windows_exporter
             rules:
               - name: Windows Server collector Error
                 description: "Collector {{ $labels.collector }} was not successful"
-                query: "wmi_exporter_collector_success == 0"
+                query: "windows_exporter_collector_success == 0"
                 severity: critical
               - name: Windows Server service Status
                 description: Windows Service state is not OK
-                query: 'wmi_service_status{status="ok"} != 1'
+                query: 'windows_service_status{status="ok"} != 1'
                 severity: critical
               - name: Windows Server CPU Usage
                 description: CPU Usage is more than 80%
-                query: '100 - (avg by (instance) (rate(wmi_cpu_time_total{mode="idle"}[2m])) * 100) > 80'
+                query: '100 - (avg by (instance) (rate(windows_cpu_time_total{mode="idle"}[2m])) * 100) > 80'
                 severity: warning
               - name: Windows Server memory Usage
                 description: Memory usage is more than 90%
-                query: "100 - ((wmi_os_physical_memory_free_bytes / wmi_cs_physical_memory_bytes) * 100) > 90"
+                query: "100 - ((windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) * 100) > 90"
                 severity: warning
               - name: Windows Server disk Space Usage
                 description: Disk usage is more than 80%
-                query: "100.0 - 100 * ((wmi_logical_disk_free_bytes{} / 1024 / 1024 ) / (wmi_logical_disk_size_bytes{} / 1024 / 1024)) > 80"
+                query: "100.0 - 100 * ((windows_logical_disk_free_bytes{} / 1024 / 1024 ) / (windows_logical_disk_size_bytes{} / 1024 / 1024)) > 80"
                 severity: critical
 
 
