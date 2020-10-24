@@ -544,7 +544,7 @@ groups:
                 severity: critical
               - name: MongoDB replication lag
                 description: Mongodb replication lag is more than 10s
-                query: 'avg(mongodb_mongod_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_mongod_replset_member_optime_date{state="SECONDARY"})  > 10'
+                query: 'mongodb_mongod_replset_member_optime_date{state="PRIMARY"} - on(set) mongodb_mongod_replset_member_optime_date{state="SECONDARY"}  > 10'
                 severity: critical
               - name: MongoDB replication headroom
                 description: MongoDB replication headroom is <= 0
@@ -556,7 +556,7 @@ groups:
                 severity: warning
               - name: MongoDB cursors timeouts
                 description: Too many cursors are timing out
-                query: "increase(mongodb_mongod_metrics_cursor_timed_out_total[10m]) > 100"
+                query: "increase(mongodb_mongod_metrics_cursor_timed_out_total[1m]) > 100"
                 severity: warning
               - name: MongoDB too many connections
                 description: Too many connections
