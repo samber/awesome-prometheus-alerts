@@ -622,6 +622,10 @@ groups:
                 description: Less than 3 nodes running in RabbitMQ cluster
                 query: "sum(rabbitmq_build_info) < 3"
                 severity: critical
+              - name: Rabbitmq node not distributed
+                description: Distribution link state is not 'up'
+                query: "erlang_vm_dist_node_state < 3"
+                severity: critical
               - name: Rabbitmq instances different versions
                 description: Running different version of Rabbitmq in the same cluster, can lead to failure.
                 query: "count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1"
@@ -629,6 +633,10 @@ groups:
               - name: Rabbitmq memory high
                 description: A node use more than 90% of allocated RAM
                 query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90"
+                severity: warning
+              - name: Rabbitmq file descriptors usage
+                description: A node use more than 90% of file descriptors
+                query: "rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90"
                 severity: warning
               - name: Rabbitmq too much unack
                 description: Too much unacknowledged messages
@@ -641,6 +649,10 @@ groups:
               - name: Rabbitmq no queue consumer
                 description: A queue has less than 1 consumer
                 query: "rabbitmq_queue_consumers < 1"
+                severity: warning
+              - name: Rabbitmq unroutable messages
+                description: A queue has unroutable messages
+                query: "increase(rabbitmq_channel_messages_unroutable_returned_total[5m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[5m]) > 0"
                 severity: warning
           - name: kbudde/rabbitmq-exporter
             doc_url: https://github.com/kbudde/rabbitmq_exporter
