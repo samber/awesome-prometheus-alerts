@@ -129,19 +129,19 @@ groups:
                 severity: warning
               - name: Host unusual network throughput in
                 description: Host network interfaces are probably receiving too much data (> 100 MB/s)
-                query: "sum by (instance) (irate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100"
+                query: "sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100"
                 severity: warning
               - name: Host unusual network throughput out
                 description: Host network interfaces are probably sending too much data (> 100 MB/s)
-                query: "sum by (instance) (irate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100"
+                query: "sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100"
                 severity: warning
               - name: Host unusual disk read rate
                 description: Disk is probably reading too much data (> 50 MB/s)
-                query: "sum by (instance) (irate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50"
+                query: "sum by (instance) (rate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50"
                 severity: warning
               - name: Host unusual disk write rate
                 description: Disk is probably writing too much data (> 50 MB/s)
-                query: "sum by (instance) (irate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50"
+                query: "sum by (instance) (rate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50"
                 severity: warning
               - name: Host out of disk space
                 description: Disk is almost full (< 10% left)
@@ -168,7 +168,7 @@ groups:
                 severity: warning
               - name: Host high CPU load
                 description: CPU load is > 80%
-                query: '100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80'
+                query: '100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80'
                 severity: warning
               - name: Host context switching
                 description: Context switching is growing on node (> 1000 / s)
@@ -783,7 +783,7 @@ groups:
                 severity: warning
               - name: Cassandra cool hacker
                 description: Increase of Cassandra authentication failures
-                query: 'irate(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
+                query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
                 severity: warning
               - name: Cassandra node down
                 description: Cassandra node down
@@ -915,19 +915,19 @@ groups:
                 severity: critical
               - name: HAProxy high HTTP 4xx error rate backend
                 description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: 'sum by (backend) irate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+                query: 'sum by (backend) rate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) rate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
                 severity: critical
               - name: HAProxy high HTTP 4xx error rate backend
                 description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: 'sum by (backend) irate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+                query: 'sum by (backend) rate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) rate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
                 severity: critical
               - name: HAProxy high HTTP 4xx error rate server
                 description: Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}
-                query: 'sum by (server) irate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+                query: 'sum by (server) rate(haproxy_server_http_responses_total{code="4xx"}[1m]) / sum by (backend) rate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
                 severity: critical
               - name: HAProxy high HTTP 5xx error rate server
                 description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
-                query: 'sum by (server) irate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) irate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
+                query: 'sum by (server) rate(haproxy_server_http_responses_total{code="5xx"}[1m]) / sum by (backend) rate(haproxy_server_http_responses_total{}[1m]) * 100 > 5'
                 severity: critical
               - name: HAProxy backend connection errors
                 description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 5%). Request throughput may be to high.
@@ -1385,11 +1385,11 @@ groups:
                 severity: critical
               - name: Juniper high Bandwith Usage 1GiB
                 description: Interface is highly saturated for at least 1 min. (> 0.90GiB/s)
-                query: "irate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.90"
+                query: "rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.90"
                 severity: critical
               - name: Juniper high Bandwith Usage 1GiB
                 description: Interface is getting saturated for at least 1 min. (> 0.80GiB/s)
-                query: "irate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80"
+                query: "rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80"
                 severity: warning
 
       - name: CoreDNS
