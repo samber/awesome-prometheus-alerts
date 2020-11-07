@@ -327,7 +327,7 @@ groups:
                 severity: warning
               - name: Windows Server disk Space Usage
                 description: Disk usage is more than 80%
-                query: "100.0 - 100 * ((windows_logical_disk_free_bytes{} / 1024 / 1024 ) / (windows_logical_disk_size_bytes{} / 1024 / 1024)) > 80"
+                query: "100.0 - 100 * ((windows_logical_disk_free_bytes / 1024 / 1024 ) / (windows_logical_disk_size_bytes / 1024 / 1024)) > 80"
                 severity: critical
 
 
@@ -1032,7 +1032,7 @@ groups:
             rules:
               - name: Sidekiq queue size
                 description: Sidekiq queue {{ $labels.name }} is growing
-                query: 'sidekiq_queue_size{} > 100'
+                query: 'sidekiq_queue_size > 100'
                 severity: warning
               - name: Sidekiq scheduling latency too high
                 description: Sidekiq jobs are taking more than 2 minutes to be picked up. Users may be seeing delays in background processing.
