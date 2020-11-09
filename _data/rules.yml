@@ -572,10 +572,6 @@ groups:
                 description: Mongodb replication lag is more than 10s
                 query: 'avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}) > 10'
                 severity: critical
-              - name: MongoDB replication headroom
-                description: MongoDB replication headroom is <= 0
-                query: '(avg(mongodb_replset_oplog_tail_timestamp - mongodb_replset_oplog_head_timestamp) - (avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}))) <= 0'
-                severity: critical
               - name: MongoDB replication Status 3
                 description: MongoDB Replication set member either perform startup self-checks, or transition from completing a rollback or resync
                 query: "mongodb_replset_member_state == 3"
