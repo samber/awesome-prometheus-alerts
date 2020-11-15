@@ -564,6 +564,34 @@ groups:
           - name: percona/mongodb_exporter
             doc_url: https://github.com/percona/mongodb_exporter
             rules:
+              - name: MongoDB Down
+                description: MongoDB instance is down
+                query: 'mongodb_up == 0'
+                severity: critical
+              - name: MongoDB replication lag
+                description: Mongodb replication lag is more than 10s
+                query: 'mongodb_mongod_replset_member_optime_date{state="PRIMARY"} - on(set) mongodb_mongod_replset_member_optime_date{state="SECONDARY"}  > 10'
+                severity: critical
+              - name: MongoDB replication headroom
+                description: MongoDB replication headroom is <= 0
+                query: '(avg(mongodb_mongod_replset_oplog_tail_timestamp - mongodb_mongod_replset_oplog_head_timestamp) - (avg(mongodb_mongod_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_mongod_replset_member_optime_date{state="SECONDARY"}))) <= 0'
+                severity: critical
+              - name: MongoDB number cursors open
+                description: Too many cursors opened by MongoDB for clients (> 10k)
+                query: 'mongodb_mongod_metrics_cursor_open{state="total"} > 10000'
+                severity: warning
+              - name: MongoDB cursors timeouts
+                description: Too many cursors are timing out
+                query: "increase(mongodb_mongod_metrics_cursor_timed_out_total[1m]) > 100"
+                severity: warning
+              - name: MongoDB too many connections
+                description: Too many connections
+                query: 'avg by(instance) (max_over_time(mongodb_connections{state="current"}[5m])) / avg by(instance) (sum (mongodb_connections) by (instance)) * 100 > 80'
+                severity: warning
+              - name: MongoDB virtual memory usage
+                description: High memory usage
+                query: '(sum(mongodb_memory{type="virtual"}) BY (instance) / sum(mongodb_memory{type="mapped"}) BY (instance)) > 3'
+                severity: warning
 
           - name: dcu/mongodb_exporter
             doc_url: https://github.com/dcu/mongodb_exporter
