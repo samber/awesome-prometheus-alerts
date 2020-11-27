@@ -520,7 +520,7 @@ groups:
                 severity: critical
               - name: Redis missing master
                 description: Redis cluster has no node marked as master.
-                query: 'count(redis_instance_info{role="master"}) or vector(0) < 1'
+                query: '(count(redis_instance_info{role="master"}) or vector(0)) < 1'
                 severity: critical
               - name: Redis too many masters
                 description: Redis cluster has too many nodes marked as master.
