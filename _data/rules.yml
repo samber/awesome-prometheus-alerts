@@ -170,8 +170,8 @@ groups:
                 description: CPU load is > 80%
                 query: '100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80'
                 severity: warning
-              - name: CPU steal
-                description: CPU steal is > 10%
+              - name: CPU steal noisy neighbor
+                description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
                 query: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
                 severity: warning
               - name: Host context switching
