@@ -170,6 +170,10 @@ groups:
                 description: CPU load is > 80%
                 query: '100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80'
                 severity: warning
+              - name: CPU steal
+                description: CPU steal is > 10%
+                query: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
+                severity: warning
               - name: Host context switching
                 description: Context switching is growing on node (> 1000 / s)
                 query: '(rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000'
