@@ -1200,10 +1200,15 @@ groups:
                 description: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.
                 query: 'time() - kube_cronjob_next_schedule_time > 3600'
                 severity: warning
-              - name: Kubernetes job completion
-                description: Kubernetes Job failed to complete
-                query: 'kube_job_spec_completions - kube_job_status_succeeded > 0 or kube_job_status_failed > 0'
+              - name: Kubernetes job failed
+                description: Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete.
+                query: 'kube_job_status_failed > 0'
                 severity: critical
+              - name: Kubernetes job slow completion
+                description: Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.
+                query: 'kube_job_spec_completions - kube_job_status_succeeded > 0'
+                severity: critical
+                for: 12h
               - name: Kubernetes API server errors
                 description: Kubernetes API server is experiencing high error rate
                 query: 'sum(rate(apiserver_request_count{job="apiserver",code=~"^(?:5..)$"}[2m])) / sum(rate(apiserver_request_count{job="apiserver"}[2m])) * 100 > 3'
