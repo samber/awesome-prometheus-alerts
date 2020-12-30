@@ -145,18 +145,27 @@ groups:
                 severity: warning
               - name: Host out of disk space
                 description: Disk is almost full (< 10% left)
-                query: '(node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10'
+                query: '(node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0'
                 severity: warning
                 comments: |
-                  please add ignored mountpoints in node_exporter parameters like
-                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)"
-              - name: Host disk will fill in 4 hours
-                description: Disk will fill in 4 hours at current write rate
-                query: 'predict_linear(node_filesystem_free_bytes{fstype!~"tmpfs"}[1h], 4 * 3600) < 0'
+                  Please add ignored mountpoints in node_exporter parameters like
+                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+                  Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
+              - name: Host disk will fill in 24 hours
+                description: Filesystem is predicted to run out of space within the next 24 hours at current write rate
+                query: '(node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0'
                 severity: warning
+                comments: |
+                  Please add ignored mountpoints in node_exporter parameters like
+                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+                  Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
-                query: 'node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint ="/rootfs"} * 100 < 10'
+                query: 'node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0'
+                severity: warning
+              - name: Host inodes will fill in 24 hours
+                description: Filesystem is predicted to run out of inodes within the next 24 hours at current write rate
+                query: 'node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 and predict_linear(node_filesystem_files_free{mountpoint="/rootfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0'
                 severity: warning
               - name: Host unusual disk read latency
                 description: Disk latency is growing (read operations > 100ms)
@@ -224,15 +233,27 @@ groups:
                 severity: warning
               - name: Host Network Receive Errors
                 description: '{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} receive errors in the last five minutes.'
-                query: 'increase(node_network_receive_errs_total[5m]) > 0'
+                query: 'rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01'
                 severity: warning
               - name: Host Network Transmit Errors
                 description: '{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last five minutes.'
-                query: 'increase(node_network_transmit_errs_total[5m]) > 0'
+                query: 'rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01'
                 severity: warning
               - name: Host Network Interface Saturated
                 description: 'The network interface "{{ $labels.interface }}" on "{{ $labels.instance }}" is getting overloaded.'
                 query: '(rate(node_network_receive_bytes_total{device!~"^tap.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*"} > 0.8'
+                severity: warning
+              - name: Host conntrack limit
+                description: 'The number of conntrack is approching limit'
+                query: 'node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8'
+                severity: warning
+              - name: Host clock skew
+                description: 'Clock skew detected. Clock is out of sync.'
+                query: '(node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0)'
+                severity: warning
+              - name: Host clock not synchronising
+                description: 'Clock not synchronising.'
+                query: 'min_over_time(node_timex_sync_status[5m]) == 0 and node_timex_maxerror_seconds >= 16'
                 severity: warning
 
 
