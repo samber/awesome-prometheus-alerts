@@ -91,7 +91,7 @@
       </a>
     </h1>
     <h2 class="project-tagline">{{ site.description | default: site.github.project_tagline }}</h2>
-    <a href="/alertmanager" class="btn">AlertManager config</a>
+    <a href="/alertmanager" class="btn">Global configuration</a>
     <a href="/rules" class="btn">Rules</a>
     <a href="https://github.com/samber/awesome-prometheus-alerts/blob/master/CONTRIBUTING.md" class="btn">Contribute on
       GitHub
@@ -128,8 +128,10 @@
 
     <footer class="site-footer">
       {% if site.github.is_project_page %}
-      <span class="site-footer-owner"><a href="{{ site.github.repository_url }}">{{ site.title }}</a> is maintained by
-        <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a>.</span>
+        <span class="site-footer-owner">
+          <a href="{{ site.github.repository_url }}">{{ site.title }}</a> is maintained by
+          <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a>.
+        </span>
       {% endif %}
     </footer>
   </main>
