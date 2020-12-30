@@ -80,7 +80,7 @@
   {% for comment in comments %}# {{ comment | strip }}
   {% endfor %}- alert: {{ ruleNameCamelcase | remove: ' ' }}
     expr: {{ rule.query }}
-    for: {% if rule.for %}{{ rule.for }}{% else %}5m{% endif %}
+    for: {% if rule.for %}{{ rule.for }}{% else %}0m{% endif %}
     labels:
       severity: {{ rule.severity }}
     annotations:
