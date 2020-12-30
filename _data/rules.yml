@@ -434,7 +434,7 @@ groups:
               - name: MySQL restarted
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
                 query: 'mysql_global_status_uptime < 60'
-                severity: warning
+                severity: info
 
       - name: PostgreSQL
         exporters:
