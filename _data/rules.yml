@@ -806,7 +806,7 @@ groups:
                 severity: warning
               - name: Elasticsearch no new documents
                 description: No new documents for 10 min!
-                query: 'rate(elasticsearch_indices_docs{es_data_node="true"}[10m]) < 1'
+                query: 'increase(elasticsearch_indices_docs{es_data_node="true"}[10m]) < 1'
                 severity: warning
 
       - name: Cassandra
@@ -1071,7 +1071,7 @@ groups:
             rules:
               - name: JVM memory filling up
                 description: JVM memory is filling up (> 80%)
-                query: 'jvm_memory_bytes_used / jvm_memory_bytes_max{area="heap"} > 0.8'
+                query: '(jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) * 100 > 80'
                 severity: warning
 
       - name: Sidekiq
