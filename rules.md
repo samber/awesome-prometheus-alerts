@@ -48,7 +48,7 @@
             <small style="font-size: 60%; vertical-align: middle; margin-left: 10px;">
               ({{ nbrRules }} rules)
             </small>
-            <span class="clipboard-multiple" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}">[copy all]</span>
+            <span class="clipboard-multiple" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}">[copy section]</span>
           {% endif %}
         </h2>
 
