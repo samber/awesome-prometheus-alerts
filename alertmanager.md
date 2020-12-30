@@ -1,12 +1,20 @@
-<h2>
-  Prometheus configuration
-</h2>
+<h1 style="text-align: center;">
+  Global configuration
+</h1>
+
+If you notice a delay between an event and the first notification, read the following blog post => [https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html](https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html).
+
+## Prometheus configuration
 
 {% highlight yaml %}
 # prometheus.yml
 
 global:
-  scrape_interval:     15s
+  scrape_interval: 20s
+
+  # A short evaluation_interval will check alerting rules very often.
+  # It can be costly if you run Prometheus with 100+ alerts.
+  evaluation_interval: 20s
   ...
 
 rule_files:
@@ -35,9 +43,7 @@ groups:
 
 {% endhighlight %}
 
-<h2>
-  AlertManager configuration
-</h2>
+## AlertManager configuration
 
 {% highlight yaml %}
 {% raw %}
@@ -53,7 +59,7 @@ route:
 
   # When the first notification was sent, wait 'group_interval' to send a batch
   # of new alerts that started firing for that group.
-  group_interval: 5m
+  group_interval: 30s
 
   # If an alert has successfully been sent, wait 'repeat_interval' to
   # resend them.
@@ -92,3 +98,14 @@ receivers:
 
 {% endraw %}
 {% endhighlight %}
+
+## Troubleshooting
+
+If the notification takes too much time to be triggered, check the following delays:
+- `scrape_interval = 20s` (prometheus.yml)
+- `evaluation_interval = 20s` (prometheus.yml)
+- `increase(mysql_global_status_slow_queries[1m]) > 0` (alerts/example-mysql.yml)
+- `for: 5m` (alerts/example-mysql.yml)
+- `group_wait = 10s` (alertmanager.yml)
+
+Also read [https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html](https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html).
