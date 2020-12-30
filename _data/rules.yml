@@ -1159,30 +1159,49 @@ groups:
                 query: 'sum(rate(request_errors_total[5m])) by (deployment, statefulset, daemonset) / sum(rate(request_total[5m])) by (deployment, statefulset, daemonset) * 100 > 10'
                 severity: warning
 
-
       - name: Istio
         exporters:
-          - rules:
-              - name: Total Request quantity rate
-                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}}, {{.operation}}, {{.threshold}} with your case.
-                query: "sum(rate(istio_requests_total{namespace = '{{.namespace}}', source_app = '{{.svcName}}', reporter = '{{.reporter}}'}[{{.span}}m])) by (namespace, prometheus_replica)"
+          - name: Embedded exporter
+            doc_url: https://istio.io/latest/docs/tasks/observability/metrics/querying-metrics/
+            rules:
+              - name: Istio Kubernetes gateway availability drop
+                description: Gateway pods have dropped. Inbound traffic will likely be affected.
+                query: 'min(kube_deployment_status_replicas_available{deployment="istio-ingressgateway", namespace="istio-system"}) without (instance, pod) < 2'
                 severity: warning
-              - name:   Latency avg
-                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}}, {{.operation}}, {{.threshold}} with your case.
-                query: "(sum(rate(istio_request_duration_milliseconds_sum{namespace = '{{.namespace}}', source_app= '{{.svcName}}', reporter = '{{.reporter}}'}[{{.span}}m])) by (namespace, prometheus_replica))  / sum(rate(istio_request_duration_milliseconds_count{namespace = '{{.namespace}}', source_app= "{{.svcName}}', reporter = '{{.reporter}}'}[{{.span}}m])) by (namespace, prometheus_replica)  {{.operation}} {{.threshold}}"
+              - name: Istio Pilot high total request rate
+                description: Number of Istio Pilot push errors is too high (> 5%). Envoy sidecars might have outdated configuration.
+                query: 'sum(rate(pilot_xds_push_errors[1m])) / sum(rate(pilot_xds_pushes[1m])) * 100 > 5'
                 severity: warning
-              - name: Latency 50%
-                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}},  {{.operation}}, {{.threshold}} with your case.
-                query: "histogram_quantile(0.5, sum(rate(istio_request_duration_milliseconds_bucket{namespace = '{{.namespace}}', destination_app = '{{.svcName}}'}[{{.span}}m])) by (namespace, le, prometheus_replica)) {{.operation}} {{.threshold}}"
+              - name: Istio Mixer Prometheus dispatches low
+                description: Number of Mixer dispatches to Prometheus is too low. Istio metrics might not be being exported properly.
+                query: 'sum(rate(mixer_runtime_dispatches_total{adapter=~"prometheus"}[1m])) < 180'
                 severity: warning
-              - name: Latency 90%
-                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}}, {{.operation}}, {{.threshold}}with your case.
-                query: "histogram_quantile(0.9, sum(rate(istio_request_duration_milliseconds_bucket{namespace = '{{.namespace}}', destination_app = '{{.svcName}}'}[{{.span}}m])) by (namespace, le, prometheus_replica)) {{.operation}} {{.threshold}}"
+              - name: Istio high total request rate
+                description: Global request rate in the service mesh is unusually high.
+                query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) > 1000'
                 severity: warning
-              - name: Latency 99%
-                description: please replace the {{.namespace}}, {{.svcName}}, {{.reporter}}, {{.span}} with your case.
-                query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{namespace = '{{.namespace}}', destination_app = '{{.svcName}}'}[{{.span}}m])) by (namespace, le, prometheus_replica)) {{.operation}} {{.threshold}}"
+              - name: Istio low total request rate
+                description: Global request rate in the service mesh is unusually low.
+                query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) < 100'
                 severity: warning
+              - name: Istio high 4xx error rate
+                description: High percentage of HTTP 5xx responses in Istio (> 5%).
+                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
+                severity: warning
+              - name: Istio high 5xx error rate
+                description: High percentage of HTTP 5xx responses in Istio (> 5%).
+                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"5.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
+                severity: warning
+              - name: Istio high request latency
+                description: Istio average requests execution is longer than 100ms.
+                query: "rate(istio_request_duration_milliseconds_sum[1m]) / rate(istio_request_duration_milliseconds_count[1m]) > 0.1"
+                severity: warning
+              - name: Istio latency 99 percentile
+                description: Istio 1% slowest resquests are longer than 1s.
+                query: "histogram_quantile(0.99, rate(istio_request_duration_milliseconds_bucket[1m])) > 1"
+                severity: warning
+
+
   - name: Network and storage
     services:
       - name: Ceph
