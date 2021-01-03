@@ -1202,7 +1202,7 @@ groups:
             rules:
               - name: JVM memory filling up
                 description: JVM memory is filling up (> 80%)
-                query: '(jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) * 100 > 80'
+                query: '(sum by (instance)(jvm_memory_used_bytes{area="heap"}) / sum by (instance)(jvm_memory_max_bytes{area="heap"})) * 100 > 80'
                 severity: warning
                 for: 2m
 
