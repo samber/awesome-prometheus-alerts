@@ -1111,7 +1111,7 @@ groups:
                 for: 2m
               - name: HAProxy pending requests
                 description: Some HAProxy requests are pending on {{ $labels.fqdn }}/{{ $labels.backend }} backend
-                query: sum by (proxy) haproxy_backend_current_queue > 0
+                query: sum by (proxy) (rate(haproxy_backend_current_queue[2m])) > 0
                 severity: warning
                 for: 2m
               - name: HAProxy HTTP slowing down
@@ -1134,7 +1134,7 @@ groups:
                 severity: critical
               - name: HAProxy frontend security blocked requests
                 description: HAProxy is blocking requests for security reason
-                query: rate(sum by (proxy) (haproxy_frontend_denied_connections_total)) > 10
+                query: sum by (proxy) (rate(haproxy_frontend_denied_connections_total[2m])) > 10
                 severity: warning
                 for: 2m
               - name: HAProxy server healthcheck failure
@@ -1185,7 +1185,7 @@ groups:
                 severity: critical
               - name: HAProxy backend max active session
                 description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
-                query: 'avg_over_time((sum by (backend) (haproxy_server_max_sessions) / sum by (backend) (haproxy_server_limit_sessions)) [2m]) * 100 > 80'
+                query: '((sum by (backend) (avg_over_time(haproxy_backend_max_sessions[2m])) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m]))) * 100) > 80'
                 severity: warning
                 for: 2m
               - name: HAProxy pending requests
