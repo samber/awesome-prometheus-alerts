@@ -391,6 +391,32 @@ groups:
                 severity: critical
                 for: 2m
 
+      - name: VMware
+        exporters:
+          - name: pryorda/vmware_exporter
+            doc_url: https://github.com/pryorda/vmware_exporter
+            rules:
+              - name: Virtual Machine Memory Warning
+                description: 'High memory usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                query: '((vmware_vm_mem_usage_average / 100) >= 90) and ((vmware_vm_mem_usage_average / 100) < 95)'
+                severity: warning
+                for: 5m
+              - name: Virtual Machine Memory Critical
+                description: 'High memory usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                query: '((vmware_vm_mem_usage_average / 100) >= 95)'
+                severity: critical
+                for: 1m
+              - name: High Number of Snapshots
+                description: "High snapshots number on {{ $labels.instance }}: {{ $value }}"
+                query: '(vmware_vm_snapshots > 3)'
+                severity: warning
+                for: 30m
+              - name: Outdated Snapshots
+                description: 'Outdated snapshots on {{ $labels.instance }}: {{ $value | printf "%.0f"}} days'
+                query: '((time() - vmware_vm_snapshot_timestamp_seconds) / (60 * 60 * 24) >= 3)'
+                severity: warning
+                for: 5m
+
 
   - name: Databases and brokers
     services:
