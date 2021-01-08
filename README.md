@@ -21,6 +21,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Docker Containers](https://awesome-prometheus-alerts.grep.to/rules#docker-containers)
 - [Blackbox](https://awesome-prometheus-alerts.grep.to/rules#blackbox)
 - [Windows](https://awesome-prometheus-alerts.grep.to/rules#windows-server)
+- [VMWare](https://awesome-prometheus-alerts.grep.to/rules#vmware)
 
 #### Databases and brokers
 
