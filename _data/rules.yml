@@ -400,22 +400,22 @@ groups:
                 description: 'High memory usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
                 query: '((vmware_vm_mem_usage_average / 100) >= 90) and ((vmware_vm_mem_usage_average / 100) < 95)'
                 severity: warning
-                for: 30m
+                for: 5m
               - name: Virtual Machine Memory Critical
                 description: 'High memory usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
                 query: '((vmware_vm_mem_usage_average / 100) >= 95)'
                 severity: critical
-                for: 5m
+                for: 1m
               - name: High Number of Snapshots
                 description: "High snapshots number on {{ $labels.instance }}: {{ $value }}"
-                query: '(vmware_vm_snapshots < 3)'
+                query: '(vmware_vm_snapshots > 3)'
                 severity: warning
                 for: 30m
-              - name: Very High Number of Snapshots
-                description: "Very high snapshot number on {{ $labels.instance }}: {{ $value }}"
-                query: '((time() - vmware_vm_snapshot_timestamp_seconds) / (60 * 60 * 24) >= 7)'
-                severity: critical
-                for: 2m
+              - name: Outdated Snapshots
+                description: 'Outdated snapshots on {{ $labels.instance }}: {{ $value | printf "%.0f"}} days'
+                query: '((time() - vmware_vm_snapshot_timestamp_seconds) / (60 * 60 * 24) >= 3)'
+                severity: warning
+                for: 5m
 
 
   - name: Databases and brokers
