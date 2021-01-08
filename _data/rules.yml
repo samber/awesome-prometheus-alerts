@@ -194,7 +194,7 @@ groups:
                 description: CPU load is > 80%
                 query: '100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80'
                 severity: warning
-              - name: CPU steal noisy neighbor
+              - name: Host CPU steal noisy neighbor
                 description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
                 query: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
                 severity: warning
@@ -398,24 +398,54 @@ groups:
             rules:
               - name: Virtual Machine Memory Warning
                 description: 'High memory usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
-                query: '((vmware_vm_mem_usage_average / 100) >= 90) and ((vmware_vm_mem_usage_average / 100) < 95)'
+                query: 'vmware_vm_mem_usage_average / 100 >= 80 and vmware_vm_mem_usage_average / 100 < 90'
                 severity: warning
                 for: 5m
               - name: Virtual Machine Memory Critical
                 description: 'High memory usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
-                query: '((vmware_vm_mem_usage_average / 100) >= 95)'
+                query: 'vmware_vm_mem_usage_average / 100 >= 90'
                 severity: critical
                 for: 1m
               - name: High Number of Snapshots
                 description: "High snapshots number on {{ $labels.instance }}: {{ $value }}"
-                query: '(vmware_vm_snapshots > 3)'
+                query: 'vmware_vm_snapshots > 3'
                 severity: warning
                 for: 30m
               - name: Outdated Snapshots
                 description: 'Outdated snapshots on {{ $labels.instance }}: {{ $value | printf "%.0f"}} days'
-                query: '((time() - vmware_vm_snapshot_timestamp_seconds) / (60 * 60 * 24) >= 3)'
+                query: '(time() - vmware_vm_snapshot_timestamp_seconds) / (60 * 60 * 24) >= 3'
                 severity: warning
                 for: 5m
+
+      - name: Netdata
+        exporters:
+          - name: Embedded exporter
+            doc_url: https://github.com/netdata/netdata/blob/master/backends/prometheus/README.md
+            rules:
+              - name: Netdata high cpu usage
+                description: Netdata high CPU usage (> 80%)
+                query: 'rate(netdata_cpu_cpu_percentage_average{dimension="idle"}[1m]) > 80'
+                severity: warning
+                for: 5m
+              - name: Host CPU steal noisy neighbor
+                description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
+                query: 'rate(netdata_cpu_cpu_percentage_average{dimension="steal"}[1m]) > 10'
+                severity: warning
+                for: 5m
+              - name: Netdata high memory usage
+                description: Netdata high memory usage (> 80%)
+                query: '100 / netdata_system_ram_MB_average * netdata_system_ram_MB_average{dimension=~"free|cached"} < 20'
+                severity: warning
+                for: 5m
+              - name: Netdata low disk space
+                description: Netdata low disk space (> 80%)
+                query: '100 / netdata_disk_space_GB_average * netdata_disk_space_GB_average{dimension=~"avail|cached"} < 20'
+                severity: warning
+                for: 5m
+              - name: Netdata predicted disk full
+                description: Netdata predicted disk full in 24 hours
+                query: 'predict_linear(netdata_disk_space_GB_average{dimension=~"avail|cached"}[3h], 24 * 3600) < 0'
+                severity: warning
 
 
   - name: Databases and brokers
@@ -792,7 +822,7 @@ groups:
                 description: A queue has less than 1 consumer
                 query: 'rabbitmq_queue_consumers < 1'
                 severity: warning
-                for: 1m   # allow a short service restart
+                for: 1m   # allows a short service restart
               - name: Rabbitmq unroutable messages
                 description: A queue has unroutable messages
                 query: 'increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0'
@@ -849,7 +879,7 @@ groups:
                 description: Queue has no consumer
                 query: 'rabbitmq_queue_consumers == 0'
                 severity: critical
-                for: 1m    # allow a short service restart
+                for: 1m    # allows a short service restart
               - name: Rabbitmq too many consumers
                 description: Queue should have only 1 consumer
                 query: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
@@ -1494,7 +1524,7 @@ groups:
                 description: "Service: `{{ $labels.service_name }}` Healthcheck: `{{ $labels.service_id }}`"
                 query: 'consul_catalog_service_node_healthy == 0'
                 severity: critical
-                for: 1m   # allow a short service restart
+                for: 1m   # allows a short service restart
               - name: Consul missing master node
                 description: Numbers of consul raft peers should be 3, in order to preserve quorum.
                 query: 'consul_raft_peers < 3'
