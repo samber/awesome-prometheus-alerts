@@ -450,6 +450,19 @@ groups:
                 description: RAID Array have unsynchronized blocks
                 query: 'netdata_md_mismatch_cnt_unsynchronized_blocks_average > 1024'
                 severity: warning
+                for: 2m
+              - name: Netdata disk reallocated sectors
+                description: Reallocated sectors on disk
+                query: 'increase(netdata_smartd_log_reallocated_sectors_count_sectors_average[1m] > 0'
+                severity: info
+              - name: Netdata disk current pending sector
+                description: Disk current pending sector
+                query: 'netdata_smartd_log_current_pending_sector_count_sectors_average > 0'
+                severity: warning
+              - name: Netdata reported uncorrectable disk sectors
+                description: Reported uncorrectable disk sectors
+                query: 'increase(netdata_smartd_log_offline_uncorrectable_sector_count_sectors_average[2m]) > 0'
+                severity: warning
 
 
   - name: Databases and brokers
