@@ -446,6 +446,10 @@ groups:
                 description: Netdata predicted disk full in 24 hours
                 query: 'predict_linear(netdata_disk_space_GB_average{dimension=~"avail|cached"}[3h], 24 * 3600) < 0'
                 severity: warning
+              - name: Netdata MD mismatch cnt unscunchronized blocks
+                description: RAID Array have unsynchronized blocks
+                query: 'netdata_md_mismatch_cnt_unsynchronized_blocks_average > 1024'
+                severity: warning
 
 
   - name: Databases and brokers
@@ -487,6 +491,10 @@ groups:
                 query: increase(mysql_global_status_slow_queries[1m]) > 0
                 severity: warning
                 for: 2m
+              - name: MySQL InnoDB log waits
+                description: MySQL innodb log writes stalling
+                query: rate(mysql_global_status_innodb_log_waits[15m]) > 10
+                severity: warning
               - name: MySQL restarted
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
                 query: 'mysql_global_status_uptime < 60'
@@ -1514,6 +1522,23 @@ groups:
         exporters:
           - name: Embedded exporter
             rules:
+              - name: Nomad job failed
+                description: Nomad job failed
+                query: 'nomad_nomad_job_summary_failed > 0'
+                severity: warning
+              - name: Nomad job lost
+                description: Nomad job lost
+                query: 'nomad_nomad_job_summary_lost > 0'
+                severity: warning
+              - name: Nomad job queued
+                description: Nomad job queued
+                query: 'nomad_nomad_job_summary_queued > 0'
+                severity: warning
+                for: 2m
+              - name: Nomad blocked evaluation
+                description: Nomad blocked evaluation
+                query: 'nomad_nomad_blocked_evals_total_blocked > 0'
+                severity: warning
 
       - name: Consul
         exporters:
