@@ -1585,7 +1585,7 @@ groups:
                 severity: critical
               - name: Etcd high number of leader changes
                 description: Etcd leader changed more than 2 times during 10 minutes
-                query: 'increase(etcd_server_leader_changes_seen_total[10]) > 2'
+                query: 'increase(etcd_server_leader_changes_seen_total[10m]) > 2'
                 severity: warning
               - name: Etcd high number of failed GRPC requests
                 description: More than 1% GRPC request failure detected in Etcd
