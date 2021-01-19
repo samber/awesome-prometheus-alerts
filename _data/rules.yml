@@ -695,9 +695,14 @@ groups:
                 description: Redis has not been backuped for 24 hours
                 query: 'time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 24'
                 severity: critical
-              - name: Redis out of memory
-                description: Redis is running out of memory (> 90%)
+              - name: Redis out of memory (total system memory version)
+                description: Redis is running out of system memory (> 90%)
                 query: 'redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90'
+                severity: warning
+                for: 2m
+              - name: Redis out of memory (maxmemory version)
+                description: Redis is running out of configured maxmemory (> 90%)
+                query: 'redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90'
                 severity: warning
                 for: 2m
               - name: Redis too many connections
