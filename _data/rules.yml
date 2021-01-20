@@ -1819,6 +1819,28 @@ groups:
                 severity: warning
                 for: 2m
 
+      - name: SSL/TLS
+        exporters:
+          - name: ssl_exporter
+            doc_url: https://github.com/ribbybibby/ssl_exporter
+            rules: 
+              - name: SSL probe failed
+                description: Failed to fetch SSL information {{ $labels.instance }}
+                query: ssl_probe_success == 0
+                severity: critical
+              - name: OSCP status unknown
+                description: Failed to get the OSCP status {{ $labels.instance }}
+                query: ssl_ocsp_response_status == 2
+                severity: warning
+              - name: SSL revoked
+                description: SSL certificate revoked {{ $labels.instance }}
+                query: ssl_ocsp_response_status == 1
+                severity: critical
+              - name: Certificate expiry (< 7days)
+                description: '{{ $labels.instance }} Certificate is expiring whithin the next 7 days: {{ $value | humanizeDuration }}'
+                query: ssl_verified_cert_not_after{chain_no="0"} - time() < 86400 * 7
+                severity: critical
+
       - name: Juniper
         exporters:
           - name: czerwonk/junos_exporter
