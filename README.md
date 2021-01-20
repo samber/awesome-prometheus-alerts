@@ -64,6 +64,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [ZFS](https://awesome-prometheus-alerts.grep.to/rules#zfs)
 - [OpenEBS](https://awesome-prometheus-alerts.grep.to/rules#openebs)
 - [Minio](https://awesome-prometheus-alerts.grep.to/rules#minio)
+- [SSL/TLS](https://awesome-prometheus-alerts.grep.to/rules#ssl/tls)
 - [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 - [CoreDNS](https://awesome-prometheus-alerts.grep.to/rules#coredns)
 
