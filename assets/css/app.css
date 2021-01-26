@@ -1,11 +1,33 @@
-.clipboard-single,
-.clipboard-multiple {
-    float: right;
+
+a.anchor {
+    font-size: 15px;
+    vertical-align: middle;
+    color: darkblue;
+    display: inline-block;
+    padding-bottom: 5px;
+    margin-right: 5px;
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+h2:hover a.anchor,
+h3:hover a.anchor,
+h4:hover a.anchor {
+    opacity: 1;
+}
+
+summary {
+    position: relative;
+    padding-left: 60px;
+    padding-right: 50px;
+    margin-bottom: 15px;
+    font-size: 15px;
+}
+
+summary .clipboard-single,
+summary .clipboard-multiple {
+    right: 0;
+    position: absolute;
     cursor: pointer;
     font-size: 14px;
     color: #606c71;
-}
-
-details summary {
-    cursor: pointer;
 }

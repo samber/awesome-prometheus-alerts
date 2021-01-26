@@ -2,22 +2,6 @@
   ul {
     list-style: none;
   }
-
-  a.anchor {
-    font-size: 15px;
-    vertical-align: middle;
-    color: darkblue;
-    display: inline-block;
-    padding-bottom: 5px;
-    margin-right: 5px;
-    opacity: 0;
-    transition: opacity 0.4s;
-  }
-  h2:hover a.anchor,
-  h3:hover a.anchor,
-  h4:hover a.anchor {
-    opacity: 1;
-  }
 </style>
 
 <div style="padding: 20px 20px 10px 20px; border: solid grey 1px; border-radius: 10px;">
@@ -85,12 +69,11 @@
               {{ groupIndex}}.{{ serviceIndex }}.{{ ruleIndex }}.
               {{ rule.name }}
             </h4>
-            <details id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}" open="">
-              <summary>
-                {{ rule.description }}
-                <span class="clipboard-single" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
-              </summary>
-              <p>
+            <summary>
+              {{ rule.description }}
+              <span class="clipboard-single" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
+            </summary>
+            <div id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}">
               {% assign ruleName = rule.name | split: ' ' %}
               {% capture ruleNameCamelcase %}{% for word in ruleName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
 
@@ -107,8 +90,7 @@
 
 {% endhighlight %}
 
-              </p>
-            </details>
+            </div>
             <br/>
           </li>
           {% endfor %}
