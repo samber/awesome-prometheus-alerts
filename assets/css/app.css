@@ -23,8 +23,12 @@ summary {
     font-size: 15px;
 }
 
-summary .clipboard-single,
-summary .clipboard-multiple {
+h2 {
+    position: relative;
+}
+
+.clipboard-single,
+.clipboard-multiple {
     right: 0;
     position: absolute;
     cursor: pointer;
