@@ -307,7 +307,7 @@ groups:
                 for: 2m
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
-                query: '(1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance)) * 100) > 80'
+                query: '(1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80'
                 severity: warning
                 for: 2m
               - name: Container Volume IO usage
