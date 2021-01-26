@@ -2,6 +2,22 @@
   ul {
     list-style: none;
   }
+
+  a.anchor {
+    font-size: 15px;
+    vertical-align: middle;
+    color: darkblue;
+    display: inline-block;
+    padding-bottom: 5px;
+    margin-right: 5px;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  h2:hover a.anchor,
+  h3:hover a.anchor,
+  h4:hover a.anchor {
+    opacity: 1;
+  }
 </style>
 
 <div style="padding: 20px 20px 10px 20px; border: solid grey 1px; border-radius: 10px;">
@@ -31,6 +47,7 @@
       <li>
         {% assign serviceId = service.name | replace: " ", "-" | downcase %}
         <h2 id="{{ serviceId }}">
+          <a class="anchor" href="#{{ serviceId }}">#</a>
           {{ groupIndex }}.
           {{ serviceIndex }}.
           {{ service.name }}
@@ -63,7 +80,8 @@
           {% assign ruleIndex = forloop.index %}
           {% assign comments = rule.comments | strip | newline_to_br | split: '<br />' %}
           <li>
-            <h4>
+            <h4 id="rule-{{ serviceId }}-{{ ruleIndex }}">
+              <a class="anchor" href="#rule-{{ serviceId }}-{{ ruleIndex }}">#</a>
               {{ groupIndex}}.{{ serviceIndex }}.{{ ruleIndex }}.
               {{ rule.name }}
             </h4>
