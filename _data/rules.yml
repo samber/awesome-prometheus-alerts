@@ -1105,17 +1105,17 @@ groups:
                 query: 'sum(kafka_consumergroup_lag) by (consumergroup) > 50'
                 severity: critical
                 for: 1m
-          - name:  linkedin/Burrow 
+          - name: linkedin/Burrow
             doc_url: https://github.com/linkedin/Burrow
             rules:
-              - name: Kafka Offset Decreased
-                description: Kafka topic offset was decreased
-                query: 'delta(kafka_burrow_partition_current_offset[1m])<0'
+              - name: Kafka topic offset decreased
+                description: Kafka topic offset has decreased
+                query: 'delta(kafka_burrow_partition_current_offset[1m]) < 0'
                 severity: warning
-              - name: Kafka Consumer Lag
-                description: Lag for consumer exist more than 30 minutes and it increasing
+              - name: Kafka consumer lag
+                description: Kafka consumer has a 30 minutes and increasing lag
                 query: |
-                  'kafka_burrow_topic_partition_offset - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset  >= (kafka_burrow_topic_partition_offset offset 15m - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset offset 15m) 
+                  'kafka_burrow_topic_partition_offset - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset >= (kafka_burrow_topic_partition_offset offset 15m - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset offset 15m)
                     AND kafka_burrow_topic_partition_offset - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset > 0'
                 severity: warning
                 for: 15m
