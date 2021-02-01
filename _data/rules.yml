@@ -1111,14 +1111,13 @@ groups:
               - name: Kafka Offset Decreased
                 description: Kafka topic offset was decreased
                 query: 'delta(kafka_burrow_partition_current_offset[1m])<0'
-                severity: high
-                for: 3m
+                severity: warning
               - name: Kafka Consumer Lag
                 description: Lag for consumer exist more than 30 minutes and it increasing
                 query: |
                   'kafka_burrow_topic_partition_offset - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset  >= (kafka_burrow_topic_partition_offset offset 15m - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset offset 15m) 
                     AND kafka_burrow_topic_partition_offset - on(partition, cluster, topic) group_right() kafka_burrow_partition_current_offset > 0'
-                severity: high
+                severity: warning
                 for: 15m
 
   - name: Reverse proxies and load balancers
