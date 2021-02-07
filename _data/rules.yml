@@ -808,7 +808,7 @@ groups:
                 severity: warning
                 for: 2m
 
-      - name: RabbitMQ (official exporter)
+      - name: RabbitMQ
         exporters:
           - name: rabbitmq/rabbitmq-prometheus
             doc_url: https://github.com/rabbitmq/rabbitmq-prometheus

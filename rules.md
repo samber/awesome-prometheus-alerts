@@ -4,6 +4,7 @@
   }
 </style>
 
+<!-- CAUTIONS -->
 <div style="padding: 20px 20px 10px 20px; border: solid grey 1px; border-radius: 10px;">
   <h2 style="text-align:center;">⚠️ Caution ⚠️</h2>
 
@@ -21,6 +22,7 @@
 
 <h1></h1>
 
+<!-- RULES -->
 <ul>
   {% for group in site.data.rules.groups %}
   {% assign groupIndex = forloop.index %}
@@ -102,3 +104,31 @@
     {% endfor %}
   {% endfor %}
 </ul>
+
+
+
+<!-- NAVBAR -->
+<div id="rules-navbar" class="affix">
+  <h3>Menu</h3>
+  <ul>
+    {% for group in site.data.rules.groups %}
+      <li>
+        <h4>{{ group.name }}</h4>
+        <ul>
+          {% for service in group.services %}
+            {% assign serviceId = service.name | replace: " ", "-" | downcase %}
+            <li>
+              <a href="#{{ service.name | replace: " ", "-" | downcase }}">
+                👉 {{ service.name }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <script>
+    $('#rules-navbar').affix({offset: {top: 750} }).css('display', 'block');
+  </script>
+</div>
