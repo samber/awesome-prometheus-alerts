@@ -1090,6 +1090,26 @@ groups:
           - name: cloudflare/kafka_zookeeper_exporter
             doc_url: https://github.com/cloudflare/kafka_zookeeper_exporter
             rules:
+          - name:  dabealu/zookeeper-exporter
+            doc_url: https://github.com/dabealu/zookeeper-exporter
+            rules:
+              - name: Zookeeper Down
+                description: "Zookeeper down on instance {{ $labels.instance }}"
+                query: 'zk_up == 0'
+                severity: critical
+              - name: Zookeeper missing leader
+                description:  "Zookeeper cluster has no node marked as leader"
+                query: 'sum(zk_server_leader) == 0'
+                severity: critical
+              - name: Zookeeper Too Many Leaders
+                description: "Zookeeper cluster has too many nodes marked as leader"
+                query: 'sum(zk_server_leader) > 1'
+                severity: critical
+              - name: Zookeeper Not Ok
+                description: "Zookeeper instance is not ok"
+                query: 'zk_ruok == 0'
+                severity: warning
+                for: 3m
 
       - name: Kafka
         exporters:
