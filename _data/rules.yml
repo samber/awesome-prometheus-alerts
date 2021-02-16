@@ -1846,11 +1846,19 @@ groups:
                 description: 'Minio disk is offline'
                 query: 'minio_offline_disks > 0'
                 severity: critical
+              - name: Minio disk offline
+                description: 'Minio disk is offline'
+                query: 'minio_disks_offline > 0'
+                severity: critical
               - name: Minio storage space exhausted
                 description: 'Minio storage space is low (< 10 GB)'
                 query: 'minio_disk_storage_free_bytes / 1024 / 1024 / 1024 < 10'
                 severity: warning
                 for: 2m
+              - name: Minio disk space usage
+                description: 'Minio available free space is low (< 10%)'
+                query: disk_storage_available / disk_storage_total * 100
+                severity: warning
 
       - name: SSL/TLS
         exporters:
