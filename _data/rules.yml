@@ -1857,7 +1857,7 @@ groups:
                 for: 2m
               - name: Minio disk space usage
                 description: 'Minio available free space is low (< 10%)'
-                query: disk_storage_available / disk_storage_total * 100
+                query: disk_storage_available / disk_storage_total * 100 < 10
                 severity: warning
 
       - name: SSL/TLS
