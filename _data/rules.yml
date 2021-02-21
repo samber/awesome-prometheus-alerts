@@ -1013,12 +1013,12 @@ groups:
                 severity: warning
               - name: 'Cassandra compaction executor blocked tasks'
                 description: 'Some Cassandra compaction executor tasks are blocked - {{ $labels.cassandra_cluster }}'
-                query: 'avg(avg_over_time(cassandra_thread_pool_blocked_tasks{pool="CompactionExecutor"}[1m])) by (cassandra_cluster,instance) > 15'
+                query: 'avg_over_time(cassandra_thread_pool_blocked_tasks{pool="CompactionExecutor"}) > 15'
                 for: 2m
                 severity: warning
               - name: 'Cassandra flush writer blocked tasks'
                 description: 'Some Cassandra flush writer tasks are blocked - {{ $labels.cassandra_cluster }}'
-                query: 'avg(avg_over_time(cassandra_thread_pool_blocked_tasks{pool="MemtableFlushWriter"}[1m])) by (cassandra_cluster,instance) > 15'
+                query: 'avg_over_time(cassandra_thread_pool_blocked_tasks{pool="MemtableFlushWriter"}) > 15'
                 for: 2m
                 severity: warning
               - name: 'Cassandra connection timeouts total'
