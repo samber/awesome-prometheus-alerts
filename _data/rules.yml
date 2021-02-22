@@ -998,6 +998,63 @@ groups:
           - name: instaclustr/cassandra-exporter
             doc_url: https://github.com/instaclustr/cassandra-exporter
             rules:
+              - name: 'Cassandra Node is unavailable
+                description: 'Cassandra Node is unavailable - {{ $labels.cassandra_cluster }} {{ $labels.exported_endpoint }}'
+                query: 'sum(min_over_time(cassandra_endpoint_active{})) by (cassandra_cluster,instance,exported_endpoint) < 1'
+                severity: critical
+              - name: 'Cassandra many compaction tasks are pending'
+                description: 'Many Cassandra compaction tasks are pending - {{ $labels.cassandra_cluster }}'
+                query: 'cassandra_table_estimated_pending_compactions{} > 100'
+                severity: warning
+              - name: 'Cassandra commitlog pending tasks'
+                description: 'Cassandra commitlog pending tasks - {{ $labels.cassandra_cluster }}'
+                query: 'avg_over_time(cassandra_commit_log_pending_tasks{}[1m]) > 15'
+                for: 2m
+                severity: warning
+              - name: 'Cassandra compaction executor blocked tasks'
+                description: 'Some Cassandra compaction executor tasks are blocked - {{ $labels.cassandra_cluster }}'
+                query: 'avg_over_time(cassandra_thread_pool_blocked_tasks{pool="CompactionExecutor"}) > 15'
+                for: 2m
+                severity: warning
+              - name: 'Cassandra flush writer blocked tasks'
+                description: 'Some Cassandra flush writer tasks are blocked - {{ $labels.cassandra_cluster }}'
+                query: 'avg_over_time(cassandra_thread_pool_blocked_tasks{pool="MemtableFlushWriter"}) > 15'
+                for: 2m
+                severity: warning
+              - name: 'Cassandra connection timeouts total'
+                description: 'Some connection between nodes are ending in timeout - {{ $labels.cassandra_cluster }}'
+                query: 'avg(avg_over_time(cassandra_client_request_timeouts_total{}[1m])) by (cassandra_cluster,instance) > 5'
+                for: 2m
+                severity: critical
+              - name: 'Cassandra storage exceptions'
+                description: 'Something is going wrong with cassandra storage - {{ $labels.cassandra_cluster }}'
+                query: 'changes(cassandra_storage_exceptions_total{}[1m]) > 1'
+                severity: critical
+              - name: 'Cassandra tombstone dump'
+                description: 'Cassandra tombstone dump - {{ $labels.cassandra_cluster }}'
+                query: 'avg(avg_over_time(cassandra_table_tombstones_scanned{quantile="0.99"}[1m])) by (instance,cassandra_cluster,keyspace) > 100'
+                for: 2m
+                severity: critical
+              - name: 'Cassandra client request unvailable write'
+                description: 'Some Cassandra client requests are unvailable to write - {{ $labels.cassandra_cluster }}'
+                query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="write"}[1m]) > 0'
+                for: 2m
+                severity: critical
+              - name: 'Cassandra client request unvailable read'
+                description: 'Some Cassandra client requests are unvailable to read - {{ $labels.cassandra_cluster }}'
+                query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="read"}[1m]) > 0'
+                for: 2m
+                severity: critical
+              - name: 'Cassandra client request write failure'
+                description: 'Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}'
+                query: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 0'
+                for: 2m
+                severity: critical
+              - name: 'Cassandra client request read failure'
+                description: 'Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}'
+                query: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 0'
+                for: 2m
+                severity: critical
 
           - name: criteo/cassandra_exporter
             doc_url: https://github.com/criteo/cassandra_exporter
