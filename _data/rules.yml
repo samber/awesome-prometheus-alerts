@@ -931,6 +931,7 @@ groups:
                 description: "The heap usage is over 90%"
                 query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90'
                 severity: critical
+                for: 2m
               - name: Elasticsearch Heap Usage warning
                 description: "The heap usage is over 80%"
                 query: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80'
@@ -954,12 +955,12 @@ groups:
                 query: 'elasticsearch_cluster_health_status{color="yellow"} == 1'
                 severity: warning
               - name: Elasticsearch Healthy Nodes
-                description: "Number Healthy Nodes less then number_of_nodes"
-                query: 'elasticsearch_cluster_health_number_of_nodes < number_of_nodes'
+                description: "Missing node in Elasticsearch cluster"
+                query: 'elasticsearch_cluster_health_number_of_nodes < 3'
                 severity: critical
               - name: Elasticsearch Healthy Data Nodes
-                description: "Number Healthy Data Nodes less then number_of_data_nodes"
-                query: 'elasticsearch_cluster_health_number_of_data_nodes < number_of_data_nodes'
+                description: "Missing data node in Elasticsearch cluster"
+                query: 'elasticsearch_cluster_health_number_of_data_nodes < 3'
                 severity: critical
               - name: Elasticsearch relocating shards
                 description: "Elasticsearch is relocating shards"
