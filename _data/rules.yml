@@ -1957,7 +1957,7 @@ groups:
             rules:
               - name: CoreDNS Panic Count
                 description: Number of CoreDNS panics encountered
-                query: 'increase(coredns_panic_count_total[1m]) > 0'
+                query: 'increase(coredns_panics_total[1m]) > 0'
                 severity: critical
 
 
