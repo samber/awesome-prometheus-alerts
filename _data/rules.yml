@@ -211,8 +211,8 @@ groups:
                 query: '(1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80'
                 severity: warning
                 for: 2m
-              - name: Host SystemD service crashed
-                description: "SystemD service crashed"
+              - name: Host systemd service crashed
+                description: "systemd service crashed"
                 query: 'node_systemd_unit_state{state="failed"} == 1'
                 severity: warning
               - name: Host physical component too hot
