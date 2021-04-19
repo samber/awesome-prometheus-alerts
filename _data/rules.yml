@@ -1978,3 +1978,23 @@ groups:
                 description: Thanos compaction has not run in 24 hours.
                 query: '(time() - thanos_objstore_bucket_last_successful_upload_time) > 24*60*60'
                 severity: critical
+
+      - name: Freeswitch
+        doc_url: https://pypi.org/project/prometheus-freeswitch-exporter
+        exporters:
+          - rules:
+              - name: Freeswitch down
+                description: Freeswitch is unresponsive
+                query: 'freeswitch_up == 0'
+                severity: critical
+                for: 1m
+              - name: Freeswitch Sessions Warning
+                description: 'High sessions uage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                query: '(freeswitch_session_active * 100 / freeswitch_session_limit) > 80'
+                severity: warning
+                for: 10m
+              - name: Freeswitch Sessions Critical
+                description: 'High sessions uage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                query: '(freeswitch_session_active * 100 / freeswitch_session_limit) > 90'
+                severity: critical
+                for: 5m
