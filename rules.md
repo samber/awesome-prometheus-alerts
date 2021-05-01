@@ -28,14 +28,16 @@
   {% assign groupIndex = forloop.index %}
     {% for service in group.services %}
     {% assign serviceIndex = forloop.index %}
+    {% assign nbrExporters = service.exporters | size %}
       {% for exporter in service.exporters %}
+      {% assign exporterIndex = forloop.index %}
       {% assign nbrRules = exporter.rules | size %}
       <li>
         {% assign serviceId = service.name | replace: " ", "-" | downcase %}
         <h2 id="{{ serviceId }}">
-          <a class="anchor" href="#{{ serviceId }}">#</a>
-          {{ groupIndex }}.
-          {{ serviceIndex }}.
+          <span id="{{ serviceId }}-{{ exporterIndex }}"></span>
+          <a class="anchor" href="#{{ serviceId }}-{{ exporterIndex }}">#</a>
+          {{ groupIndex }}.{{ serviceIndex }}.{% if nbrExporters > 1 %}{{ exporterIndex }}.{% endif %}
           {{ service.name }}
           {% if exporter.name %}:
           {% if exporter.doc_url %}
@@ -51,7 +53,7 @@
             <small style="font-size: 60%; vertical-align: middle; margin-left: 10px;">
               ({{ nbrRules }} rules)
             </small>
-            <span class="clipboard-multiple" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}">[copy section]</span>
+            <span class="clipboard-multiple" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}-exporter-{{ exporterIndex }}">[copy section]</span>
           {% endif %}
         </h2>
 
@@ -66,16 +68,17 @@
           {% assign ruleIndex = forloop.index %}
           {% assign comments = rule.comments | strip | newline_to_br | split: '<br />' %}
           <li>
-            <h4 id="rule-{{ serviceId }}-{{ ruleIndex }}">
-              <a class="anchor" href="#rule-{{ serviceId }}-{{ ruleIndex }}">#</a>
-              {{ groupIndex}}.{{ serviceIndex }}.{{ ruleIndex }}.
+            <h4 id="rule-{{ serviceId }}-{{ exporterIndex }}-{{ ruleIndex }}">
+              <span id="rule-{{ serviceId }}-{{ ruleIndex }}"></span><!-- @deprecated -->
+              <a class="anchor" href="#rule-{{ serviceId }}-{{ exporterIndex }}-{{ ruleIndex }}">#</a>
+              {{ groupIndex}}.{{ serviceIndex }}.{% if nbrExporters > 1 %}{{ exporterIndex }}.{% endif %}{{ ruleIndex }}.
               {{ rule.name }}
             </h4>
             <summary>
               {{ rule.description }}
-              <span class="clipboard-single" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
+              <span class="clipboard-single" data-clipboard-target-id="group-{{ groupIndex }}-service-{{ serviceIndex }}-exporter-{{ exporterIndex }}-rule-{{ ruleIndex }}" onclick="event.preventDefault();">[copy]</span>
             </summary>
-            <div id="group-{{ groupIndex }}-service-{{ serviceIndex }}-rule-{{ ruleIndex }}">
+            <div id="group-{{ groupIndex }}-service-{{ serviceIndex }}-exporter-{{ exporterIndex }}-rule-{{ ruleIndex }}">
               {% assign ruleName = rule.name | split: ' ' %}
               {% capture ruleNameCamelcase %}{% for word in ruleName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
 
@@ -116,7 +119,6 @@
         <h4>{{ group.name }}</h4>
         <ul>
           {% for service in group.services %}
-            {% assign serviceId = service.name | replace: " ", "-" | downcase %}
             <li>
               <a href="#{{ service.name | replace: " ", "-" | downcase }}">
                 👉 {{ service.name }}
