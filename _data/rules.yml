@@ -1498,7 +1498,7 @@ groups:
                 for: 2m
               - name: Kubernetes out of capacity
                 description: "{{ $labels.node }} is out of capacity"
-                query: 'sum(kube_pod_info) by (node) / sum(kube_node_status_allocatable_pods) by (node) * 100 > 90'
+                query: 'sum by (node) ((kube_pod_status_phase{phase="Running"} == 1) + on(pod, namespace) group_left(node) (0 * kube_pod_info)) / sum(kube_node_status_allocatable_pods) by (node) * 100 > 90'
                 severity: warning
                 for: 2m
               - name: Kubernetes Job failed
