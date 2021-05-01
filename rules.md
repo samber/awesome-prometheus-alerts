@@ -88,7 +88,7 @@
       severity: {{ rule.severity }}
     annotations:
       summary: {{ rule.name }} (instance {% raw %}{{ $labels.instance }}{% endraw %})
-      description: {{ rule.description }}\n  VALUE = {% raw %}{{ $value }}{% endraw %}\n  LABELS: {% raw %}{{ $labels }}{% endraw %}
+      description: "{{ rule.description | replace: '"', '\"' }}\n  VALUE = {% raw %}{{ $value }}{% endraw %}\n  LABELS: {% raw %}{{ $labels }}{% endraw %}"
 
 {% endhighlight %}
 
