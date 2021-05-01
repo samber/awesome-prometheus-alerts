@@ -67,6 +67,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [SSL/TLS](https://awesome-prometheus-alerts.grep.to/rules#ssl/tls)
 - [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 - [CoreDNS](https://awesome-prometheus-alerts.grep.to/rules#coredns)
+- [FreeSwitch](https://awesome-prometheus-alerts.grep.to/rules#freeswitch)
 
 #### Other
 
