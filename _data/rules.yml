@@ -594,7 +594,7 @@ groups:
                 severity: critical
               - name: Postgresql replication lag bytes
                 description: Postgres Replication lag (in bytes) is high
-                query: '(pg_xlog_position_bytes and pg_replication_is_replica == 0) - GROUP_RIGHT(instance) (pg_xlog_position_bytes and pg_replication_is_replica == 1) > 1e+09'
+                query: '(pg_xlog_position_bytes and pg_replication_is_replica == 0) - on(environment) group_right(instance) (pg_xlog_position_bytes and pg_replication_is_replica == 1) > 1e+09'
                 severity: critical
               - name: Postgresql unused replication slot
                 description: Unused Replication Slots
