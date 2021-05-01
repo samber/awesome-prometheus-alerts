@@ -3,14 +3,14 @@ $(function () {
         text: function (trigger) {
             const id = trigger.getAttribute('data-clipboard-target-id');
             const html = $("#" + id + " .highlight");
-            return html.text();
+            return html.text() + '\n';
         },
     });
     var clipboardCategories = new ClipboardJS('.clipboard-multiple', {
         text: function (trigger) {
             const id = trigger.getAttribute('data-clipboard-target-id');
             const html = $("[id^=" + id + "] .highlight");
-            return html.append("\n\n").text();
+            return Array.from(html.map((i, target) => $(target).text())).join('\n\n');
         },
     });
 });
