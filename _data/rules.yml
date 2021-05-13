@@ -2001,3 +2001,37 @@ groups:
                 description: Thanos compaction has not run in 24 hours.
                 query: '(time() - thanos_objstore_bucket_last_successful_upload_time) > 24*60*60'
                 severity: critical
+      - name: Loki
+        exporters:
+          - rules:
+              - name: LokiProcTooManyRestarts
+                query: changes(process_start_time_seconds{job=~"loki"}[15m]) > 2
+                for: 0m
+                severity: warning
+                annotations:
+                description: A loki process had too many restarts (target {{ $labels.instance }})
+              - name: CortexRulerConfigurationReloadFailure
+                query: cortex_ruler_config_last_reload_successful != 1
+                for: 0m
+                severity: warning
+                annotations:
+                description: Cortex ruler configuration reload failure (instance {{ $labels.instance }})
+              - name: CortexNotConnectedToAlertmanager
+                query: cortex_prometheus_notifications_alertmanagers_discovered < 1
+                for: 0m
+                severity: severe
+                annotations:
+                description: Cortex not connected to alertmanager (instance {{ $labels.instance }})
+              - name: CortexNotificationAreBeingDropped
+                query: rate(cortex_prometheus_notifications_dropped_total[5m]) > 0
+                for: 0m
+                severity: severe
+                annotations:
+                description: Cortex notification are being dropped due to errors (instance {{ $labels.instance }})
+              - name: CortexNotificationError
+                query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0
+                for: 0m
+                severity: severe
+                annotations:
+                description: Cortex is failing when sengin alert notifications (instance {{ $labels.instance }})
+                
