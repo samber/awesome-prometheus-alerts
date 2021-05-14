@@ -1801,7 +1801,11 @@ groups:
                 query: 'histogram_quantile(0.99, rate(istio_request_duration_milliseconds_bucket[1m])) > 1'
                 severity: warning
                 for: 1m
-
+              - name: Istio Pilot Duplicate Entry
+                description: Istio pilot duplicate entry error.
+                query: 'sum(irate(pilot_duplicate_envoy_clusters{}[5m])) > 0'
+                severity: critical
+                for: 1m
 
   - name: Network and storage
     services:
