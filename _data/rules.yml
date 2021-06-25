@@ -836,12 +836,12 @@ groups:
                 query: 'rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90'
                 severity: warning
                 for: 2m
-              - name: Rabbitmq too much unack
-                description: Too much unacknowledged messages
+              - name: Rabbitmq too many unack messages
+                description: Too many unacknowledged messages
                 query: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
                 severity: warning
                 for: 1m
-              - name: Rabbitmq too much connections
+              - name: Rabbitmq too many connections
                 description: The total connections of a node is too high
                 query: 'rabbitmq_connections > 1000'
                 severity: warning
