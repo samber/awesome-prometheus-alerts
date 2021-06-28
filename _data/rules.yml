@@ -1299,13 +1299,9 @@ groups:
                 query: sum by (proxy) (rate(haproxy_backend_retry_warnings_total[1m])) > 10
                 severity: warning
                 for: 2m
-              - name: HAProxy proxy down
-                description: HAProxy proxy is down
-                query: haproxy_backend_up == 0
-                severity: critical
-              - name: HAProxy server down
-                description: HAProxy backend is down
-                query: haproxy_backend_active_servers == 0
+              - name: HAproxy has no alive backends
+                description: HAProxy has no alive active or backup backends for {{ $labels.proxy }}
+                query: haproxy_backend_active_servers + haproxy_backend_backup_servers == 0
                 severity: critical
               - name: HAProxy frontend security blocked requests
                 description: HAProxy is blocking requests for security reason
