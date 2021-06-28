@@ -1295,7 +1295,7 @@ groups:
                 severity: warning
                 for: 1m
               - name: HAProxy retry high
-                description: High rate of retry on {{ $labels.fqdn }}/{{ $labels.backend }} backend
+                description: High rate of retry on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}
                 query: sum by (proxy) (rate(haproxy_backend_retry_warnings_total[1m])) > 10
                 severity: warning
                 for: 2m
