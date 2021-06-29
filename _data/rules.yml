@@ -1441,6 +1441,10 @@ groups:
           - name: bakins/php-fpm-exporter
             doc_url: https://github.com/bakins/php-fpm-exporter
             rules:
+              - name: PHP-FPM max-children reached
+                description: PHP-FPM reached max children - {{ $labels.instance }}
+                query: 'sum(phpfpm_max_children_reached_total) by (instance) > 0'
+                severity: warning
 
       - name: JVM
         exporters:
