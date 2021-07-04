@@ -72,6 +72,8 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 #### Other
 
 - [Thanos](https://awesome-prometheus-alerts.grep.to/rules#thanos)
+- [Loki](https://awesome-prometheus-alerts.grep.to/rules#loki)
+- [Cortex](https://awesome-prometheus-alerts.grep.to/rules#cortex)
 
 ## 🤝 Contributing
 
