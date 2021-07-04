@@ -1247,22 +1247,22 @@ groups:
             rules:
               - name: HAProxy high HTTP 4xx error rate backend
                 description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: '((sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5'
+                query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate backend
                 description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
+                query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 4xx error rate server
                 description: Too many HTTP requests with status 4xx (> 5%) on server {{ $labels.server }}
-                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
+                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate server
                 description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
-                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
+                query: ((sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5
                 severity: critical
                 for: 1m
               - name: HAProxy server response errors
@@ -1279,33 +1279,29 @@ groups:
                 description: Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be to high.
                 query: (sum by (proxy) (rate(haproxy_server_connection_errors_total[1m]))) > 100
                 severity: critical
-              - name: HAProxy backend max active session
-                description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
-                query: avg_over_time(((sum by (proxy) (haproxy_server_max_sessions)) / (sum by (proxy) (haproxy_server_limit_sessions))) [2m:]) * 100 > 80
+              - name: HAProxy backend max active session > 80%
+                description: Session limit from backend {{ $labels.proxy }} to server {{ $labels.server }} reached 80% of limit - {{ $value | printf "%.2f"}}%
+                query: ((haproxy_server_max_sessions >0) * 100) / (haproxy_server_limit_sessions > 0) > 80
                 severity: warning
                 for: 2m
               - name: HAProxy pending requests
-                description: Some HAProxy requests are pending on {{ $labels.fqdn }}/{{ $labels.backend }} backend
+                description: Some HAProxy requests are pending on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}
                 query: sum by (proxy) (rate(haproxy_backend_current_queue[2m])) > 0
                 severity: warning
                 for: 2m
               - name: HAProxy HTTP slowing down
-                description: Average request time is increasing
+                description: Average request time is increasing - {{ $value | printf "%.2f"}}
                 query: avg by (proxy) (haproxy_backend_max_total_time_seconds) > 1
                 severity: warning
                 for: 1m
               - name: HAProxy retry high
-                description: High rate of retry on {{ $labels.fqdn }}/{{ $labels.backend }} backend
+                description: High rate of retry on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}
                 query: sum by (proxy) (rate(haproxy_backend_retry_warnings_total[1m])) > 10
                 severity: warning
                 for: 2m
-              - name: HAProxy proxy down
-                description: HAProxy proxy is down
-                query: haproxy_backend_up == 0
-                severity: critical
-              - name: HAProxy server down
-                description: HAProxy backend is down
-                query: haproxy_backend_active_servers == 0
+              - name: HAproxy has no alive backends
+                description: HAProxy has no alive active or backup backends for {{ $labels.proxy }}
+                query: haproxy_backend_active_servers + haproxy_backend_backup_servers == 0
                 severity: critical
               - name: HAProxy frontend security blocked requests
                 description: HAProxy is blocking requests for security reason
