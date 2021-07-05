@@ -92,7 +92,7 @@ receivers:
         text: "{{ range .Alerts }}<!channel> {{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}"
 
   - name: "pager"
-    webhook_config:
+    webhook_configs:
       - url: http://a.b.c.d:8080/send/sms
         send_resolved: true
 
