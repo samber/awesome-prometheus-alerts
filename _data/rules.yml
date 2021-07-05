@@ -1803,9 +1803,8 @@ groups:
                 for: 1m
               - name: Istio Pilot Duplicate Entry
                 description: Istio pilot duplicate entry error.
-                query: 'sum(irate(pilot_duplicate_envoy_clusters{}[5m])) > 0'
+                query: 'sum(rate(pilot_duplicate_envoy_clusters{}[5m])) > 0'
                 severity: critical
-                for: 1m
 
   - name: Network and storage
     services:
