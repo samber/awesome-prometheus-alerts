@@ -1700,7 +1700,7 @@ groups:
                 severity: critical
                 for: 2m
               - name: Etcd GRPC requests slow
-                description: GRPC requests slowing down, 99th percentil is over 0.15s
+                description: GRPC requests slowing down, 99th percentile is over 0.15s
                 query: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
                 severity: warning
                 for: 2m
@@ -1715,12 +1715,12 @@ groups:
                 severity: critical
                 for: 2m
               - name: Etcd HTTP requests slow
-                description: HTTP requests slowing down, 99th percentil is over 0.15s
+                description: HTTP requests slowing down, 99th percentile is over 0.15s
                 query: 'histogram_quantile(0.99, rate(etcd_http_successful_duration_seconds_bucket[1m])) > 0.15'
                 severity: warning
                 for: 2m
               - name: Etcd member communication slow
-                description: Etcd member communication slowing down, 99th percentil is over 0.15s
+                description: Etcd member communication slowing down, 99th percentile is over 0.15s
                 query: 'histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[1m])) > 0.15'
                 severity: warning
                 for: 2m
@@ -1730,12 +1730,12 @@ groups:
                 severity: warning
                 for: 2m
               - name: Etcd high fsync durations
-                description: Etcd WAL fsync duration increasing, 99th percentil is over 0.5s
+                description: Etcd WAL fsync duration increasing, 99th percentile is over 0.5s
                 query: 'histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[1m])) > 0.5'
                 severity: warning
                 for: 2m
               - name: Etcd high commit durations
-                description: Etcd commit duration increasing, 99th percentil is over 0.25s
+                description: Etcd commit duration increasing, 99th percentile is over 0.25s
                 query: 'histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[1m])) > 0.25'
                 severity: warning
                 for: 2m
