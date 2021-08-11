@@ -453,7 +453,7 @@ groups:
                 for: 2m
               - name: Netdata disk reallocated sectors
                 description: Reallocated sectors on disk
-                query: 'increase(netdata_smartd_log_reallocated_sectors_count_sectors_average[1m] > 0'
+                query: 'increase(netdata_smartd_log_reallocated_sectors_count_sectors_average[1m]) > 0'
                 severity: info
               - name: Netdata disk current pending sector
                 description: Disk current pending sector
