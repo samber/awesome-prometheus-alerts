@@ -2029,11 +2029,10 @@ groups:
                 severity: critical
               - name: Cortex ingester unhealthy
                 description: Cortex has an unhealthy ingester
-                query: (cortex_ring_members{state="Unhealthy", name="ingester"}) > 0
+                query: cortex_ring_members{state="Unhealthy", name="ingester"} > 0
                 severity: critical
-                for: 15m
               - name: Cortex frontend queries stuck
                 description: There are queued up queries in query-frontend.
-                query: sum by (job)(cortex_query_frontend_queue_length{job="cortex-query-frontend"}) > 0
+                query: sum by (job) (cortex_query_frontend_queue_length) > 0
                 severity: critical
                 for: 5m
