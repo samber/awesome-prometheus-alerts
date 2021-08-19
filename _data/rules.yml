@@ -2027,3 +2027,12 @@ groups:
                 description: Cortex is failing when sengin alert notifications (instance {{ $labels.instance }})
                 query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0
                 severity: critical
+              - name: Cortex ingester unhealthy
+                description: Cortex has an unhealthy ingester
+                query: cortex_ring_members{state="Unhealthy", name="ingester"} > 0
+                severity: critical
+              - name: Cortex frontend queries stuck
+                description: There are queued up queries in query-frontend.
+                query: sum by (job) (cortex_query_frontend_queue_length) > 0
+                severity: critical
+                for: 5m
