@@ -15,7 +15,8 @@ groups:
           - rules:
             - name: Prometheus job missing
               description: A Prometheus job has disappeared
-              query: 'absent(up{job="prometheus"})'
+              query: 'absent(
+              job="prometheus"})'
               severity: warning
             - name: Prometheus target missing
               description: A Prometheus target has disappeared. An exporter might be crashed.
@@ -1803,7 +1804,7 @@ groups:
                 for: 1m
 
 
-  - name: Network and storage
+  - name: Network, security and storage
     services:
       - name: Ceph
         exporters:
@@ -1989,10 +1990,6 @@ groups:
           - name: Embedded exporter
             doc_url: https://github.com/hashicorp/vault/blob/master/website/content/docs/configuration/telemetry.mdx#prometheus
             rules:
-              - name: Vault down
-                description: Vault instance is down on {{ $labels.instance }}
-                query: 'up{job="vault"} == 0'
-                severity: critical
               - name: Vault sealed
                 description: 'Vault instance is sealed on {{ $labels.instance }}'
                 query: 'vault_core_unsealed == 0'
