@@ -58,7 +58,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Linkerd](https://awesome-prometheus-alerts.grep.to/rules#linkerd)
 - [Istio](https://awesome-prometheus-alerts.grep.to/rules#istio)
 
-#### Network and storage
+#### Network, security and storage
 
 - [Ceph](https://awesome-prometheus-alerts.grep.to/rules#ceph)
 - [ZFS](https://awesome-prometheus-alerts.grep.to/rules#zfs)
@@ -68,6 +68,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 - [CoreDNS](https://awesome-prometheus-alerts.grep.to/rules#coredns)
 - [FreeSwitch](https://awesome-prometheus-alerts.grep.to/rules#freeswitch)
+- [Hashicorp Vault](https://awesome-prometheus-alerts.grep.to/rules#Hashicorp-Vault)
 
 #### Other
 
