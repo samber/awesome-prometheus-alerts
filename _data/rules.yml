@@ -1803,7 +1803,7 @@ groups:
                 for: 1m
 
 
-  - name: Network and storage
+  - name: Network, security and storage
     services:
       - name: Ceph
         exporters:
@@ -1982,6 +1982,26 @@ groups:
                 description: 'High sessions uage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
                 query: '(freeswitch_session_active * 100 / freeswitch_session_limit) > 90'
                 severity: critical
+                for: 5m
+
+      - name: Hashicorp Vault
+        exporters:
+          - name: Embedded exporter
+            doc_url: https://github.com/hashicorp/vault/blob/master/website/content/docs/configuration/telemetry.mdx#prometheus
+            rules:
+              - name: Vault sealed
+                description: 'Vault instance is sealed on {{ $labels.instance }}'
+                query: 'vault_core_unsealed == 0'
+                severity: critical
+              - name: Vault too many pending tokens
+                description: 'Too many pending tokens {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                query: 'avg(vault_token_create_count - vault_token_store_count) > 0'
+                severity: warning
+                for: 5m
+              - name: Vault too many infinity tokens
+                description: 'Too many infinity tokens {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                query: 'vault_token_count_by_ttl{creation_ttl="+Inf"} > 3'
+                severity: warning
                 for: 5m
 
   - name: Other
