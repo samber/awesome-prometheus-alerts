@@ -2031,6 +2031,34 @@ groups:
                 description: A loki process had too many restarts (target {{ $labels.instance }})
                 query: changes(process_start_time_seconds{job=~"loki"}[15m]) > 2
                 severity: warning
+              - name: Loki request errors
+                description: The {{ $labels.job }} and {{ $labels.route }} are experiencing errors
+                query: '100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10'
+                severity: critical
+                for: 15m
+              - name: Loki request panic
+                description: The {{ $labels.job }} is experiencing {{ printf "%.2f" $value }}% increase of panics
+                query: sum(increase(loki_panic_total[10m])) by (namespace, job) > 0
+                severity: critical
+                for: 5m
+              - name: Loki request latency
+                description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}s 99th percentile latency
+                query: (histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*"}[5m])) by (le)))  > 1
+                severity: critical
+                for: 5m
+      - name: Promtail
+        exporters:
+          - rules:
+              - name: Promtail request errors
+                description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}% errors.
+                query: '100 * sum(rate(promtail_request_duration_seconds_count{status_code=~"5..|failed"}[1m])) by (namespace, job, route, instance) / sum(rate(promtail_request_duration_seconds_count[1m])) by (namespace, job, route, instance) > 10'
+                severity: critical
+                for: 15m
+              - name: Promtail request latency
+                description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}s 99th percentile latency.
+                query: histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[5m])) by (le)) > 1
+                severity: critical
+                for: 15m
       - name: Cortex
         exporters:
           - rules:
