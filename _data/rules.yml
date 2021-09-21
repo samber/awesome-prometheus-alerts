@@ -2014,7 +2014,7 @@ groups:
           - rules:
               - name: Thanos compaction halted
                 description: Thanos compaction has failed to run and is now halted.
-                query: 'thanos_compactor_halted == 1'
+                query: 'thanos_compact_halted == 1'
                 severity: critical
               - name: Thanos compact bucket operation failure
                 description: Thanos compaction has failing storage operations
