@@ -2053,12 +2053,12 @@ groups:
                 description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}% errors.
                 query: '100 * sum(rate(promtail_request_duration_seconds_count{status_code=~"5..|failed"}[1m])) by (namespace, job, route, instance) / sum(rate(promtail_request_duration_seconds_count[1m])) by (namespace, job, route, instance) > 10'
                 severity: critical
-                for: 15m
+                for: 5m
               - name: Promtail request latency
                 description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}s 99th percentile latency.
                 query: histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[5m])) by (le)) > 1
                 severity: critical
-                for: 15m
+                for: 5m
       - name: Cortex
         exporters:
           - rules:
