@@ -12,11 +12,15 @@
 
 
 <h2>
-  AlertManager configuration
+  Hello world
 </h2>
 
 <a href="/alertmanager">
-  See here
+  AlertManager configuration
+</a>
+
+<a href="/sleep-peacefully">
+  Alerting time window
 </a>
 
 <h2>
