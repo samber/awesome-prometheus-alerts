@@ -291,6 +291,15 @@ groups:
                 description: A container has disappeared
                 query: 'time() - container_last_seen > 60'
                 severity: warning
+                comments: |
+                  This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
+              - name: Container absent
+                description: A container is absent for 5 min
+                query: 'absent(container_last_seen)'
+                severity: warning
+                for: 5m
+                comments: |
+                  This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
               - name: Container CPU usage
                 description: Container CPU usage is above 80%
                 query: '(sum(rate(container_cpu_usage_seconds_total[3m])) BY (instance, name) * 100) > 80'
