@@ -266,7 +266,7 @@ groups:
                 severity: warning
                 for: 1m
               - name: Host conntrack limit
-                description: 'The number of conntrack is approching limit'
+                description: 'The number of conntrack is approaching limit'
                 query: 'node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8'
                 severity: warning
                 for: 5m
@@ -446,7 +446,7 @@ groups:
                 description: Netdata predicted disk full in 24 hours
                 query: 'predict_linear(netdata_disk_space_GB_average{dimension=~"avail|cached"}[3h], 24 * 3600) < 0'
                 severity: warning
-              - name: Netdata MD mismatch cnt unscunchronized blocks
+              - name: Netdata MD mismatch cnt unsynchronized blocks
                 description: RAID Array have unsynchronized blocks
                 query: 'netdata_md_mismatch_cnt_unsynchronized_blocks_average > 1024'
                 severity: warning
@@ -534,8 +534,8 @@ groups:
                 description: PostgreSQL replication lag is going up (> 30s)
                 query: 'pg_replication_lag > 30 and ON(instance) pg_replication_is_replica == 1'
                 severity: critical
-              - name: Postgresql table not vaccumed
-                description: Table has not been vaccum for 24 hours
+              - name: Postgresql table not vacuumed
+                description: Table has not been vacuumed for 24 hours
                 query: 'time() - pg_stat_user_tables_last_autovacuum > 60 * 60 * 24'
                 severity: warning
               - name: Postgresql table not analyzed
@@ -647,7 +647,7 @@ groups:
           - name: spreaker/prometheus-pgbouncer-exporter
             doc_url: https://github.com/spreaker/prometheus-pgbouncer-exporter
             rules:
-              - name: PGBouncer active connectinos
+              - name: PGBouncer active connections
                 description: PGBouncer pools are filling up
                 query: 'pgbouncer_pools_server_active_connections > 200'
                 severity: warning
@@ -1271,12 +1271,12 @@ groups:
                 severity: critical
                 for: 1m
               - name: HAProxy backend connection errors
-                description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 100 req/s). Request throughput may be to high.
+                description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 100 req/s). Request throughput may be too high.
                 query: (sum by (proxy) (rate(haproxy_backend_connection_errors_total[1m]))) > 100
                 severity: critical
                 for: 1m
               - name: HAProxy server connection errors
-                description: Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be to high.
+                description: Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be too high.
                 query: (sum by (proxy) (rate(haproxy_server_connection_errors_total[1m]))) > 100
                 severity: critical
               - name: HAProxy backend max active session > 80%
@@ -1346,12 +1346,12 @@ groups:
                 severity: critical
                 for: 1m
               - name: HAProxy backend connection errors
-                description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 100 req/s). Request throughput may be to high.
+                description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 100 req/s). Request throughput may be too high.
                 query: 'sum by (backend) (rate(haproxy_backend_connection_errors_total[1m])) > 100'
                 severity: critical
                 for: 1m
               - name: HAProxy server connection errors
-                description: Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be to high.
+                description: Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be too high.
                 query: 'sum by (server) (rate(haproxy_server_connection_errors_total[1m])) > 100'
                 severity: critical
               - name: HAProxy backend max active session
@@ -1797,7 +1797,7 @@ groups:
                 severity: warning
                 for: 1m
               - name: Istio latency 99 percentile
-                description: Istio 1% slowest resquests are longer than 1s.
+                description: Istio 1% slowest requests are longer than 1s.
                 query: 'histogram_quantile(0.99, rate(istio_request_duration_milliseconds_bucket[1m])) > 1'
                 severity: warning
                 for: 1m
@@ -1854,8 +1854,8 @@ groups:
                 description: Some Ceph placement groups are incomplete. Please ensure that all the data are available.
                 query: 'ceph_pg_incomplete > 0'
                 severity: critical
-              - name: Ceph PG inconsistant
-                description: Some Ceph placement groups are inconsitent. Data is available but inconsistent across nodes.
+              - name: Ceph PG inconsistent
+                description: Some Ceph placement groups are inconsistent. Data is available but inconsistent across nodes.
                 query: ceph_pg_inconsistent > 0
                 severity: warning
               - name: Ceph PG activation long
@@ -1947,12 +1947,12 @@ groups:
                 description: The switch appears to be down
                 query: junos_up == 0
                 severity: critical
-              - name: Juniper high Bandwith Usage 1GiB
+              - name: Juniper high Bandwidth Usage 1GiB
                 description: Interface is highly saturated. (> 0.90GiB/s)
                 query: 'rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.90'
                 severity: critical
                 for: 1m
-              - name: Juniper high Bandwith Usage 1GiB
+              - name: Juniper high Bandwidth Usage 1GiB
                 description: Interface is getting saturated. (> 0.80GiB/s)
                 query: 'rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80'
                 severity: warning
@@ -1977,12 +1977,12 @@ groups:
                 query: 'freeswitch_up == 0'
                 severity: critical
               - name: Freeswitch Sessions Warning
-                description: 'High sessions uage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                description: 'High sessions usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
                 query: '(freeswitch_session_active * 100 / freeswitch_session_limit) > 80'
                 severity: warning
                 for: 10m
               - name: Freeswitch Sessions Critical
-                description: 'High sessions uage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                description: 'High sessions usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
                 query: '(freeswitch_session_active * 100 / freeswitch_session_limit) > 90'
                 severity: critical
                 for: 5m
@@ -2075,7 +2075,7 @@ groups:
                 query: rate(cortex_prometheus_notifications_dropped_total[5m]) > 0
                 severity: critical
               - name: Cortex notification error
-                description: Cortex is failing when sengin alert notifications (instance {{ $labels.instance }})
+                description: Cortex is failing when sending alert notifications (instance {{ $labels.instance }})
                 query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0
                 severity: critical
               - name: Cortex ingester unhealthy
