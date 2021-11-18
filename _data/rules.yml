@@ -1207,6 +1207,29 @@ groups:
                 severity: warning
                 for: 15m
 
+      - name: Solr
+        exporters:
+          - name: embedded exporter
+            doc_url: https://solr.apache.org/guide/8_11/monitoring-solr-with-prometheus-and-grafana.html
+            rules:
+              - name: Solr update errors
+                description: Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: 'increase(solr_metrics_core_update_handler_errors_total) > 1'
+                severity: critical
+              - name: Solr query errors
+                description: Solr has increased query errors in collection {{ $labels.collection }} for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: 'increase(solr_metrics_core_errors_total{category="QUERY"}[1m]) > 1'
+                severity: warning
+                for: 5m
+              - name: Solr replication errors
+                description: Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: 'increase(solr_metrics_core_errors_total{category="REPLICATION"}[1m]) > 1'
+                severity: critical
+              - name: Solr low live node count
+                description: Solr collection {{ $labels.collection }} has less than two live nodes for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: 'solr_collections_live_nodes < 2'
+                severity: critical
+
   - name: Reverse proxies and load balancers
     services:
       - name: Nginx
