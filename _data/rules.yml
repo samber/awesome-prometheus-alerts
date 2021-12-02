@@ -276,12 +276,12 @@ groups:
                 severity: warning
                 for: 5m
               - name: Host clock skew
-                description: 'Clock skew detected. Clock is out of sync.'
+                description: 'Clock skew detected. Clock is out of sync. Ensure NTP is configured correctly on this host.'
                 query: '(node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0)'
                 severity: warning
                 for: 2m
               - name: Host clock not synchronising
-                description: 'Clock not synchronising.'
+                description: 'Clock not synchronising. Ensure NTP is configured on this host.'
                 query: 'min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16'
                 severity: warning
                 for: 2m
