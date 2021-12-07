@@ -1577,16 +1577,16 @@ groups:
                 for: 1m
               - name: Kubernetes HPA scaling ability
                 description: Pod is unable to scale
-                query: 'kube_hpa_status_condition{status="false", condition="AbleToScale"} == 1'
+                query: 'kube_horizontalpodautoscaler_status_condition{status="false", condition="AbleToScale"} == 1'
                 severity: warning
                 for: 2m
               - name: Kubernetes HPA metric availability
                 description: HPA is not able to collect metrics
-                query: 'kube_hpa_status_condition{status="false", condition="ScalingActive"} == 1'
+                query: 'kube_horizontalpodautoscaler_status_condition{status="false", condition="ScalingActive"} == 1'
                 severity: warning
               - name: Kubernetes HPA scale capability
                 description: The maximum number of desired Pods has been hit
-                query: 'kube_hpa_status_desired_replicas >= kube_hpa_spec_max_replicas'
+                query: 'kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas'
                 severity: info
                 for: 2m
               - name: Kubernetes Pod not healthy
