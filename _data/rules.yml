@@ -312,7 +312,7 @@ groups:
                   This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
               - name: Container CPU usage
                 description: Container CPU usage is above 80%
-                query: '(sum(rate(container_cpu_usage_seconds_total[3m])) BY (instance, name) * 100) > 80'
+                query: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) > 80'
                 severity: warning
                 comments: |
                   cAdvisor can sometimes consume a lot of CPU, so this alert will fire constantly.
@@ -320,18 +320,18 @@ groups:
                 for: 2m
               - name: Container Memory usage
                 description: Container Memory usage is above 80%
-                query: '(sum(container_memory_working_set_bytes) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
+                query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
                 severity: warning
                 comments: See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
                 for: 2m
               - name: Container Volume usage
                 description: Container Volume usage is above 80%
-                query: '(1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80'
+                query: '(1 - (sum(container_fs_inodes_free{name!=""}) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80'
                 severity: warning
                 for: 2m
               - name: Container Volume IO usage
                 description: Container Volume IO usage is above 80%
-                query: '(sum(container_fs_io_current) BY (instance, name) * 100) > 80'
+                query: '(sum(container_fs_io_current{name!=""}) BY (instance, name) * 100) > 80'
                 severity: warning
                 for: 2m
               - name: Container high throttle rate
