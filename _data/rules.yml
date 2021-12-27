@@ -2127,45 +2127,35 @@ groups:
                 severity: critical
                 for: 5m
 
-      - name: Jenkins Metrics (Plugin)
+      - name: Jenkins
         exporters:
-          - rules:
-              - name: JenkinsOffline
+          - name: Metric plugin
+            doc_url: https://plugins.jenkins.io/prometheus/
+            rules:
+              - name: Jenkins offline
+                description: "Jenkins offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
                 query: 'jenkins_node_offline_value > 1'
                 severity: critical
-                summary: "Jenkins OFFLINE"
-                description: "Jenkins Offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                jenkins_url: "https://{{$labels.instance}}/"
-              - name: JenkinsHealthCheck
+              - name: Jenkins healthcheck
+                description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
                 query: 'jenkins_health_check_score < 1'
                 severity: critical
-                summary: "Jenkins Health Check Score: {{$value}}"
-                description: "Health Check Failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                jenkins_url: "https://{{$labels.instance}}/"
-              - name: JenkinsBuildsHealthScore
-                query: 'default_jenkins_builds_health_score{} < 1'
+              - name: Jenkins builds health score
+                description: "Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'default_jenkins_builds_health_score < 1'
                 severity: critical
-                summary: "Jenkins Health Check Score: {{$value}}"
-                description: "Health Check Failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                jenkins_url: "https://{{$labels.instance}}/search/?q={{$labels.jenkins_job}}"
-              - name: JenkinsRunFailureTotal
-                query: 'delta(jenkins_runs_failure_total{}[1h]) > 100'
+              - name: Jenkins run failure total
+                description: "Job run failures: ({{$value}}) {{$labels.jenkins_job}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'delta(jenkins_runs_failure_total[1h]) > 100'
                 severity: warning
-                summary: "Job Run Failures: ({{$value}}) {{$labels.jenkins_job}}"
-                description: "Health Check Failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                jenkins_url: "https://{{$labels.instance}}/search/?q={{$labels.jenkins_job}}"
               - name: JenkinsBuildTestsFailing
+                description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
                 query: 'default_jenkins_builds_last_build_tests_failing > 0'
                 severity: warning
-                summary: "Last Build Tests Failed: {{$labels.jenkins_job}}"
-                description: "FAILED Build Tests for Job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
-                jenkins_url: "https://{{$labels.instance}}/search/?q={{$labels.jenkins_job}}"
-              - name: JenkinsLastBuildFailed
-                query: 'default_jenkins_builds_last_build_result_ordinal{} == 2'
+              - name: Jenkins last build failed
+                description: "Last build failed: {{$labels.jenkins_job}}. Failed build for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'default_jenkins_builds_last_build_result_ordinal == 2'
                 severity: warning
-                summary: "Last Build Failed: {{$labels.jenkins_job}}"
-                description: "FAILED Build for Job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
-                jenkins_url: "https://{{$labels.instance}}/search/?q={{$labels.jenkins_job}}"
                 comments: |
                   * RUNNING  -1 true  - The build had no errors.
                   * SUCCESS   0 true  - The build had no errors.
