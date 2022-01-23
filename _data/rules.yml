@@ -33,6 +33,10 @@ groups:
               description: Prometheus has restarted more than twice in the last 15 minutes. It might be crashlooping.
               query: 'changes(process_start_time_seconds{job=~"prometheus|pushgateway|alertmanager"}[15m]) > 2'
               severity: warning
+            - name: Prometheus AlertManager job missing
+              description: A Prometheus AlertManager job has disappeared
+              query: 'absent(up{job="alertmanager"})'
+              severity: warning
             - name: Prometheus AlertManager configuration reload failure
               description: AlertManager configuration reload error
               query: 'alertmanager_config_last_reload_successful != 1'
