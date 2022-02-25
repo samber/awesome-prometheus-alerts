@@ -33,6 +33,10 @@ groups:
               description: Prometheus has restarted more than twice in the last 15 minutes. It might be crashlooping.
               query: 'changes(process_start_time_seconds{job=~"prometheus|pushgateway|alertmanager"}[15m]) > 2'
               severity: warning
+            - name: Prometheus AlertManager job missing
+              description: A Prometheus AlertManager job has disappeared
+              query: 'absent(up{job="alertmanager"})'
+              severity: warning
             - name: Prometheus AlertManager configuration reload failure
               description: AlertManager configuration reload error
               query: 'alertmanager_config_last_reload_successful != 1'
@@ -494,12 +498,12 @@ groups:
                 severity: critical
               - name: MySQL too many connections (> 80%)
                 description: 'More than 80% of MySQL connections are in use on {{ $labels.instance }}'
-                query: 'avg by (instance) (rate(mysql_global_status_threads_connected[1m])) / avg by (instance) (mysql_global_variables_max_connections) * 100 > 80'
+                query: 'max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80'
                 severity: warning
                 for: 2m
               - name: MySQL high threads running
                 description: 'More than 60% of MySQL connections are in running state on {{ $labels.instance }}'
-                query: 'avg by (instance) (rate(mysql_global_status_threads_running[1m])) / avg by (instance) (mysql_global_variables_max_connections) * 100 > 60'
+                query: 'max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60'
                 severity: warning
                 for: 2m
               - name: MySQL Slave IO thread not running
@@ -2126,3 +2130,41 @@ groups:
                 query: sum by (job) (cortex_query_frontend_queue_length) > 0
                 severity: critical
                 for: 5m
+
+      - name: Jenkins
+        exporters:
+          - name: Metric plugin
+            doc_url: https://plugins.jenkins.io/prometheus/
+            rules:
+              - name: Jenkins offline
+                description: "Jenkins offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'jenkins_node_offline_value > 1'
+                severity: critical
+              - name: Jenkins healthcheck
+                description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'jenkins_health_check_score < 1'
+                severity: critical
+              - name: Jenkins builds health score
+                description: "Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'default_jenkins_builds_health_score < 1'
+                severity: critical
+              - name: Jenkins run failure total
+                description: "Job run failures: ({{$value}}) {{$labels.jenkins_job}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'delta(jenkins_runs_failure_total[1h]) > 100'
+                severity: warning
+              - name: JenkinsBuildTestsFailing
+                description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'default_jenkins_builds_last_build_tests_failing > 0'
+                severity: warning
+              - name: Jenkins last build failed
+                description: "Last build failed: {{$labels.jenkins_job}}. Failed build for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
+                query: 'default_jenkins_builds_last_build_result_ordinal == 2'
+                severity: warning
+                comments: |
+                  * RUNNING  -1 true  - The build had no errors.
+                  * SUCCESS   0 true  - The build had no errors.
+                  * UNSTABLE  1 true  - The build had some errors but they were not fatal. For example, some tests failed.
+                  * FAILURE   2 false - The build had a fatal error.
+                  * NOT_BUILT 3 false - The module was not built.
+                  * ABORTED   4 false - The build was manually aborted.
+
