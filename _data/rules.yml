@@ -1225,7 +1225,7 @@ groups:
             rules:
               - name: Solr update errors
                 description: Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.
-                query: 'increase(solr_metrics_core_update_handler_errors_total) > 1'
+                query: 'increase(solr_metrics_core_update_handler_errors_total[1m]) > 1'
                 severity: critical
               - name: Solr query errors
                 description: Solr has increased query errors in collection {{ $labels.collection }} for replica {{ $labels.replica }} on {{ $labels.base_url }}.
