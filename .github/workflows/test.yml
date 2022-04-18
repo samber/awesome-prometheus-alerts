@@ -1,0 +1,35 @@
+name: Promtool check
+
+on: [pull_request, push]
+
+jobs:
+  promtool-check:
+    name: Check alert rules syntax
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Set up Ruby
+      uses: actions/setup-ruby@v1
+
+    - name: Set up yq
+      uses: mikefarah/yq@master
+
+    - name: Install liquid
+      run: gem install liquid-cli
+
+    - name: Build rule configuration
+      run: |
+        gem install liquid-cli
+        cat _data/rules.yml | yq -I 0 -o json > _data/rules.json
+        cat test/template.yml | liquid "$(< _data/rules.json)" > test/rules.yml
+
+    - name: Check Prometheus alert rules
+      uses: peimanja/promtool-github-actions@master
+      with:
+        promtool_actions_subcommand: 'rules'
+        promtool_actions_files: 'test/rules.yml'
+        promtool_actions_comment: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
