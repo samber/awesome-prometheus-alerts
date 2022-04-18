@@ -576,17 +576,12 @@ groups:
                 description: PostgreSQL has dead-locks
                 query: 'increase(pg_stat_database_deadlocks{datname!~"template.*|postgres"}[1m]) > 5'
                 severity: warning
-              - name: Postgresql slow queries
-                description: PostgreSQL executes slow queries
-                query: 'pg_slow_queries > 0'
-                severity: warning
-                for: 2m
               - name: Postgresql high rollback rate
                 description: Ratio of transactions being aborted compared to committed is > 2 %
                 query: 'rate(pg_stat_database_xact_rollback{datname!~"template.*"}[3m]) / rate(pg_stat_database_xact_commit{datname!~"template.*"}[3m]) > 0.02'
                 severity: warning
               - name: Postgresql commit rate low
-                description: Postgres seems to be processing very few transactions
+                description: Postgresql seems to be processing very few transactions
                 query: 'rate(pg_stat_database_xact_commit[1m]) < 10'
                 severity: critical
                 for: 2m
@@ -595,15 +590,6 @@ groups:
                 query: 'rate(pg_txid_current[1m]) < 5'
                 severity: warning
                 for: 2m
-              - name: Postgresqllow XLOG consumption
-                description: Postgres seems to be consuming XLOG very slowly
-                query: 'rate(pg_xlog_position_bytes[1m]) < 100'
-                severity: warning
-                for: 2m
-              - name: Postgresql WALE replication stopped
-                description: WAL-E replication seems to be stopped
-                query: 'rate(pg_xlog_position_bytes[1m]) == 0'
-                severity: critical
               - name: Postgresql high rate statement timeout
                 description: Postgres transactions showing high rate of statement timeouts
                 query: 'rate(postgresql_errors_total{type="statement_timeout"}[1m]) > 3'
@@ -611,10 +597,6 @@ groups:
               - name: Postgresql high rate deadlock
                 description: Postgres detected deadlocks
                 query: 'increase(postgresql_errors_total{type="deadlock_detected"}[1m]) > 1'
-                severity: critical
-              - name: Postgresql replication lag bytes
-                description: Postgres Replication lag (in bytes) is high
-                query: '(pg_xlog_position_bytes and pg_replication_is_replica == 0) - on(environment) group_right(instance) (pg_xlog_position_bytes and pg_replication_is_replica == 1) > 1e+09'
                 severity: critical
               - name: Postgresql unused replication slot
                 description: Unused Replication Slots
