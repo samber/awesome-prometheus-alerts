@@ -2144,6 +2144,11 @@ groups:
                 description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
                 query: 'jenkins_health_check_score < 1'
                 severity: critical
+              - name: Jenkins outdated plugins
+                description: "{{ $value }} plugins need update"
+                query: 'sum(jenkins_plugins_withUpdate) by (instance) > 3'
+                severity: warning
+                for: 1d
               - name: Jenkins builds health score
                 description: "Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
                 query: 'default_jenkins_builds_health_score < 1'
@@ -2152,7 +2157,7 @@ groups:
                 description: "Job run failures: ({{$value}}) {{$labels.jenkins_job}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
                 query: 'delta(jenkins_runs_failure_total[1h]) > 100'
                 severity: warning
-              - name: JenkinsBuildTestsFailing
+              - name: Jenkins build tests failing
                 description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
                 query: 'default_jenkins_builds_last_build_tests_failing > 0'
                 severity: warning
