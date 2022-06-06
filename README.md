@@ -36,6 +36,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Cassandra](https://awesome-prometheus-alerts.grep.to/rules#cassandra)
 - [Zookeeper](https://awesome-prometheus-alerts.grep.to/rules#zookeeper)
 - [Kafka](https://awesome-prometheus-alerts.grep.to/rules#kafka)
+- [Pulsar](https://awesome-prometheus-alerts.grep.to/rules#pulsar)
 - [Solr](https://awesome-prometheus-alerts.grep.to/rules#solr)
 
 #### Reverse proxies and load balancers
