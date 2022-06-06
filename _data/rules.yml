@@ -1198,6 +1198,60 @@ groups:
                 severity: warning
                 for: 15m
 
+      - name: Pulsar
+        exporters:
+          - rules:
+              - name: Pulsar Subscription High Number Of Backlog Entries
+                query: sum(pulsar_subscription_back_log) by (subscription) > 5000
+                for: 1h
+                severity: warning
+                description: "The number of subscription backlog entries is over 5k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: Pulsar Subscription Very High Number Of Backlog Entries
+                query: sum(pulsar_subscription_back_log) by (subscription) > 100000
+                for: 1h
+                severity: critical
+                description: "The number of subscription backlog entries is over 100k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: Pulsar Topic Large Backlog Storage Size
+                query: sum(pulsar_storage_size > 5*1024*1024*1024) by (topic)
+                for: 1h
+                severity: warning
+                description: "The topic backlog storage size is over 5 GB\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: PulsarTopicVeryLargeBacklogStorageSize
+                query: sum(pulsar_storage_size > 20*1024*1024*1024) by (topic)
+                for: 1h
+                severity: critical
+                description: "The topic backlog storage size is over 20 GB\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: Pulsar High Write Latency
+                query: sum(pulsar_storage_write_latency_overflow > 0) by (topic)
+                for: 1h
+                severity: critical
+                description: "Messages cannot be written in a timely fashion\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: Pulsar Large Message Payload
+                query: sum(pulsar_entry_size_overflow > 0) by (topic)
+                for: 1h
+                severity: warning
+                description: "Observing large message payload (> 1MB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: PulsarHighLedgerDiskUsage
+                query: sum(bookie_ledger_dir__pulsar_data_bookkeeper_ledgers_usage) by (kubernetes_pod_name) > 75
+                for: 1h
+                severity: critical
+                description: "Observing Ledger Disk Usage (> 75%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: Pulsar Read Only Bookies
+                query: count(bookie_SERVER_STATUS{} == 0) by (pod)
+                for: 5m
+                severity: critical
+                description: "Observing Readonly Bookies\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: Pulsar High Number Of Function Errors
+                query: sum((rate(pulsar_function_user_exceptions_total{}[1m]) + rate(pulsar_function_system_exceptions_total{}[1m])) > 10) by (name)
+                for: 1m
+                severity: critical
+                description: "Observing more than 10 Function errors per minute\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+              - name: Pulsar High Number Of Sink Errors
+                query: sum(rate(pulsar_sink_sink_exceptions_total{}[1m]) > 10) by (name)
+                for: 1m
+                severity: critical
+                description: "Observing more than 10 Sink errors per minute\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
       - name: Solr
         exporters:
           - name: embedded exporter
