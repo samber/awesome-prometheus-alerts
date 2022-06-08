@@ -535,8 +535,8 @@ groups:
 
       - name: PostgreSQL
         exporters:
-          - name: wrouesnel/postgres_exporter
-            doc_url: https://github.com/wrouesnel/postgres_exporter/
+          - name: prometheus-community/postgres_exporter
+            doc_url: https://github.com/prometheus-community/postgres_exporter
             rules:
               - name: Postgresql down
                 description: Postgresql instance is down
