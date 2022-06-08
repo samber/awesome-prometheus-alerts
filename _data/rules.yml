@@ -23,7 +23,7 @@ groups:
               severity: critical
             - name: Prometheus all targets missing
               description: A Prometheus job does not have living target anymore.
-              query: 'count by (job) (up) == 0'
+              query: 'sum by (job) (up) == 0'
               severity: critical
             - name: Prometheus configuration reload failure
               description: Prometheus configuration reload error
