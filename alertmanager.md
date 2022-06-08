@@ -107,8 +107,8 @@ For expansive or frequent PromQL queries, Prometheus allows to precompute rules.
 {% raw %}
 groups:
 
-  # first define the recording rule
-  - name: ExampleRecordingGroup
+  # first define the recorded rule
+  - name: ExampleRecordedGroup
     rules:
     - record: job:rabbitmq_queue_messages_delivered_total:rate:5m
       expr: rate(rabbitmq_queue_messages_delivered_total[5m])
