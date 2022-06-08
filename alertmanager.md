@@ -99,6 +99,33 @@ receivers:
 {% endraw %}
 {% endhighlight %}
 
+## Reduce Prometheus server load
+
+For expansive or frequent PromQL queries, Prometheus allows to precompute rules.
+
+{% highlight yaml %}
+{% raw %}
+groups:
+
+  # first define the recording rule
+  - name: ExampleRecordingGroup
+    rules:
+    - record: job:rabbitmq_queue_messages_delivered_total:rate:5m
+      expr: rate(rabbitmq_queue_messages_delivered_total[5m])
+
+  # then use it in alerts
+  - name: ExampleAlertingGroup
+    rules:
+    - alert: ExampleRabbitmqLowMessageDelivery
+      expr: sum(job:rabbitmq_queue_messages_delivered_total:rate:5m) < 10
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Low delivery rate in Rabbitmq queues"
+{% endraw %}
+{% endhighlight %}
+
 ## Troubleshooting
 
 If the notification takes too much time to be triggered, check the following delays:
