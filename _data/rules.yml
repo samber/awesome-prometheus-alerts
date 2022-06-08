@@ -820,6 +820,14 @@ groups:
                 severity: warning
                 for: 2m
 
+          - name: stefanprodan/mgob
+            doc_url: https://github.com/stefanprodan/mgob
+            rules:
+              - name: Mgob backup failed
+                description: MongoDB backup has failed
+                query: 'changes(mgob_scheduler_backup_total{status="500"}[1h]) > 0'
+                severity: critical
+
       - name: RabbitMQ
         exporters:
           - name: rabbitmq/rabbitmq-prometheus
