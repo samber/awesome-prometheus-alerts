@@ -1392,7 +1392,7 @@ groups:
                 for: 2m
               - name: HAProxy HTTP slowing down
                 description: Average request time is increasing - {{ $value | printf "%.2f"}}
-                query: avg by (proxy) (haproxy_backend_max_total_time_seconds) > 1
+                query: avg by (instance, proxy) (haproxy_backend_max_total_time_seconds) > 1
                 severity: warning
                 for: 1m
               - name: HAProxy retry high
