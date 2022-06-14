@@ -270,7 +270,7 @@ groups:
                 for: 2m
               - name: Host Network Interface Saturated
                 description: 'The network interface "{{ $labels.device }}" on "{{ $labels.instance }}" is getting overloaded.'
-                query: '(rate(node_network_receive_bytes_total{device!~"^tap.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*"} > 0.8 < 10000'    # < to 10Gb to prevent +inf when max speed is unknown
+                query: '(rate(node_network_receive_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"} > 0.8 < 10000'    # < to 10Gb to prevent +inf when max speed is unknown
                 severity: warning
                 for: 1m
               - name: Host Network Bond Degraded
