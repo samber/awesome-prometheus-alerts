@@ -1889,7 +1889,7 @@ groups:
                 for: 1m
               - name: Istio high request latency
                 description: Istio average requests execution is longer than 100ms.
-                query: 'rate(istio_request_duration_milliseconds_sum[1m]) / rate(istio_request_duration_milliseconds_count[1m]) > 0.1'
+                query: 'rate(istio_request_duration_milliseconds_sum{reporter="destination"}[1m]) / rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 100'
                 severity: warning
                 for: 1m
               - name: Istio latency 99 percentile
