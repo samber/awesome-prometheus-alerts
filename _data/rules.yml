@@ -79,8 +79,8 @@ groups:
               query: 'prometheus_sd_discovered_targets == 0'
               severity: critical
             - name: Prometheus target scraping slow
-              description: Prometheus is scraping exporters slowly
-              query: 'prometheus_target_interval_length_seconds{quantile="0.9"} > 60'
+              description: Prometheus is scraping exporters slowly since it exceeded the requested interval time. Your Prometheus server is under-provisioned.
+              query: 'prometheus_target_interval_length_seconds{quantile="0.9"} / on (interval, instance, job) prometheus_target_interval_length_seconds{quantile="0.5"} > 1.05'
               severity: warning
               for: 5m
             - name: Prometheus large scrape
