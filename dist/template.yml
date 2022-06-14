@@ -1,0 +1,16 @@
+groups:
+{% assign groupName = slug | split: '-' %}{% capture groupNameCamelcase %}{% for word in groupName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
+- name: {{ groupNameCamelcase | remove: ' ' | remove: '-' }}
+
+  rules:
+{% for rule in rules %}{% assign ruleName = rule.name | split: ' ' %}{% capture ruleNameCamelcase %}{% for word in ruleName %}{{ word | capitalize }} {% endfor %}{% endcapture %}
+    {% for comment in comments %}# {{ comment | strip }}
+    {% endfor %}- alert: {{ ruleNameCamelcase | remove: ' ' }}
+      expr: '{{ rule.query }}'
+      for: {% if rule.for %}{{ rule.for }}{% else %}0m{% endif %}
+      labels:
+        severity: {{ rule.severity }}
+      annotations:
+        summary: {{ rule.name }} (instance {% raw %}{{ $labels.instance }}{% endraw %})
+        description: "{{ rule.description | replace: '"', '\"' }}\n  VALUE = {% raw %}{{ $value }}{% endraw %}\n  LABELS = {% raw %}{{ $labels }}{% endraw %}"
+{% endfor %}
