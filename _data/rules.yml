@@ -558,12 +558,12 @@ groups:
                 description: PostgreSQL replication lag is going up (> 30s)
                 query: 'pg_replication_lag > 30 and ON(instance) pg_replication_is_replica == 1'
                 severity: critical
-              - name: Postgresql table not vacuumed
-                description: Table {{ $labels.relname }} has not been vacuumed for 10 days
+              - name: Postgresql table not auto vacuumed
+                description: Table {{ $labels.relname }} has not been auto vacuumed for 10 days
                 query: '(pg_stat_user_tables_last_autovacuum > 0) and (time() - pg_stat_user_tables_last_autovacuum) > 60 * 60 * 24 * 10'
                 severity: warning
-              - name: Postgresql table not analyzed
-                description: Table {{ $labels.relname }} has not been analyzed for 10 days
+              - name: Postgresql table not auto analyzed
+                description: Table {{ $labels.relname }} has not been auto analyzed for 10 days
                 query: '(pg_stat_user_tables_last_autoanalyze > 0) and (time() - pg_stat_user_tables_last_autoanalyze) > 24 * 60 * 60 * 10'
                 severity: warning
               - name: Postgresql too many connections
