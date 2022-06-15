@@ -1,0 +1,86 @@
+groups:
+
+- name: RabbitmqExporter
+
+  rules:
+
+    - alert: RabbitmqNodeDown
+      expr: 'sum(rabbitmq_build_info) < 3'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Rabbitmq node down (instance {{ $labels.instance }})
+        description: "Less than 3 nodes running in RabbitMQ cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqNodeNotDistributed
+      expr: 'erlang_vm_dist_node_state < 3'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Rabbitmq node not distributed (instance {{ $labels.instance }})
+        description: "Distribution link state is not 'up'\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqInstancesDifferentVersions
+      expr: 'count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Rabbitmq instances different versions (instance {{ $labels.instance }})
+        description: "Running different version of Rabbitmq in the same cluster, can lead to failure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqMemoryHigh
+      expr: 'rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Rabbitmq memory high (instance {{ $labels.instance }})
+        description: "A node use more than 90% of allocated RAM\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqFileDescriptorsUsage
+      expr: 'rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Rabbitmq file descriptors usage (instance {{ $labels.instance }})
+        description: "A node use more than 90% of file descriptors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqTooManyUnackMessages
+      expr: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Rabbitmq too many unack messages (instance {{ $labels.instance }})
+        description: "Too many unacknowledged messages\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqTooManyConnections
+      expr: 'rabbitmq_connections > 1000'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Rabbitmq too many connections (instance {{ $labels.instance }})
+        description: "The total connections of a node is too high\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqNoQueueConsumer
+      expr: 'rabbitmq_queue_consumers < 1'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Rabbitmq no queue consumer (instance {{ $labels.instance }})
+        description: "A queue has less than 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqUnroutableMessages
+      expr: 'increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Rabbitmq unroutable messages (instance {{ $labels.instance }})
+        description: "A queue has unroutable messages\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

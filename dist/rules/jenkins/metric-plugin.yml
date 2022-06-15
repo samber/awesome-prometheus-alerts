@@ -1,0 +1,68 @@
+groups:
+
+- name: MetricPlugin
+
+  rules:
+
+    - alert: JenkinsOffline
+      expr: 'jenkins_node_offline_value > 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Jenkins offline (instance {{ $labels.instance }})
+        description: "Jenkins offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JenkinsHealthcheck
+      expr: 'jenkins_health_check_score < 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Jenkins healthcheck (instance {{ $labels.instance }})
+        description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JenkinsOutdatedPlugins
+      expr: 'sum(jenkins_plugins_withUpdate) by (instance) > 3'
+      for: 1d
+      labels:
+        severity: warning
+      annotations:
+        summary: Jenkins outdated plugins (instance {{ $labels.instance }})
+        description: "{{ $value }} plugins need update\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JenkinsBuildsHealthScore
+      expr: 'default_jenkins_builds_health_score < 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Jenkins builds health score (instance {{ $labels.instance }})
+        description: "Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JenkinsRunFailureTotal
+      expr: 'delta(jenkins_runs_failure_total[1h]) > 100'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jenkins run failure total (instance {{ $labels.instance }})
+        description: "Job run failures: ({{$value}}) {{$labels.jenkins_job}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JenkinsBuildTestsFailing
+      expr: 'default_jenkins_builds_last_build_tests_failing > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jenkins build tests failing (instance {{ $labels.instance }})
+        description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JenkinsLastBuildFailed
+      expr: 'default_jenkins_builds_last_build_result_ordinal == 2'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jenkins last build failed (instance {{ $labels.instance }})
+        description: "Last build failed: {{$labels.jenkins_job}}. Failed build for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -1,0 +1,23 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: PromtailRequestErrors
+      expr: '100 * sum(rate(promtail_request_duration_seconds_count{status_code=~"5..|failed"}[1m])) by (namespace, job, route, instance) / sum(rate(promtail_request_duration_seconds_count[1m])) by (namespace, job, route, instance) > 10'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Promtail request errors (instance {{ $labels.instance }})
+        description: "The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}% errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PromtailRequestLatency
+      expr: 'histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[5m])) by (le)) > 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Promtail request latency (instance {{ $labels.instance }})
+        description: "The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}s 99th percentile latency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

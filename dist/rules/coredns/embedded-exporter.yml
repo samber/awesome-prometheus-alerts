@@ -1,0 +1,14 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: CorednsPanicCount
+      expr: 'increase(coredns_panics_total[1m]) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: CoreDNS Panic Count (instance {{ $labels.instance }})
+        description: "Number of CoreDNS panics encountered\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

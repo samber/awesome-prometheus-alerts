@@ -1,0 +1,14 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: OpenebsUsedPoolCapacity
+      expr: 'openebs_used_pool_capacity_percent > 80'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenEBS used pool capacity (instance {{ $labels.instance }})
+        description: "OpenEBS Pool use more than 80% of his capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

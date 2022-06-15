@@ -1,0 +1,122 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: EtcdInsufficientMembers
+      expr: 'count(etcd_server_id) % 2 == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd insufficient Members (instance {{ $labels.instance }})
+        description: "Etcd cluster should have an odd number of members\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdNoLeader
+      expr: 'etcd_server_has_leader == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd no Leader (instance {{ $labels.instance }})
+        description: "Etcd cluster have no leader\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighNumberOfLeaderChanges
+      expr: 'increase(etcd_server_leader_changes_seen_total[10m]) > 2'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high number of leader changes (instance {{ $labels.instance }})
+        description: "Etcd leader changed more than 2 times during 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighNumberOfFailedGrpcRequests
+      expr: 'sum(rate(grpc_server_handled_total{grpc_code!="OK"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high number of failed GRPC requests (instance {{ $labels.instance }})
+        description: "More than 1% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighNumberOfFailedGrpcRequests
+      expr: 'sum(rate(grpc_server_handled_total{grpc_code!="OK"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd high number of failed GRPC requests (instance {{ $labels.instance }})
+        description: "More than 5% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdGrpcRequestsSlow
+      expr: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd GRPC requests slow (instance {{ $labels.instance }})
+        description: "GRPC requests slowing down, 99th percentile is over 0.15s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighNumberOfFailedHttpRequests
+      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high number of failed HTTP requests (instance {{ $labels.instance }})
+        description: "More than 1% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighNumberOfFailedHttpRequests
+      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd high number of failed HTTP requests (instance {{ $labels.instance }})
+        description: "More than 5% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHttpRequestsSlow
+      expr: 'histogram_quantile(0.99, rate(etcd_http_successful_duration_seconds_bucket[1m])) > 0.15'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd HTTP requests slow (instance {{ $labels.instance }})
+        description: "HTTP requests slowing down, 99th percentile is over 0.15s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdMemberCommunicationSlow
+      expr: 'histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[1m])) > 0.15'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd member communication slow (instance {{ $labels.instance }})
+        description: "Etcd member communication slowing down, 99th percentile is over 0.15s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighNumberOfFailedProposals
+      expr: 'increase(etcd_server_proposals_failed_total[1h]) > 5'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high number of failed proposals (instance {{ $labels.instance }})
+        description: "Etcd server got more than 5 failed proposals past hour\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighFsyncDurations
+      expr: 'histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[1m])) > 0.5'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high fsync durations (instance {{ $labels.instance }})
+        description: "Etcd WAL fsync duration increasing, 99th percentile is over 0.5s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdHighCommitDurations
+      expr: 'histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[1m])) > 0.25'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high commit durations (instance {{ $labels.instance }})
+        description: "Etcd commit duration increasing, 99th percentile is over 0.25s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -1,0 +1,212 @@
+groups:
+
+- name: PostgresExporter
+
+  rules:
+
+    - alert: PostgresqlDown
+      expr: 'pg_up == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql down (instance {{ $labels.instance }})
+        description: "Postgresql instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlRestarted
+      expr: 'time() - pg_postmaster_start_time_seconds < 60'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql restarted (instance {{ $labels.instance }})
+        description: "Postgresql restarted\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlExporterError
+      expr: 'pg_exporter_last_scrape_error > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql exporter error (instance {{ $labels.instance }})
+        description: "Postgresql exporter is showing errors. A query may be buggy in query.yaml\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlReplicationLag
+      expr: 'pg_replication_lag > 30 and ON(instance) pg_replication_is_replica == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql replication lag (instance {{ $labels.instance }})
+        description: "PostgreSQL replication lag is going up (> 30s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlTableNotAutoVacuumed
+      expr: '(pg_stat_user_tables_last_autovacuum > 0) and (time() - pg_stat_user_tables_last_autovacuum) > 60 * 60 * 24 * 10'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql table not auto vacuumed (instance {{ $labels.instance }})
+        description: "Table {{ $labels.relname }} has not been auto vacuumed for 10 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlTableNotAutoAnalyzed
+      expr: '(pg_stat_user_tables_last_autoanalyze > 0) and (time() - pg_stat_user_tables_last_autoanalyze) > 24 * 60 * 60 * 10'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql table not auto analyzed (instance {{ $labels.instance }})
+        description: "Table {{ $labels.relname }} has not been auto analyzed for 10 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlTooManyConnections
+      expr: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) > pg_settings_max_connections * 0.8'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql too many connections (instance {{ $labels.instance }})
+        description: "PostgreSQL instance has too many connections (> 80%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlNotEnoughConnections
+      expr: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) < 5'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql not enough connections (instance {{ $labels.instance }})
+        description: "PostgreSQL instance should have more connections (> 5)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlDeadLocks
+      expr: 'increase(pg_stat_database_deadlocks{datname!~"template.*|postgres"}[1m]) > 5'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql dead locks (instance {{ $labels.instance }})
+        description: "PostgreSQL has dead-locks\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlHighRollbackRate
+      expr: 'rate(pg_stat_database_xact_rollback{datname!~"template.*"}[3m]) / rate(pg_stat_database_xact_commit{datname!~"template.*"}[3m]) > 0.02'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql high rollback rate (instance {{ $labels.instance }})
+        description: "Ratio of transactions being aborted compared to committed is > 2 %\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlCommitRateLow
+      expr: 'rate(pg_stat_database_xact_commit[1m]) < 10'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql commit rate low (instance {{ $labels.instance }})
+        description: "Postgresql seems to be processing very few transactions\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlLowXidConsumption
+      expr: 'rate(pg_txid_current[1m]) < 5'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql low XID consumption (instance {{ $labels.instance }})
+        description: "Postgresql seems to be consuming transaction IDs very slowly\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlHighRateStatementTimeout
+      expr: 'rate(postgresql_errors_total{type="statement_timeout"}[1m]) > 3'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql high rate statement timeout (instance {{ $labels.instance }})
+        description: "Postgres transactions showing high rate of statement timeouts\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlHighRateDeadlock
+      expr: 'increase(postgresql_errors_total{type="deadlock_detected"}[1m]) > 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql high rate deadlock (instance {{ $labels.instance }})
+        description: "Postgres detected deadlocks\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlUnusedReplicationSlot
+      expr: 'pg_replication_slots_active == 0'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql unused replication slot (instance {{ $labels.instance }})
+        description: "Unused Replication Slots\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlTooManyDeadTuples
+      expr: '((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1 unless ON(instance) (pg_replication_is_replica == 1)'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql too many dead tuples (instance {{ $labels.instance }})
+        description: "PostgreSQL dead tuples is too large\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlSplitBrain
+      expr: 'count(pg_replication_is_replica == 0) != 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql split brain (instance {{ $labels.instance }})
+        description: "Split Brain, too many primary Postgresql databases in read-write mode\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlPromotedNode
+      expr: 'pg_replication_is_replica and changes(pg_replication_is_replica[1m]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql promoted node (instance {{ $labels.instance }})
+        description: "Postgresql standby server has been promoted as primary node\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlConfigurationChanged
+      expr: '{__name__=~"pg_settings_.*"} != ON(__name__) {__name__=~"pg_settings_([^t]|t[^r]|tr[^a]|tra[^n]|tran[^s]|trans[^a]|transa[^c]|transac[^t]|transact[^i]|transacti[^o]|transactio[^n]|transaction[^_]|transaction_[^r]|transaction_r[^e]|transaction_re[^a]|transaction_rea[^d]|transaction_read[^_]|transaction_read_[^o]|transaction_read_o[^n]|transaction_read_on[^l]|transaction_read_onl[^y]).*"} OFFSET 5m'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: Postgresql configuration changed (instance {{ $labels.instance }})
+        description: "Postgres Database configuration change has occurred\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlSslCompressionActive
+      expr: 'sum(pg_stat_ssl_compression) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql SSL compression active (instance {{ $labels.instance }})
+        description: "Database connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlTooManyLocksAcquired
+      expr: '((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Postgresql too many locks acquired (instance {{ $labels.instance }})
+        description: "Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlBloatIndexHigh(>80%)
+      expr: 'pg_bloat_btree_bloat_pct > 80 and on (idxname) (pg_bloat_btree_real_size > 100000000)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql bloat index high (> 80%) (instance {{ $labels.instance }})
+        description: "The index {{ $labels.idxname }} is bloated. You should execute `REINDEX INDEX CONCURRENTLY {{ $labels.idxname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlBloatTableHigh(>80%)
+      expr: 'pg_bloat_table_bloat_pct > 80 and on (relname) (pg_bloat_table_real_size > 200000000)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql bloat table high (> 80%) (instance {{ $labels.instance }})
+        description: "The table {{ $labels.relname }} is bloated. You should execute `VACUUM {{ $labels.relname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

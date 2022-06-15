@@ -1,0 +1,95 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: PulsarSubscriptionHighNumberOfBacklogEntries
+      expr: 'sum(pulsar_subscription_back_log) by (subscription) > 5000'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Pulsar subscription high number of backlog entries (instance {{ $labels.instance }})
+        description: "The number of subscription backlog entries is over 5k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarSubscriptionVeryHighNumberOfBacklogEntries
+      expr: 'sum(pulsar_subscription_back_log) by (subscription) > 100000'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar subscription very high number of backlog entries (instance {{ $labels.instance }})
+        description: "The number of subscription backlog entries is over 100k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarTopicLargeBacklogStorageSize
+      expr: 'sum(pulsar_storage_size > 5*1024*1024*1024) by (topic)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Pulsar topic large backlog storage size (instance {{ $labels.instance }})
+        description: "The topic backlog storage size is over 5 GB\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarTopicVeryLargeBacklogStorageSize
+      expr: 'sum(pulsar_storage_size > 20*1024*1024*1024) by (topic)'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar topic very large backlog storage size (instance {{ $labels.instance }})
+        description: "The topic backlog storage size is over 20 GB\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarHighWriteLatency
+      expr: 'sum(pulsar_storage_write_latency_overflow > 0) by (topic)'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar high write latency (instance {{ $labels.instance }})
+        description: "Messages cannot be written in a timely fashion\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarLargeMessagePayload
+      expr: 'sum(pulsar_entry_size_overflow > 0) by (topic)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Pulsar large message payload (instance {{ $labels.instance }})
+        description: "Observing large message payload (> 1MB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarHighLedgerDiskUsage
+      expr: 'sum(bookie_ledger_dir__pulsar_data_bookkeeper_ledgers_usage) by (kubernetes_pod_name) > 75'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar high ledger disk usage (instance {{ $labels.instance }})
+        description: "Observing Ledger Disk Usage (> 75%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarReadOnlyBookies
+      expr: 'count(bookie_SERVER_STATUS{} == 0) by (pod)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar read only bookies (instance {{ $labels.instance }})
+        description: "Observing Readonly Bookies\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarHighNumberOfFunctionErrors
+      expr: 'sum((rate(pulsar_function_user_exceptions_total{}[1m]) + rate(pulsar_function_system_exceptions_total{}[1m])) > 10) by (name)'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar high number of function errors (instance {{ $labels.instance }})
+        description: "Observing more than 10 Function errors per minute\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PulsarHighNumberOfSinkErrors
+      expr: 'sum(rate(pulsar_sink_sink_exceptions_total{}[1m]) > 10) by (name)'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar high number of sink errors (instance {{ $labels.instance }})
+        description: "Observing more than 10 Sink errors per minute\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

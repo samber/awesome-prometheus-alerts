@@ -1,0 +1,32 @@
+groups:
+
+- name: EmbeddedExporterV2
+
+  rules:
+
+    - alert: TraefikServiceDown
+      expr: 'count(traefik_service_server_up) by (service) == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Traefik service down (instance {{ $labels.instance }})
+        description: "All Traefik services are down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TraefikHighHttp4xxErrorRateService
+      expr: 'sum(rate(traefik_service_requests_total{code=~"4.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Traefik high HTTP 4xx error rate service (instance {{ $labels.instance }})
+        description: "Traefik service 4xx error rate is above 5%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TraefikHighHttp5xxErrorRateService
+      expr: 'sum(rate(traefik_service_requests_total{code=~"5.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Traefik high HTTP 5xx error rate service (instance {{ $labels.instance }})
+        description: "Traefik service 5xx error rate is above 5%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

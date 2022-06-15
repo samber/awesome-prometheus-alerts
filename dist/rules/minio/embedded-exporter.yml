@@ -1,0 +1,23 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: MinioDiskOffline
+      expr: 'minio_disks_offline > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Minio disk offline (instance {{ $labels.instance }})
+        description: "Minio disk is offline\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MinioDiskSpaceUsage
+      expr: 'disk_storage_available / disk_storage_total * 100 < 10'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Minio disk space usage (instance {{ $labels.instance }})
+        description: "Minio available free space is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
