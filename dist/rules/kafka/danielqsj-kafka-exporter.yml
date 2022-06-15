@@ -1,0 +1,23 @@
+groups:
+
+- name: DanielqsjKafkaExporter
+
+  rules:
+
+    - alert: KafkaTopicsReplicas
+      expr: 'sum(kafka_topic_partition_in_sync_replica) by (topic) < 3'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Kafka topics replicas (instance {{ $labels.instance }})
+        description: "Kafka topic in-sync partition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: KafkaConsumersGroup
+      expr: 'sum(kafka_consumergroup_lag) by (consumergroup) > 50'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Kafka consumers group (instance {{ $labels.instance }})
+        description: "Kafka consumers group\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

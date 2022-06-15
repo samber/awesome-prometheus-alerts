@@ -1,0 +1,32 @@
+groups:
+
+- name: EmbeddedExporterV1
+
+  rules:
+
+    - alert: TraefikBackendDown
+      expr: 'count(traefik_backend_server_up) by (backend) == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Traefik backend down (instance {{ $labels.instance }})
+        description: "All Traefik backends are down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TraefikHighHttp4xxErrorRateBackend
+      expr: 'sum(rate(traefik_backend_requests_total{code=~"4.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Traefik high HTTP 4xx error rate backend (instance {{ $labels.instance }})
+        description: "Traefik backend 4xx error rate is above 5%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TraefikHighHttp5xxErrorRateBackend
+      expr: 'sum(rate(traefik_backend_requests_total{code=~"5.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Traefik high HTTP 5xx error rate backend (instance {{ $labels.instance }})
+        description: "Traefik backend 5xx error rate is above 5%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -1,0 +1,14 @@
+groups:
+
+- name: StefanprodanMgobExporter
+
+  rules:
+
+    - alert: MgobBackupFailed
+      expr: 'changes(mgob_scheduler_backup_total{status="500"}[1h]) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mgob backup failed (instance {{ $labels.instance }})
+        description: "MongoDB backup has failed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

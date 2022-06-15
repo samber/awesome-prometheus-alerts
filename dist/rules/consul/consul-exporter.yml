@@ -1,0 +1,32 @@
+groups:
+
+- name: ConsulExporter
+
+  rules:
+
+    - alert: ConsulServiceHealthcheckFailed
+      expr: 'consul_catalog_service_node_healthy == 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Consul service healthcheck failed (instance {{ $labels.instance }})
+        description: "Service: `{{ $labels.service_name }}` Healthcheck: `{{ $labels.service_id }}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ConsulMissingMasterNode
+      expr: 'consul_raft_peers < 3'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Consul missing master node (instance {{ $labels.instance }})
+        description: "Numbers of consul raft peers should be 3, in order to preserve quorum.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ConsulAgentUnhealthy
+      expr: 'consul_health_node_status{status="critical"} == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Consul agent unhealthy (instance {{ $labels.instance }})
+        description: "A Consul agent is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
