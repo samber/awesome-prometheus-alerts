@@ -42,6 +42,7 @@ jobs:
             for exporter in $(echo ${service} | base64 --decode | jq -r '.exporters[] | @base64'); do
               exporterName=$(echo ${exporter} | base64 --decode | jq -r '.slug')
               cat dist/template.yml | liquid "$(echo ${exporter} | base64 --decode)" > ${subdir}/${exporterName}.yml
+              echo ${subdir}/${exporterName}.yml
             done
           done
 
