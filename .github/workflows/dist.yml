@@ -55,8 +55,8 @@ jobs:
       - name: Push changes
         if: steps.git-check.outputs.modified != '0'
         run: |
-          git config --global user.name 'Samuel Berthe'
-          git config --global user.email 'samuel-berthe@users.noreply.github.com'
+          git config --global user.name 'samber'
+          git config --global user.email 'samber@users.noreply.github.com'
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add .
           git commit -m "Publish"
