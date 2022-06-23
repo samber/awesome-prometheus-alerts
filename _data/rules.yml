@@ -642,11 +642,15 @@ groups:
                 query: 'pg_bloat_btree_bloat_pct > 80 and on (idxname) (pg_bloat_btree_real_size > 100000000)'
                 severity: warning
                 for: 1h
+                comments: |
+                  See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
               - name: Postgresql bloat table high (> 80%)
                 description: 'The table {{ $labels.relname }} is bloated. You should execute `VACUUM {{ $labels.relname }};`'
                 query: 'pg_bloat_table_bloat_pct > 80 and on (relname) (pg_bloat_table_real_size > 200000000)'
                 severity: warning
                 for: 1h
+                comments: |
+                  See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
 
       - name: SQL Server
         exporters:
