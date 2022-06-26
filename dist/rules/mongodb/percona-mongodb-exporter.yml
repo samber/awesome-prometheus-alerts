@@ -13,6 +13,15 @@ groups:
         summary: MongoDB Down (instance {{ $labels.instance }})
         description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: MongodbReplicaMemberHealth
+      expr: 'mongodb_rs_members_health == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: MongoDB replica member not healthy {{ $labels.member_idx }}
+        description: "MongoDB replica member not healthy\n VALUE = {{ $value }}\n LABELS = {{ $labels }}"
+
     - alert: MongodbReplicationLag
       expr: 'mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"} > 10'
       for: 0m
