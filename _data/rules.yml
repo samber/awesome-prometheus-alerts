@@ -759,7 +759,7 @@ groups:
                 description: MongoDB instance is down
                 query: 'mongodb_up == 0'
                 severity: critical
-              - name: MongodbReplicaMemberHealthy
+              - name: Mongodb replica member unhealthy
                 description: MongoDB replica member is not healthy
                 query: 'mongodb_rs_members_health == 0'
                 severity: critical
