@@ -13,17 +13,8 @@ groups:
         summary: MongoDB Down (instance {{ $labels.instance }})
         description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbReplicaMemberHealth
-      expr: 'mongodb_rs_members_health == 0'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: MongoDB replica member not healthy {{ $labels.member_idx }}
-        description: "MongoDB replica member not healthy\n VALUE = {{ $value }}\n LABELS = {{ $labels }}"
-
     - alert: MongodbReplicationLag
-      expr: 'mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"} > 10'
+      expr: 'mongodb_mongod_replset_member_optime_date{state="PRIMARY"} - ON (set) mongodb_mongod_replset_member_optime_date{state="SECONDARY"} > 10'
       for: 0m
       labels:
         severity: critical
@@ -41,7 +32,7 @@ groups:
         description: "MongoDB replication headroom is <= 0\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MongodbNumberCursorsOpen
-      expr: 'mongodb_ss_metrics_cursor_open{csr_type="total"} > 10 * 1000'
+      expr: 'mongodb_mongod_metrics_cursor_open{state="total"} > 10 * 1000'
       for: 2m
       labels:
         severity: warning
@@ -50,7 +41,7 @@ groups:
         description: "Too many cursors opened by MongoDB for clients (> 10k)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MongodbCursorsTimeouts
-      expr: 'increase(mongodb_ss_metrics_cursor_timedOut[1m]) > 100'
+      expr: 'increase(mongodb_mongod_metrics_cursor_timed_out_total[1m]) > 100'
       for: 2m
       labels:
         severity: warning
@@ -59,7 +50,7 @@ groups:
         description: "Too many cursors are timing out\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MongodbTooManyConnections
-      expr: 'avg by(instance) (rate(mongodb_ss_connections{conn_type="current"}[1m])) / avg by(instance) (sum (mongodb_ss_connections) by (instance)) * 100 > 80'
+      expr: 'avg by(instance) (rate(mongodb_connections{state="current"}[1m])) / avg by(instance) (sum (mongodb_connections) by (instance)) * 100 > 80'
       for: 2m
       labels:
         severity: warning
@@ -68,7 +59,7 @@ groups:
         description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MongodbVirtualMemoryUsage
-      expr: '(sum(mongodb_ss_mem_virtual) BY (instance) / sum(mongodb_ss_mem_resident) BY (instance)) > 3'
+      expr: '(sum(mongodb_memory{type="virtual"}) BY (instance) / sum(mongodb_memory{type="mapped"}) BY (instance)) > 3'
       for: 2m
       labels:
         severity: warning
