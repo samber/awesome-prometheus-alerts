@@ -1940,7 +1940,7 @@ groups:
                 for: 1m
               - name: Istio latency 99 percentile
                 description: Istio 1% slowest requests are longer than 1s.
-                query: 'histogram_quantile(0.99, rate(istio_request_duration_milliseconds_bucket[1m])) > 1'
+                query: 'histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (le)) > 1'
                 severity: warning
                 for: 1m
               - name: Istio Pilot Duplicate Entry
