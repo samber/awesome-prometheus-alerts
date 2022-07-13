@@ -13,6 +13,15 @@ groups:
         summary: Blackbox probe failed (instance {{ $labels.instance }})
         description: "Probe failed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: BlackboxConfigurationReloadFailure
+      expr: blackbox_exporter_config_last_reload_successful != 1
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Blackbox configuration reload failure (instance {{ $labels.instance }})
+        description: "Blackbox configuration reload error\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: BlackboxSlowProbe
       expr: 'avg_over_time(probe_duration_seconds[1m]) > 1'
       for: 1m
