@@ -2045,6 +2045,11 @@ groups:
             slug: node-exporter
             doc_url: https://github.com/prometheus/node_exporter
             rules:
+              - name: ZFS offline pool
+                description: 'A ZFS zpool is in a unexpected state: {{ $labels.state }}.'
+                query: 'node_zfs_zpool_state{state!="online"} > 0'
+                severity: critical
+                for: 1m
 
       - name: OpenEBS
         exporters:
