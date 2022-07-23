@@ -3,3 +3,12 @@ groups:
 - name: NodeExporter
 
   rules:
+
+    - alert: ZfsOfflinePool
+      expr: 'node_zfs_zpool_state{state!="online"} > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: ZFS offline pool (instance {{ $labels.instance }})
+        description: "A ZFS zpool is in a unexpected state: {{ $labels.state }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
