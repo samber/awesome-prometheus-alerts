@@ -353,6 +353,10 @@ groups:
                 description: Probe failed
                 query: probe_success == 0
                 severity: critical
+              - name: Blackbox configuration reload failure
+                description: Blackbox configuration reload failure
+                query: 'blackbox_exporter_config_last_reload_successful != 1'
+                severity: warning
               - name: Blackbox slow probe
                 description: Blackbox probe took more than 1s to complete
                 query: 'avg_over_time(probe_duration_seconds[1m]) > 1'
