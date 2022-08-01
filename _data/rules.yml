@@ -562,10 +562,6 @@ groups:
                 description: Postgresql exporter is showing errors. A query may be buggy in query.yaml
                 query: 'pg_exporter_last_scrape_error > 0'
                 severity: critical
-              - name: Postgresql replication lag
-                description: PostgreSQL replication lag is going up (> 30s)
-                query: 'pg_replication_lag > 30 and ON(instance) pg_replication_is_replica == 1'
-                severity: critical
               - name: Postgresql table not auto vacuumed
                 description: Table {{ $labels.relname }} has not been auto vacuumed for 10 days
                 query: '(pg_stat_user_tables_last_autovacuum > 0) and (time() - pg_stat_user_tables_last_autovacuum) > 60 * 60 * 24 * 10'
@@ -617,17 +613,9 @@ groups:
                 for: 1m
               - name: Postgresql too many dead tuples
                 description: PostgreSQL dead tuples is too large
-                query: '((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1 unless ON(instance) (pg_replication_is_replica == 1)'
+                query: '((pg_stat_user_tables_n_dead_tup > 10000) / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) >= 0.1'
                 severity: warning
                 for: 2m
-              - name: Postgresql split brain
-                description: Split Brain, too many primary Postgresql databases in read-write mode
-                query: 'count(pg_replication_is_replica == 0) != 1'
-                severity: critical
-              - name: Postgresql promoted node
-                description: Postgresql standby server has been promoted as primary node
-                query: 'pg_replication_is_replica and changes(pg_replication_is_replica[1m]) > 0'
-                severity: warning
               - name: Postgresql configuration changed
                 description: Postgres Database configuration change has occurred
                 query: '{__name__=~"pg_settings_.*"} != ON(__name__) {__name__=~"pg_settings_([^t]|t[^r]|tr[^a]|tra[^n]|tran[^s]|trans[^a]|transa[^c]|transac[^t]|transact[^i]|transacti[^o]|transactio[^n]|transaction[^_]|transaction_[^r]|transaction_r[^e]|transaction_re[^a]|transaction_rea[^d]|transaction_read[^_]|transaction_read_[^o]|transaction_read_o[^n]|transaction_read_on[^l]|transaction_read_onl[^y]).*"} OFFSET 5m'
