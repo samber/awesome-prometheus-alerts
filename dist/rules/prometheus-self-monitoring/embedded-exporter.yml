@@ -237,3 +237,12 @@ groups:
       annotations:
         summary: Prometheus TSDB WAL truncations failed (instance {{ $labels.instance }})
         description: "Prometheus encountered {{ $value }} TSDB WAL truncation failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PrometheusTimeserieCardinality
+      expr: 'label_replace(count by(__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") > 10000'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Prometheus timeserie cardinality (instance {{ $labels.instance }})
+        description: "The \"{{ $label.name }}\" timeserie cardinality is getting very high: {{ $value }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
