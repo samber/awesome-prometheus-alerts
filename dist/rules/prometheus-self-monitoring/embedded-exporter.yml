@@ -245,4 +245,4 @@ groups:
         severity: warning
       annotations:
         summary: Prometheus timeserie cardinality (instance {{ $labels.instance }})
-        description: "The \"{{ $labels.name }}\" timeserie cardinality is getting very high: {{ $value }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "The \"{{ $label.name }}\" timeserie cardinality is getting very high: {{ $value }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
