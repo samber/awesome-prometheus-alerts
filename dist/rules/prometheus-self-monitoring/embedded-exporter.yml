@@ -31,6 +31,15 @@ groups:
         summary: Prometheus all targets missing (instance {{ $labels.instance }})
         description: "A Prometheus job does not have living target anymore.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: PrometheusTargetMissingWithWarmupTime
+      expr: 'sum by (instance, job) ((up == 0) * on (instance) group_right(job) (node_time_seconds - node_boot_time_seconds > 600))'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Prometheus target missing with warmup time (instance {{ $labels.instance }})
+        description: "Allow a job time to start up (10 minutes) before alerting that it's down.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: PrometheusConfigurationReloadFailure
       expr: 'prometheus_config_last_reload_successful != 1'
       for: 0m
