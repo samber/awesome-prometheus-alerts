@@ -1958,7 +1958,7 @@ groups:
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
-            doc_url: https://docs.ceph.com/docs/luminous/mgr/prometheus/
+            doc_url: https://docs.ceph.com/en/quincy/mgr/prometheus/
             rules:
               - name: Ceph State
                 description: Ceph instance unhealthy
