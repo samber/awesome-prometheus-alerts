@@ -23,13 +23,13 @@ groups:
         description: "Redis cluster has no node marked as master.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RedisTooManyMasters
-      expr: 'count(redis_instance_info{role="master"}) > 1'
+      expr: 'count(redis_instance_info{role="master",redis_mode!="cluster"}) > 1'
       for: 0m
       labels:
         severity: critical
       annotations:
         summary: Redis too many masters (instance {{ $labels.instance }})
-        description: "Redis cluster has too many nodes marked as master.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Redis has too many nodes marked as master.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RedisDisconnectedSlaves
       expr: 'count without (instance, job) (redis_connected_slaves) - sum without (instance, job) (redis_connected_slaves) - 1 > 1'
