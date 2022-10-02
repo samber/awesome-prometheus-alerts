@@ -27,7 +27,7 @@ groups:
               query: 'sum by (job) (up) == 0'
               severity: critical
             - name: Prometheus target missing with warmup time
-              description: Allow a job time to start up (10 minutes) before alerting that it's down. 
+              description: Allow a job time to start up (10 minutes) before alerting that it's down.
               query: 'sum by (instance, job) ((up == 0) * on (instance) group_right(job) (node_time_seconds - node_boot_time_seconds > 600))'
               severity: critical
             - name: Prometheus configuration reload failure
@@ -1951,6 +1951,24 @@ groups:
                 description: Istio pilot duplicate entry error.
                 query: 'sum(rate(pilot_duplicate_envoy_clusters{}[5m])) > 0'
                 severity: critical
+
+      - name: ArgoCD
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://argo-cd.readthedocs.io/en/stable/operator-manual/metrics/
+            rules:
+              - name: ArgoCD service not synced
+                description: Service {{ $labels.name }} run by argo is currently not in sync.
+                query: 'argocd_app_info{sync_status!="Synced"} != 0'
+                severity: warning
+                for: 15m
+              - name: ArgoCD service unhealthy
+                description: Service {{ $labels.name }} run by argo is currently not healthy.
+                query: 'argocd_app_info{health_status!="Healthy"} != 0'
+                severity: warning
+                for: 15m
+
 
   - name: Network, security and storage
     services:
