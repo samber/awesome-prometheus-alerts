@@ -59,6 +59,7 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Etcd](https://awesome-prometheus-alerts.grep.to/rules#etcd)
 - [Linkerd](https://awesome-prometheus-alerts.grep.to/rules#linkerd)
 - [Istio](https://awesome-prometheus-alerts.grep.to/rules#istio)
+- [ArgoCD](https://awesome-prometheus-alerts.grep.to/rules#argocd)
 
 #### Network, security and storage
 

@@ -1,0 +1,25 @@
+groups:
+
+- name: ArgoCD
+
+  rules:
+
+    - alert: ServiceUnSynced
+      expr: argocd_app_info{sync_status!="Synced"} != 0
+      for: 20m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD Service (name {{ $labels.name }}) unsynced.
+        description: "Service {{ $labels.name }} run by argo is currently not in sync please check"
+
+
+
+    - alert: ServiceUnhealthy
+      expr: argocd_app_info{health_status!="Healthy"} != 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: ArgoCD Service (name {{ $labels.name }}) unhealthy.
+        description: "Service {{ $labels.name }} run by argo is currently not in healthy please check"
