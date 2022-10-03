@@ -71,7 +71,8 @@ Collection available here: **[https://awesome-prometheus-alerts.grep.to](https:/
 - [Juniper](https://awesome-prometheus-alerts.grep.to/rules#juniper)
 - [CoreDNS](https://awesome-prometheus-alerts.grep.to/rules#coredns)
 - [FreeSwitch](https://awesome-prometheus-alerts.grep.to/rules#freeswitch)
-- [Hashicorp Vault](https://awesome-prometheus-alerts.grep.to/rules#Hashicorp-Vault)
+- [Hashicorp Vault](https://awesome-prometheus-alerts.grep.to/rules#hashicorp-vault)
+- [Cloudflare](https://awesome-prometheus-alerts.grep.to/rules#cloudflare)
 
 #### Other
 
