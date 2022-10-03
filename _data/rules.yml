@@ -2186,6 +2186,22 @@ groups:
                 severity: warning
                 for: 5m
 
+      - name: Cloudflare
+        exporters:
+          - name: lablabs/cloudflare-exporter
+            slug: lablabs-cloudflare-exporter
+            doc_url: https://github.com/lablabs/cloudflare-exporter
+            rules:
+              - name: Cloudflare http 4xx error rate
+                description: 'Cloudflare high HTTP 4xx error rate (> 5% for domain {{ $labels.zone }})'
+                query: '(sum by(zone) (rate(cloudflare_zone_requests_status{status=~"^4.."}[15m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[15m]))) * 100 > 5'
+                severity: warning
+              - name: Cloudflare http 5xx error rate
+                description: 'Cloudflare high HTTP 5xx error rate (> 5% for domain {{ $labels.zone }})'
+                query: '(sum by (zone) (rate(cloudflare_zone_requests_status{status=~"^5.."}[5m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[5m]))) * 100 > 5'
+                severity: critical
+
+
   - name: Other
     services:
       - name: Thanos
