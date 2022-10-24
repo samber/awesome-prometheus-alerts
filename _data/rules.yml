@@ -2081,9 +2081,13 @@ groups:
           - name: Embedded exporter
             slug: embedded-exporter
             rules:
-              - name: Minio disk offline
-                description: 'Minio disk is offline'
-                query: 'minio_disks_offline > 0'
+              - name: Minio cluster disk offline
+                description: 'Minio cluster disk is offline'
+                query: 'minio_cluster_disk_offline_total > 0'
+                severity: critical
+              - name: Minio node disk offline
+                description: 'Minio cluster node disk is offline'
+                query: 'minio_cluster_nodes_offline_total > 0'
                 severity: critical
               - name: Minio disk space usage
                 description: 'Minio available free space is low (< 10%)'
