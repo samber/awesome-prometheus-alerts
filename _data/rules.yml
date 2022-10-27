@@ -968,9 +968,9 @@ groups:
 
       - name: Elasticsearch
         exporters:
-          - name: justwatchcom/elasticsearch_exporter
-            slug: justwatchcom-elasticsearch-exporter
-            doc_url: https://github.com/justwatchcom/elasticsearch_exporter
+          - name: prometheus-community/elasticsearch_exporter
+            slug: prometheus-community-elasticsearch-exporter
+            doc_url: https://github.com/prometheus-community/elasticsearch_exporter
             rules:
               - name: Elasticsearch Heap Usage Too High
                 description: "The heap usage is over 90%"
