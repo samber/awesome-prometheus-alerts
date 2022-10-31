@@ -1631,9 +1631,9 @@ groups:
                 query: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
                 severity: critical
                 for: 2m
-              - name: Kubernetes out of disk
-                description: "{{ $labels.node }} has OutOfDisk condition"
-                query: 'kube_node_status_condition{condition="OutOfDisk",status="true"} == 1'
+              - name: Kubernetes network unavailable
+                description: "{{ $labels.node }} has NetworkUnavailable condition"
+                query: 'kube_node_status_condition{condition="NetworkUnavailable",status="true"} == 1'
                 severity: critical
                 for: 2m
               - name: Kubernetes out of capacity
