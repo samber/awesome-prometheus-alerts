@@ -1,6 +1,6 @@
 groups:
 
-- name: JustwatchcomElasticsearchExporter
+- name: PrometheusCommunityElasticsearchExporter
 
   rules:
 
