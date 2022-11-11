@@ -1471,7 +1471,7 @@ groups:
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate server
                 description: Too many HTTP requests with status 5xx (> 5%) on server {{ $labels.server }}
-                query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (server) (rate(haproxy_server_http_responses_total[1m]) * 100) > 5'
+                query: 'sum by (server) (rate(haproxy_server_http_responses_total{code="5xx"}[1m]) * 100) / sum by (server) (rate(haproxy_server_http_responses_total[1m])) > 5'
                 severity: critical
                 for: 1m
               - name: HAProxy server response errors
