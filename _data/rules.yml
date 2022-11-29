@@ -313,17 +313,17 @@ groups:
             doc_url: https://github.com/prometheus/node_exporter
             rules:
               - name: Host Memory is under utilized
-                description: 'Node memory is not fully used (> 80% free). Consider reducing memory space.'
+                description: 'Node memory is not fully used (> 80% free) for 1 week. Consider reducing memory space.'
                 query: 'node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 > 80'
                 severity: info
                 for: 7d
               - name: Host Cpu is under utilized
-                description: 'CPU load is < 20%. Consider reducing the number of CPUs.'
+                description: 'CPU load is < 20% for 1 week. Consider reducing the number of CPUs.'
                 query: '100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) < 20'
                 severity: info
                 for: 7d
               - name: Host lots of free Disk space
-                description: 'Disk space is not fully used (> 80% free). Consider reducing disk space.'
+                description: 'Disk space is not fully used (> 80% free) for 1 week. Consider reducing disk space.'
                 query: '(node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes > 80 and ON (instance, device, mountpoint) node_filesystem_readonly == 0'
                 severity: info
                 for: 7d
