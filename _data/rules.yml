@@ -329,7 +329,7 @@ groups:
                 for: 5m
                 comments: |
                   This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
-              - name: Container CPU usage
+              - name: Container CPU utilization
                 description: Container CPU usage is above 80%
                 query: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) > 80'
                 severity: warning
@@ -350,6 +350,21 @@ groups:
                 query: 'rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1'
                 severity: warning
                 for: 2m
+          - name: google/cAdvisor
+            slug: google-cadvisor-under-utilized
+            doc_url: https://github.com/google/cadvisor
+            rules:
+              - name: Container CPU utilization
+                description: Container CPU usage is under 20% for 1 week. Consider reducing memory space.
+                query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) < 20'
+                severity: info
+                for: 7d
+              - name: Container Memory usage
+                description: Container Memory usage is under 20% for 1 week. Consider reducing the number of CPUs.
+                query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) < 20'
+                severity: info
+                for: 7d
+
 
       - name: Blackbox
         exporters:
