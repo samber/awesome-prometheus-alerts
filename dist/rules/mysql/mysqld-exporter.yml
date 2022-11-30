@@ -32,7 +32,7 @@ groups:
         description: "More than 60% of MySQL connections are in running state on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlSlaveIoThreadNotRunning
-      expr: '( mysql_slave_status_slave_io_running and ON (instance) mysql_slave_status_master_server_id > 0 ) == 0'
+      expr: 'mysql_slave_status_master_server_id > 0 and ON (instance) mysql_slave_status_slave_io_running == 0'
       for: 0m
       labels:
         severity: critical
@@ -41,7 +41,7 @@ groups:
         description: "MySQL Slave IO thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlSlaveSqlThreadNotRunning
-      expr: '( mysql_slave_status_slave_sql_running and ON (instance) mysql_slave_status_master_server_id > 0) == 0'
+      expr: 'mysql_slave_status_master_server_id > 0 and ON (instance) mysql_slave_status_slave_sql_running == 0'
       for: 0m
       labels:
         severity: critical
@@ -50,7 +50,7 @@ groups:
         description: "MySQL Slave SQL thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlSlaveReplicationLag
-      expr: '( (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) and ON (instance) mysql_slave_status_master_server_id > 0 ) > 30'
+      expr: 'mysql_slave_status_master_server_id > 0 and ON (instance) (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) > 30'
       for: 1m
       labels:
         severity: critical
