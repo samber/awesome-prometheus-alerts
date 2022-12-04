@@ -1743,6 +1743,8 @@ groups:
                 description: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.
                 query: 'time() - kube_cronjob_next_schedule_time > 3600'
                 severity: warning
+                comments: |
+                  Threshold should be customized for each cronjob name.
               - name: Kubernetes job slow completion
                 description: Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.
                 query: 'kube_job_spec_completions - kube_job_status_succeeded > 0'
