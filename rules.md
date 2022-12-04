@@ -58,9 +58,13 @@
         </h2>
 
         {% if nbrRules == 0 %}
-  {% highlight javascript %}
-  // @TODO: Please contribute => https://github.com/samber/awesome-prometheus-alerts 👋
-  {% endhighlight %}
+{% highlight javascript %}
+// @TODO: Please contribute => https://github.com/samber/awesome-prometheus-alerts 👋
+{% endhighlight %}
+        {% else %}
+{% highlight bash %}
+$ wget https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/{{ service.name | replace: " ", "-" | downcase }}/{{ exporter.slug }}.yml
+{% endhighlight %}
         {% endif %}
 
         <ul>
