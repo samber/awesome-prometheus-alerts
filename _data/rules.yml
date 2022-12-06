@@ -309,6 +309,19 @@ groups:
                 severity: info
                 for: 4h
 
+          # You may be want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
+          - name: node-exporter
+            slug: node-exporter-under-utilized
+            doc_url: https://github.com/prometheus/node_exporter
+            rules:
+              - name: Host Memory is under utilized
+                description: 'Node memory is not fully used (> 80% free) for 1 week. Consider reducing memory space.'
+                query: 'min_over_time(node_memory_MemAvailable_bytes[1w]) / node_memory_MemTotal_bytes * 100 > 80'
+                severity: info
+              - name: Host Cpu is under utilized
+                description: 'CPU load is < 20% for 1 week. Consider reducing the number of CPUs.'
+                query: '100 - (max by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1w])) * 100) < 20'
+                severity: info
 
       - name: Docker containers
         exporters:

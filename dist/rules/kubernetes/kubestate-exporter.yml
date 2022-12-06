@@ -113,7 +113,7 @@ groups:
         description: "Persistent volume is in bad state\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesStatefulsetDown
-      expr: '(kube_statefulset_status_replicas_ready / kube_statefulset_status_replicas_current) != 1'
+      expr: 'kube_statefulset_replicas != kube_statefulset_status_replicas_ready > 0'
       for: 1m
       labels:
         severity: critical
