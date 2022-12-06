@@ -22,6 +22,15 @@ groups:
         summary: Host memory under memory pressure (instance {{ $labels.instance }})
         description: "The node is under heavy memory pressure. High rate of major page faults\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: HostMemoryIsUnderUtilized
+      expr: '100 - (rate(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20'
+      for: 1w
+      labels:
+        severity: info
+      annotations:
+        summary: Host Memory is under utilized (instance {{ $labels.instance }})
+        description: "Node memory is < 20% for 1 week. Consider reducing memory space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: HostUnusualNetworkThroughputIn
       expr: 'sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100'
       for: 5m
@@ -120,6 +129,15 @@ groups:
       annotations:
         summary: Host high CPU load (instance {{ $labels.instance }})
         description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HostCpuIsUnderUtilized
+      expr: '100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20'
+      for: 1w
+      labels:
+        severity: info
+      annotations:
+        summary: Host CPU is under utilized (instance {{ $labels.instance }})
+        description: "CPU load is < 20% for 1 week. Consider reducing the number of CPUs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostCpuStealNoisyNeighbor
       expr: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
