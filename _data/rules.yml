@@ -146,6 +146,13 @@ groups:
                 query: 'rate(node_vmstat_pgmajfault[1m]) > 1000'
                 severity: warning
                 for: 2m
+              - name: Host Memory is under utilized
+                description: 'Node memory is < 20% for 1 week. Consider reducing memory space.'
+                query: '100 - (rate(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20'
+                severity: info
+                for: 1w
+                comments: |
+                  You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host unusual network throughput in
                 description: Host network interfaces are probably receiving too much data (> 100 MB/s)
                 query: 'sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100'
@@ -208,6 +215,13 @@ groups:
                 description: CPU load is > 80%
                 query: '100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80'
                 severity: warning
+              - name: Host CPU is under utilized
+                description: 'CPU load is < 20% for 1 week. Consider reducing the number of CPUs.'
+                query: '100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20'
+                severity: info
+                for: 1w
+                comments: |
+                  You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host CPU steal noisy neighbor
                 description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
                 query: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
@@ -308,20 +322,6 @@ groups:
                 query: 'node_reboot_required > 0'
                 severity: info
                 for: 4h
-
-          # You may be want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
-          - name: node-exporter
-            slug: node-exporter-under-utilized
-            doc_url: https://github.com/prometheus/node_exporter
-            rules:
-              - name: Host Memory is under utilized
-                description: 'Node memory is not fully used (> 80% free) for 1 week. Consider reducing memory space.'
-                query: 'min_over_time(node_memory_MemAvailable_bytes[1w]) / node_memory_MemTotal_bytes * 100 > 80'
-                severity: info
-              - name: Host Cpu is under utilized
-                description: 'CPU load is < 20% for 1 week. Consider reducing the number of CPUs.'
-                query: '100 - (max by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1w])) * 100) < 20'
-                severity: info
 
       - name: Docker containers
         exporters:
