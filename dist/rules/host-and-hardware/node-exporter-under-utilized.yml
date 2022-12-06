@@ -1,0 +1,23 @@
+groups:
+
+- name: NodeExporterUnderUtilized
+
+  rules:
+
+    - alert: HostMemoryIsUnderUtilized
+      expr: 'min_over_time(node_memory_MemAvailable_bytes[1w]) / node_memory_MemTotal_bytes * 100 > 80'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: Host Memory is under utilized (instance {{ $labels.instance }})
+        description: "Node memory is not fully used (> 80% free) for 1 week. Consider reducing memory space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HostCpuIsUnderUtilized
+      expr: '100 - (max by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1w])) * 100) < 20'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: Host Cpu is under utilized (instance {{ $labels.instance }})
+        description: "CPU load is < 20% for 1 week. Consider reducing the number of CPUs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
