@@ -399,6 +399,11 @@ groups:
                 description: SSL certificate has expired already
                 query: 'probe_ssl_earliest_cert_expiry - time() <= 0'
                 severity: critical
+                comments: |
+                  For probe_ssl_earliest_cert_expiry to be exposed after expiration, you
+                  need to enable insecure_skip_verify. Note that this will disable
+                  certificate validation.
+                  See https://github.com/prometheus/blackbox_exporter/blob/master/CONFIGURATION.md#tls_config
               - name: Blackbox probe slow HTTP
                 description: HTTP request took more than 1s
                 query: 'avg_over_time(probe_http_duration_seconds[1m]) > 1'
