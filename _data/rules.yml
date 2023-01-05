@@ -1755,7 +1755,7 @@ groups:
                 for: 1m
               - name: Kubernetes CronJob too long
                 description: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.
-                query: 'time() - kube_cronjob_next_schedule_time > 3600'
+                query: 'kube_cronjob_next_schedule_time - time() > 3600'
                 severity: warning
                 comments: |
                   Threshold should be customized for each cronjob name.
