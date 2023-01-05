@@ -388,8 +388,8 @@ groups:
                 query: 'probe_http_status_code <= 199 OR probe_http_status_code >= 400'
                 severity: critical
               - name: Blackbox SSL certificate will expire soon
-                description: SSL certificate expires in 30 days
-                query: '86400 * 3 <= last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time() < 86400 * 30'
+                description: SSL certificate expires in 20 days
+                query: '86400 * 3 <= last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time() < 86400 * 20'
                 severity: warning
               - name: Blackbox SSL certificate will expire soon
                 description: SSL certificate expires in 3 days
