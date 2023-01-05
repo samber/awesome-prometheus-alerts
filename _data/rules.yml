@@ -389,15 +389,15 @@ groups:
                 severity: critical
               - name: Blackbox SSL certificate will expire soon
                 description: SSL certificate expires in 30 days
-                query: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 30'
+                query: 'last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time() < 86400 * 30'
                 severity: warning
               - name: Blackbox SSL certificate will expire soon
                 description: SSL certificate expires in 3 days
-                query: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 3'
+                query: 'last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time() < 86400 * 3'
                 severity: critical
               - name: Blackbox SSL certificate expired
                 description: SSL certificate has expired already
-                query: 'probe_ssl_earliest_cert_expiry - time() <= 0'
+                query: 'last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time() <= 0'
                 severity: critical
                 comments: |
                   For probe_ssl_earliest_cert_expiry to be exposed after expiration, you
