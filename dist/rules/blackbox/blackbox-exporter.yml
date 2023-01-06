@@ -41,25 +41,25 @@ groups:
         description: "HTTP status code is not 200-399\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: BlackboxSslCertificateWillExpireSoon
-      expr: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 30'
+      expr: '3 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 20'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: Blackbox SSL certificate will expire soon (instance {{ $labels.instance }})
-        description: "SSL certificate expires in 30 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "SSL certificate expires in less than 20 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: BlackboxSslCertificateWillExpireSoon
-      expr: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 3'
+      expr: '0 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 3'
       for: 0m
       labels:
         severity: critical
       annotations:
         summary: Blackbox SSL certificate will expire soon (instance {{ $labels.instance }})
-        description: "SSL certificate expires in 3 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "SSL certificate expires in less than 3 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: BlackboxSslCertificateExpired
-      expr: 'probe_ssl_earliest_cert_expiry - time() <= 0'
+      expr: 'round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 0'
       for: 0m
       labels:
         severity: critical
