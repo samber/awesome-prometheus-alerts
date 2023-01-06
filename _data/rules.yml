@@ -388,17 +388,22 @@ groups:
                 query: 'probe_http_status_code <= 199 OR probe_http_status_code >= 400'
                 severity: critical
               - name: Blackbox SSL certificate will expire soon
-                description: SSL certificate expires in 30 days
-                query: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 30'
+                description: SSL certificate expires in less than 20 days
+                query: '3 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 20'
                 severity: warning
               - name: Blackbox SSL certificate will expire soon
-                description: SSL certificate expires in 3 days
-                query: 'probe_ssl_earliest_cert_expiry - time() < 86400 * 3'
+                description: SSL certificate expires in less than 3 days
+                query: '0 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 3'
                 severity: critical
               - name: Blackbox SSL certificate expired
                 description: SSL certificate has expired already
-                query: 'probe_ssl_earliest_cert_expiry - time() <= 0'
+                query: 'round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 0'
                 severity: critical
+                comments: |
+                  For probe_ssl_earliest_cert_expiry to be exposed after expiration, you
+                  need to enable insecure_skip_verify. Note that this will disable
+                  certificate validation.
+                  See https://github.com/prometheus/blackbox_exporter/blob/master/CONFIGURATION.md#tls_config
               - name: Blackbox probe slow HTTP
                 description: HTTP request took more than 1s
                 query: 'avg_over_time(probe_http_duration_seconds[1m]) > 1'
