@@ -2080,6 +2080,30 @@ groups:
                 query: 'node_zfs_zpool_state{state!="online"} > 0'
                 severity: critical
                 for: 1m
+          - name: ZFS exporter
+            slug: zfs_exporter
+            doc_url: https://github.com/pdf/zfs_exporter
+            rules:
+              - name: ZFS pool out of space
+                description: Disk is almost full (< 10% left)
+                query: 'zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and ON (instance, device, mountpoint) zfs_pool_readonly == 0'
+                severity: warning
+              - name: ZFS pool unhealthy
+                description: ZFS pool state is {{ $value }}. See comments for more information.
+                query: 'zfs_pool_health > 0'
+                severity: critical
+                comments: |
+                  0: ONLINE
+                  1: DEGRADED
+                  2: FAULTED
+                  3: OFFLINE
+                  4: UNAVAIL
+                  5: REMOVED
+                  6: SUSPENDED
+              - name: ZFS collector failed
+                description: ZFS collector for {{ $labels.instance }} has failed to collect information
+                query: 'zfs_scrape_collector_success != 1'
+                severity: warning
 
       - name: OpenEBS
         exporters:
