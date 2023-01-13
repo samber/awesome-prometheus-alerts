@@ -1100,13 +1100,13 @@ groups:
                 query: 'avg(cassandra_table_tombstones_scanned{quantile="0.99"}) by (instance,cassandra_cluster,keyspace) > 100'
                 for: 2m
                 severity: critical
-              - name: 'Cassandra client request unvailable write'
-                description: 'Some Cassandra client requests are unvailable to write - {{ $labels.cassandra_cluster }}'
+              - name: 'Cassandra client request unavailable write'
+                description: 'Some Cassandra client requests are unavailable to write - {{ $labels.cassandra_cluster }}'
                 query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="write"}[1m]) > 0'
                 for: 2m
                 severity: critical
-              - name: 'Cassandra client request unvailable read'
-                description: 'Some Cassandra client requests are unvailable to read - {{ $labels.cassandra_cluster }}'
+              - name: 'Cassandra client request unavailable read'
+                description: 'Some Cassandra client requests are unavailable to read - {{ $labels.cassandra_cluster }}'
                 query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="read"}[1m]) > 0'
                 for: 2m
                 severity: critical
@@ -1186,11 +1186,11 @@ groups:
                 description: Too much tombstones scanned in queries
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:table:tombstonescannedhistogram:99thpercentile"} > 1000'
                 severity: critical
-              - name: Cassandra client request unvailable write
+              - name: Cassandra client request unavailable write
                 description: Write failures have occurred because too many nodes are unavailable
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:unavailables:count"}[1m]) > 0'
                 severity: critical
-              - name: Cassandra client request unvailable read
+              - name: Cassandra client request unavailable read
                 description: Read failures have occurred because too many nodes are unavailable
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:unavailables:count"}[1m]) > 0'
                 severity: critical
