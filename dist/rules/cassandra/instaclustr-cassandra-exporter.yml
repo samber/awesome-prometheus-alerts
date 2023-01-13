@@ -76,23 +76,23 @@ groups:
         summary: Cassandra tombstone dump (instance {{ $labels.instance }})
         description: "Cassandra tombstone dump - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestUnvailableWrite
+    - alert: CassandraClientRequestUnavailableWrite
       expr: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="write"}[1m]) > 0'
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request unvailable write (instance {{ $labels.instance }})
-        description: "Some Cassandra client requests are unvailable to write - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Cassandra client request unavailable write (instance {{ $labels.instance }})
+        description: "Some Cassandra client requests are unavailable to write - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestUnvailableRead
+    - alert: CassandraClientRequestUnavailableRead
       expr: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="read"}[1m]) > 0'
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request unvailable read (instance {{ $labels.instance }})
-        description: "Some Cassandra client requests are unvailable to read - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Cassandra client request unavailable read (instance {{ $labels.instance }})
+        description: "Some Cassandra client requests are unavailable to read - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraClientRequestWriteFailure
       expr: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 0'
