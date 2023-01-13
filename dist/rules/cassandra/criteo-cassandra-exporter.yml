@@ -121,22 +121,22 @@ groups:
         summary: Cassandra tombstone dump (instance {{ $labels.instance }})
         description: "Too much tombstones scanned in queries\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestUnvailableWrite
+    - alert: CassandraClientRequestUnavailableWrite
       expr: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:unavailables:count"}[1m]) > 0'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request unvailable write (instance {{ $labels.instance }})
+        summary: Cassandra client request unavailable write (instance {{ $labels.instance }})
         description: "Write failures have occurred because too many nodes are unavailable\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraClientRequestUnvailableRead
+    - alert: CassandraClientRequestUnavailableRead
       expr: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:unavailables:count"}[1m]) > 0'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Cassandra client request unvailable read (instance {{ $labels.instance }})
+        summary: Cassandra client request unavailable read (instance {{ $labels.instance }})
         description: "Read failures have occurred because too many nodes are unavailable\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CassandraClientRequestWriteFailure
