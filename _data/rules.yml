@@ -1708,6 +1708,11 @@ groups:
                 query: 'kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas'
                 severity: info
                 for: 2m
+              - name: Kubernetes HPA underutilized
+                description: HPA is constantly at minimum replicas for 50% of the time
+                query: 'max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler) > 3'  # allow minimum 3 replicas running
+                severity: info
+                for: 5m
               - name: Kubernetes Pod not healthy
                 description: Pod has been in a non-ready state for longer than 15 minutes.
                 query: 'sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0'
