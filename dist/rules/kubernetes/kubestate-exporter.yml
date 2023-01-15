@@ -150,12 +150,12 @@ groups:
 
     - alert: KubernetesHpaUnderutilized
       expr: 'max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler) > 3'
-      for: 5m
+      for: 0m
       labels:
         severity: info
       annotations:
         summary: Kubernetes HPA underutilized (instance {{ $labels.instance }})
-        description: "HPA is constantly at minimum replicas for 50% of the time\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "HPA is constantly at minimum replicas for 50% of the time. Potential cost saving here.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesPodNotHealthy
       expr: 'sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0'
