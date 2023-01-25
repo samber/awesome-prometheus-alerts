@@ -1054,7 +1054,7 @@ groups:
                 for: 15m
               - name: Elasticsearch no new documents
                 description: No new documents for 10 min!
-                query: 'increase(elasticsearch_indices_docs{es_data_node="true"}[10m]) < 1'
+                query: 'increase(elasticsearch_indices_indexing_index_total{es_data_node="true"}[10m]) < 1'
                 severity: warning
 
       - name: Cassandra
