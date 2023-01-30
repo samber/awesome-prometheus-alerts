@@ -131,7 +131,7 @@ groups:
         description: "Elasticsearch has pending tasks. Cluster works slowly.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchNoNewDocuments
-      expr: 'increase(elasticsearch_indices_docs{es_data_node="true"}[10m]) < 1'
+      expr: 'increase(elasticsearch_indices_indexing_index_total{es_data_node="true"}[10m]) < 1'
       for: 0m
       labels:
         severity: warning
