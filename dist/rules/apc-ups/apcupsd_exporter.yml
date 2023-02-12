@@ -1,0 +1,59 @@
+groups:
+
+- name: Apcupsd_exporter
+
+  rules:
+
+    - alert: ApcUpsBatteryNearlyEmpty
+      expr: 'apcupsd_battery_charge_percent < 10'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: APC UPS Battery nearly empty (instance {{ $labels.instance }})
+        description: "Battery is almost empty (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ApcUpsLessThan15MinutesOfBatteryTimeRemaining
+      expr: 'apcupsd_battery_time_left_seconds < 900'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: APC UPS Less than 15 Minutes of battery time remaining (instance {{ $labels.instance }})
+        description: "Battery is almost empty (< 15 Minutes remaining)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ApcUpsAcInputOutage
+      expr: 'apcupsd_battery_time_on_seconds > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: APC UPS AC input outage (instance {{ $labels.instance }})
+        description: "UPS now running on battery (since {{$value | humanizeDuration}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ApcUpsLowBatteryVoltage
+      expr: '(apcupsd_battery_volts / apcupsd_battery_nominal_volts) < 0.95'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: APC UPS low battery voltage (instance {{ $labels.instance }})
+        description: "Battery voltage is lower than nominal (< 95%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ApcUpsHighTemperature
+      expr: 'apcupsd_internal_temperature_celsius >= 40'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: APC UPS high temperature (instance {{ $labels.instance }})
+        description: "Internal temperature is high ({{$value}}°C)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ApcUpsHighLoad
+      expr: 'apcupsd_ups_load_percent > 80'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: APC UPS high load (instance {{ $labels.instance }})
+        description: "UPS load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
