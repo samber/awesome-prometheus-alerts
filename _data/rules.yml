@@ -230,6 +230,11 @@ groups:
                 description: CPU iowait > 5%. A high iowait means that you are disk or network bound.
                 query: 'avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) * 100 > 5'
                 severity: warning
+              - name: Host unusual disk IO
+                description: 'Time spent in IO is too high on {{ $labels.instance }}. Check storage for issues.'
+                query: 'rate(node_disk_io_time_seconds_total[1m]) > 0.5'
+                severity: warning
+                for: 5m
               - name: Host context switching
                 description: Context switching is growing on node (> 1000 / s)
                 query: '(rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000'
