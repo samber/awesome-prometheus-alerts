@@ -157,6 +157,15 @@ groups:
         summary: Host CPU high iowait (instance {{ $labels.instance }})
         description: "CPU iowait > 5%. A high iowait means that you are disk or network bound.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: HostUnusualDiskIo
+      expr: 'rate(node_disk_io_time_seconds_total[1m]) > 0.5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Host unusual disk IO (instance {{ $labels.instance }})
+        description: "Time spent in IO is too high on {{ $labels.instance }}. Check storage for issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: HostContextSwitching
       expr: '(rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000'
       for: 0m
