@@ -30,12 +30,3 @@ groups:
       annotations:
         summary: Vault too many infinity tokens (instance {{ $labels.instance }})
         description: "Too many infinity tokens {{ $labels.instance }}: {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: VaultClusterHealth
-      expr: 'max(up {job='vault'}) == 0'
-      for: 30s
-      labels:
-        severity: critical
-      annotations:
-        summary: Vault cluster is in bad shape (instance {{ $labels.instance }})
-        description: "Vault cluster unhealthy on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
