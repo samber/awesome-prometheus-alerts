@@ -617,7 +617,7 @@ groups:
                 severity: warning
               - name: Postgresql high rollback rate
                 description: Ratio of transactions being aborted compared to committed is > 2 %
-                query: 'rate(pg_stat_database_xact_rollback{datname!~"template.*"}[3m]) / rate(pg_stat_database_xact_commit{datname!~"template.*"}[3m]) > 0.02'
+                query: 'sum by (namespace,datname) ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) / ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m])))) > 0.02'
                 severity: warning
               - name: Postgresql commit rate low
                 description: Postgresql seems to be processing very few transactions
