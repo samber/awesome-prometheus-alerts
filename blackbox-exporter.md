@@ -23,7 +23,7 @@ You should deploy blackbox exporters in multiple Point of Presence around the gl
 Blackbox exporters and endpoints must be declared in Prometheus. Here is a simple configuration, inspired by [Hayk Davtyan medium post](https://medium.com/geekculture/single-prometheus-job-for-dozens-of-blackbox-exporters-2a7ba492d6c8):
 
 ```yml
-# sd/
+# sd/blackbox.yml
 
 - targets:
   #
