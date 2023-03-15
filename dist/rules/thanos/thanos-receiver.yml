@@ -1,0 +1,68 @@
+groups:
+
+- name: ThanosReceiver
+
+  rules:
+
+    - alert: ThanosReceiveHttpRequestErrorRateHigh
+      expr: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-receive.*", handler="receive"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m]))) * 100 > 5'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Receive Http Request Error Rate High (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveHttpRequestLatencyHigh
+      expr: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-receive.*", handler="receive"}[5m]))) > 10 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-receive.*", handler="receive"}[5m])) > 0)'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Receive Http Request Latency High (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} has a 99th percentile latency of {{ $value }} seconds for requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveHighReplicationFailures
+      expr: 'thanos_receive_replication_factor > 1 and ((sum by (job) (rate(thanos_receive_replications_total{result="error", job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_replications_total{job=~".*thanos-receive.*"}[5m]))) > (max by (job) (floor((thanos_receive_replication_factor{job=~".*thanos-receive.*"}+1)/ 2)) / max by (job) (thanos_receive_hashring_nodes{job=~".*thanos-receive.*"}))) * 100'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Receive High Replication Failures (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} is failing to replicate {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveHighForwardRequestFailures
+      expr: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error", job=~".*thanos-receive.*"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m]))) * 100 > 20'
+      for: 5m
+      labels:
+        severity: info
+      annotations:
+        summary: Thanos Receive High Forward Request Failures (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} is failing to forward {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveHighHashringFileRefreshFailures
+      expr: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0)'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Receive High Hashring File Refresh Failures (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} is failing to refresh hashring file, {{$value | humanize}} of attempts failed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveConfigReloadFailure
+      expr: 'avg by (job) (thanos_receive_config_last_reload_successful{job=~".*thanos-receive.*"}) != 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Receive Config Reload Failure (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} has not been able to reload hashring configurations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveNoUpload
+      expr: '(up{job=~".*thanos-receive.*"} - 1) + on (job, instance) (sum by (job, instance) (increase(thanos_shipper_uploads_total{job=~".*thanos-receive.*"}[3h])) == 0)'
+      for: 3h
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Receive No Upload (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.instance}} has not uploaded latest data to object storage.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

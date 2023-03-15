@@ -1,0 +1,59 @@
+groups:
+
+- name: ThanosComponentAbsent
+
+  rules:
+
+    - alert: ThanosCompactIsDown
+      expr: 'absent(up{job=~".*thanos-compact.*"} == 1)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Compact Is Down (instance {{ $labels.instance }})
+        description: "ThanosCompact has disappeared. Prometheus target for the component cannot be discovered.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosQueryIsDown
+      expr: 'absent(up{job=~".*thanos-query.*"} == 1)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Query Is Down (instance {{ $labels.instance }})
+        description: "ThanosQuery has disappeared. Prometheus target for the component cannot be discovered.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveIsDown
+      expr: 'absent(up{job=~".*thanos-receive.*"} == 1)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Receive Is Down (instance {{ $labels.instance }})
+        description: "ThanosReceive has disappeared. Prometheus target for the component cannot be discovered.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosRuleIsDown
+      expr: 'absent(up{job=~".*thanos-rule.*"} == 1)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Rule Is Down (instance {{ $labels.instance }})
+        description: "ThanosRule has disappeared. Prometheus target for the component cannot be discovered.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosSidecarIsDown
+      expr: 'absent(up{job=~".*thanos-sidecar.*"} == 1)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Sidecar Is Down (instance {{ $labels.instance }})
+        description: "ThanosSidecar has disappeared. Prometheus target for the component cannot be discovered.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosStoreIsDown
+      expr: 'absent(up{job=~".*thanos-store.*"} == 1)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Store Is Down (instance {{ $labels.instance }})
+        description: "ThanosStore has disappeared. Prometheus target for the component cannot be discovered.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

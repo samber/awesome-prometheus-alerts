@@ -1,0 +1,23 @@
+groups:
+
+- name: ThanosSidecar
+
+  rules:
+
+    - alert: ThanosSidecarBucketOperationsFailed
+      expr: 'sum by (job, instance) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-sidecar.*"}[5m])) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Sidecar Bucket Operations Failed (instance {{ $labels.instance }})
+        description: "Thanos Sidecar {{$labels.instance}} bucket operations are failing\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosSidecarNoConnectionToStartedPrometheus
+      expr: 'thanos_sidecar_prometheus_up{job=~".*thanos-sidecar.*"} == 0 and on (namespace, pod)prometheus_tsdb_data_replay_duration_seconds != 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Sidecar No Connection To Started Prometheus (instance {{ $labels.instance }})
+        description: "Thanos Sidecar {{$labels.instance}} is unhealthy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

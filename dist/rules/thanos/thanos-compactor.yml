@@ -1,0 +1,50 @@
+groups:
+
+- name: ThanosCompactor
+
+  rules:
+
+    - alert: ThanosCompactorMultipleRunning
+      expr: 'sum by (job) (up{job=~".*thanos-compact.*"}) > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Compactor Multiple Running (instance {{ $labels.instance }})
+        description: "No more than one Thanos Compact instance should be running at once. There are {{$value}} instances running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosCompactorHalted
+      expr: 'thanos_compact_halted{job=~".*thanos-compact.*"} == 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Compactor Halted (instance {{ $labels.instance }})
+        description: "Thanos Compact {{$labels.job}} has failed to run and now is halted.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosCompactorHighCompactionFailures
+      expr: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5)'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Compactor High Compaction Failures (instance {{ $labels.instance }})
+        description: "Thanos Compact {{$labels.job}} is failing to execute {{$value | humanize}}% of compactions.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosCompactBucketHighOperationFailures
+      expr: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5)'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Compact Bucket High Operation Failures (instance {{ $labels.instance }})
+        description: "Thanos Compact {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosCompactHasNotRun
+      expr: '(time() - max by (job) (max_over_time(thanos_objstore_bucket_last_successful_upload_time{job=~".*thanos-compact.*"}[24h]))) / 60 / 60 > 24'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Compact Has Not Run (instance {{ $labels.instance }})
+        description: "Thanos Compact {{$labels.job}} has not uploaded anything for 24 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

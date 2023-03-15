@@ -1,0 +1,41 @@
+groups:
+
+- name: ThanosStore
+
+  rules:
+
+    - alert: ThanosStoreGrpcErrorRate
+      expr: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-store.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Store Grpc Error Rate (instance {{ $labels.instance }})
+        description: "Thanos Store {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosStoreSeriesGateLatencyHigh
+      expr: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_bucket_store_series_gate_duration_seconds_bucket{job=~".*thanos-store.*"}[5m]))) > 2 and sum by (job) (rate(thanos_bucket_store_series_gate_duration_seconds_count{job=~".*thanos-store.*"}[5m])) > 0)'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Store Series Gate Latency High (instance {{ $labels.instance }})
+        description: "Thanos Store {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for store series gate requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosStoreBucketHighOperationFailures
+      expr: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-store.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Store Bucket High Operation Failures (instance {{ $labels.instance }})
+        description: "Thanos Store {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosStoreObjstoreOperationLatencyHigh
+      expr: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_objstore_bucket_operation_duration_seconds_bucket{job=~".*thanos-store.*"}[5m]))) > 2 and  sum by (job) (rate(thanos_objstore_bucket_operation_duration_seconds_count{job=~".*thanos-store.*"}[5m])) > 0)'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Store Objstore Operation Latency High (instance {{ $labels.instance }})
+        description: "Thanos Store {{$labels.job}} Bucket has a 99th percentile latency of {{$value}} seconds for the bucket operations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

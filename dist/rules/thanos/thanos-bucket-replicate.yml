@@ -1,0 +1,23 @@
+groups:
+
+- name: ThanosBucketReplicate
+
+  rules:
+
+    - alert: ThanosBucketReplicateErrorRate
+      expr: '(sum by (job) (rate(thanos_replicate_replication_runs_total{result="error", job=~".*thanos-bucket-replicate.*"}[5m]))/ on (job) group_left  sum by (job) (rate(thanos_replicate_replication_runs_total{job=~".*thanos-bucket-replicate.*"}[5m]))) * 100 >= 10'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Bucket Replicate Error Rate (instance {{ $labels.instance }})
+        description: "Thanos Replicate is failing to run, {{$value | humanize}}% of attempts failed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosBucketReplicateRunLatency
+      expr: '(histogram_quantile(0.99, sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_bucket{job=~".*thanos-bucket-replicate.*"}[5m]))) > 20 and  sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_bucket{job=~".*thanos-bucket-replicate.*"}[5m])) > 0)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Bucket Replicate Run Latency (instance {{ $labels.instance }})
+        description: "Thanos Replicate {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for the replicate operations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
