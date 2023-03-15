@@ -2269,21 +2269,256 @@ groups:
     services:
       - name: Thanos
         exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
+          - name: Thanos Compactor
+            slug: thanos-compactor
             rules:
-              - name: Thanos compaction halted
-                description: Thanos compaction has failed to run and is now halted.
-                query: 'thanos_compact_halted == 1'
-                severity: critical
-              - name: Thanos compact bucket operation failure
-                description: Thanos compaction has failing storage operations
-                query: 'rate(thanos_objstore_bucket_operation_failures_total[1m]) > 0'
-                severity: critical
-              - name: Thanos compact not run
-                description: Thanos compaction has not run in 24 hours.
-                query: '(time() - thanos_objstore_bucket_last_successful_upload_time) > 24*60*60'
-                severity: critical
+            - name: Thanos Compactor Multiple Running
+              description: 'No more than one Thanos Compact instance should be running at once. There are {{$value}} instances running.'
+              query: 'sum by (job) (up{job=~".*thanos-compact.*"}) > 1'
+              severity: warning
+              for: 5m
+            - name: Thanos Compactor Halted
+              description: 'Thanos Compact {{$labels.job}} has failed to run and now is halted.'
+              query: 'thanos_compact_halted{job=~".*thanos-compact.*"} == 1'
+              severity: warning
+              for: 5m
+            - name: Thanos Compactor High Compaction Failures
+              description: 'Thanos Compact {{$labels.job}} is failing to execute {{$value | humanize}}% of compactions.'
+              query: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5)'
+              severity: warning
+              for: 15m
+            - name: Thanos Compact Bucket High Operation Failures
+              description: 'Thanos Compact {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations.'
+              query: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5)'
+              severity: warning
+              for: 15m
+            - name: Thanos Compact Has Not Run
+              description: 'Thanos Compact {{$labels.job}} has not uploaded anything for 24 hours.'
+              query: '(time() - max by (job) (max_over_time(thanos_objstore_bucket_last_successful_upload_time{job=~".*thanos-compact.*"}[24h]))) / 60 / 60 > 24'
+              severity: warning
+              for: 0m
+          - name: Thanos Query
+            slug: thanos-query
+            rules:
+            - name: Thanos Query Http Request Query Error Rate High
+              description: 'Thanos Query {{$labels.job}} is failing to handle {{$value | humanize}}% of "query" requests.'
+              query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-query.*", handler="query"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query"}[5m]))) * 100 > 5'
+              severity: critical
+              for: 5m
+            - name: Thanos Query Http Request Query Range Error Rate High
+              description: 'Thanos Query {{$labels.job}} is failing to handle {{$value | humanize}}% of "query_range" requests.'
+              query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-query.*", handler="query_range"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-query.*", handler="query_range"}[5m]))) * 100 > 5'
+              severity: critical
+              for: 5m
+            - name: Thanos Query Grpc Server Error Rate
+              description: 'Thanos Query {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.'
+              query: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-query.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-query.*"}[5m])) * 100 > 5)'
+              severity: warning
+              for: 5m
+            - name: Thanos Query Grpc Client Error Rate
+              description: 'Thanos Query {{$labels.job}} is failing to send {{$value | humanize}}% of requests.'
+              query: '(sum by (job) (rate(grpc_client_handled_total{grpc_code!="OK", job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m]))) * 100 > 5'
+              severity: warning
+              for: 5m
+            - name: Thanos Query High D N S Failures
+              description: 'Thanos Query {{$labels.job}} have {{$value | humanize}}% of failing DNS queries for store endpoints.'
+              query: '(sum by (job) (rate(thanos_query_store_apis_dns_failures_total{job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m]))) * 100 > 1'
+              severity: warning
+              for: 15m
+            - name: Thanos Query Instant Latency High
+              description: 'Thanos Query {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for instant queries.'
+              query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query"}[5m]))) > 40 and sum by (job) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query"}[5m])) > 0)'
+              severity: critical
+              for: 10m
+            - name: Thanos Query Range Latency High
+              description: 'Thanos Query {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for range queries.'
+              query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query_range"}[5m]))) > 90 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-query.*", handler="query_range"}[5m])) > 0)'
+              severity: critical
+              for: 10m
+            - name: Thanos Query Overload
+              description: 'Thanos Query {{$labels.job}} has been overloaded for more than 15 minutes. This may be a symptom of excessive simultanous complex requests, low performance of the Prometheus API, or failures within these components. Assess the health of the Thanos query instances, the connnected Prometheus instances, look for potential senders of these requests and then contact support.'
+              query: '(max_over_time(thanos_query_concurrent_gate_queries_max[5m]) - avg_over_time(thanos_query_concurrent_gate_queries_in_flight[5m]) < 1)'
+              severity: warning
+              for: 15m
+          - name: Thanos Receiver
+            slug: thanos-receiver
+            rules:
+            - name: Thanos Receive Http Request Error Rate High
+              description: 'Thanos Receive {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.'
+              query: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-receive.*", handler="receive"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m]))) * 100 > 5'
+              severity: critical
+              for: 5m
+            - name: Thanos Receive Http Request Latency High
+              description: 'Thanos Receive {{$labels.job}} has a 99th percentile latency of {{ $value }} seconds for requests.'
+              query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-receive.*", handler="receive"}[5m]))) > 10 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-receive.*", handler="receive"}[5m])) > 0)'
+              severity: critical
+              for: 10m
+            - name: Thanos Receive High Replication Failures
+              description: 'Thanos Receive {{$labels.job}} is failing to replicate {{$value | humanize}}% of requests.'
+              query: 'thanos_receive_replication_factor > 1 and ((sum by (job) (rate(thanos_receive_replications_total{result="error", job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_replications_total{job=~".*thanos-receive.*"}[5m]))) > (max by (job) (floor((thanos_receive_replication_factor{job=~".*thanos-receive.*"}+1)/ 2)) / max by (job) (thanos_receive_hashring_nodes{job=~".*thanos-receive.*"}))) * 100'
+              severity: warning
+              for: 5m
+            - name: Thanos Receive High Forward Request Failures
+              description: 'Thanos Receive {{$labels.job}} is failing to forward {{$value | humanize}}% of requests.'
+              query: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error", job=~".*thanos-receive.*"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m]))) * 100 > 20'
+              severity: info
+              for: 5m
+            - name: Thanos Receive High Hashring File Refresh Failures
+              description: 'Thanos Receive {{$labels.job}} is failing to refresh hashring file, {{$value | humanize}} of attempts failed.'
+              query: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0)'
+              severity: warning
+              for: 15m
+            - name: Thanos Receive Config Reload Failure
+              description: 'Thanos Receive {{$labels.job}} has not been able to reload hashring configurations.'
+              query: 'avg by (job) (thanos_receive_config_last_reload_successful{job=~".*thanos-receive.*"}) != 1'
+              severity: warning
+              for: 5m
+            - name: Thanos Receive No Upload
+              description: 'Thanos Receive {{$labels.instance}} has not uploaded latest data to object storage.'
+              query: '(up{job=~".*thanos-receive.*"} - 1) + on (job, instance) (sum by (job, instance) (increase(thanos_shipper_uploads_total{job=~".*thanos-receive.*"}[3h])) == 0)'
+              severity: critical
+              for: 3h
+          - name: Thanos Sidecar
+            slug: thanos-sidecar
+            rules:
+            - name: Thanos Sidecar Bucket Operations Failed
+              description: 'Thanos Sidecar {{$labels.instance}} bucket operations are failing'
+              query: 'sum by (job, instance) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-sidecar.*"}[5m])) > 0'
+              severity: critical
+              for: 5m
+            - name: Thanos Sidecar No Connection To Started Prometheus
+              description: 'Thanos Sidecar {{$labels.instance}} is unhealthy.'
+              query: 'thanos_sidecar_prometheus_up{job=~".*thanos-sidecar.*"} == 0 and on (namespace, pod)prometheus_tsdb_data_replay_duration_seconds != 0'
+              severity: critical
+              for: 5m
+          - name: Thanos Store
+            slug: thanos-store
+            rules:
+            - name: Thanos Store Grpc Error Rate
+              description: 'Thanos Store {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.'
+              query: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-store.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+              severity: warning
+              for: 5m
+            - name: Thanos Store Series Gate Latency High
+              description: 'Thanos Store {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for store series gate requests.'
+              query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_bucket_store_series_gate_duration_seconds_bucket{job=~".*thanos-store.*"}[5m]))) > 2 and sum by (job) (rate(thanos_bucket_store_series_gate_duration_seconds_count{job=~".*thanos-store.*"}[5m])) > 0)'
+              severity: warning
+              for: 10m
+            - name: Thanos Store Bucket High Operation Failures
+              description: 'Thanos Store {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations.'
+              query: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-store.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) * 100 > 5)'
+              severity: warning
+              for: 15m
+            - name: Thanos Store Objstore Operation Latency High
+              description: 'Thanos Store {{$labels.job}} Bucket has a 99th percentile latency of {{$value}} seconds for the bucket operations.'
+              query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_objstore_bucket_operation_duration_seconds_bucket{job=~".*thanos-store.*"}[5m]))) > 2 and  sum by (job) (rate(thanos_objstore_bucket_operation_duration_seconds_count{job=~".*thanos-store.*"}[5m])) > 0)'
+              severity: warning
+              for: 10m
+          - name: Thanos Ruler
+            slug: thanos-ruler
+            rules:
+            - name: Thanos Rule Queue Is Dropping Alerts
+              description: 'Thanos Rule {{$labels.instance}} is failing to queue alerts.'
+              query: 'sum by (job, instance) (rate(thanos_alert_queue_alerts_dropped_total{job=~".*thanos-rule.*"}[5m])) > 0'
+              severity: critical
+              for: 5m
+            - name: Thanos Rule Sender Is Failing Alerts
+              description: 'Thanos Rule {{$labels.instance}} is failing to send alerts to alertmanager.'
+              query: 'sum by (job, instance) (rate(thanos_alert_sender_alerts_dropped_total{job=~".*thanos-rule.*"}[5m])) > 0'
+              severity: critical
+              for: 5m
+            - name: Thanos Rule High Rule Evaluation Failures
+              description: 'Thanos Rule {{$labels.instance}} is failing to evaluate rules.'
+              query: '(sum by (job, instance) (rate(prometheus_rule_evaluation_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5)'
+              severity: critical
+              for: 5m
+            - name: Thanos Rule High Rule Evaluation Warnings
+              description: 'Thanos Rule {{$labels.instance}} has high number of evaluation warnings.'
+              query: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total{job=~".*thanos-rule.*"}[5m])) > 0'
+              severity: info
+              for: 15m
+            - name: Thanos Rule Rule Evaluation Latency High
+              description: 'Thanos Rule {{$labels.instance}} has higher evaluation latency than interval for {{$labels.rule_group}}.'
+              query: '(sum by (job, instance, rule_group) (prometheus_rule_group_last_duration_seconds{job=~".*thanos-rule.*"}) > sum by (job, instance, rule_group) (prometheus_rule_group_interval_seconds{job=~".*thanos-rule.*"}))'
+              severity: warning
+              for: 5m
+            - name: Thanos Rule Grpc Error Rate
+              description: 'Thanos Rule {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.'
+              query: '(sum by (job, instance) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-rule.*"}[5m]))/  sum by (job, instance) (rate(grpc_server_started_total{job=~".*thanos-rule.*"}[5m])) * 100 > 5)'
+              severity: warning
+              for: 5m
+            - name: Thanos Rule Config Reload Failure
+              description: 'Thanos Rule {{$labels.job}} has not been able to reload its configuration.'
+              query: 'avg by (job, instance) (thanos_rule_config_last_reload_successful{job=~".*thanos-rule.*"}) != 1'
+              severity: info
+              for: 5m
+            - name: Thanos Rule Query High D N S Failures
+              description: 'Thanos Rule {{$labels.job}} has {{$value | humanize}}% of failing DNS queries for query endpoints.'
+              query: '(sum by (job, instance) (rate(thanos_rule_query_apis_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1)'
+              severity: warning
+              for: 15m
+            - name: Thanos Rule Alertmanager High D N S Failures
+              description: 'Thanos Rule {{$labels.instance}} has {{$value | humanize}}% of failing DNS queries for Alertmanager endpoints.'
+              query: '(sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1)'
+              severity: warning
+              for: 15m
+            - name: Thanos Rule No Evaluation For10 Intervals
+              description: 'Thanos Rule {{$labels.job}} has rule groups that did not evaluate for at least 10x of their expected interval.'
+              query: 'time() -  max by (job, instance, group) (prometheus_rule_group_last_evaluation_timestamp_seconds{job=~".*thanos-rule.*"})>10 * max by (job, instance, group) (prometheus_rule_group_interval_seconds{job=~".*thanos-rule.*"})'
+              severity: info
+              for: 5m
+            - name: Thanos No Rule Evaluations
+              description: 'Thanos Rule {{$labels.instance}} did not perform any rule evaluations in the past 10 minutes.'
+              query: 'sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) <= 0  and sum by (job, instance) (thanos_rule_loaded_rules{job=~".*thanos-rule.*"}) > 0'
+              severity: critical
+              for: 5m
+          - name: Thanos Bucket Replicate
+            slug: thanos-bucket-replicate
+            rules:
+            - name: Thanos Bucket Replicate Error Rate
+              description: 'Thanos Replicate is failing to run, {{$value | humanize}}% of attempts failed.'
+              query: '(sum by (job) (rate(thanos_replicate_replication_runs_total{result="error", job=~".*thanos-bucket-replicate.*"}[5m]))/ on (job) group_left  sum by (job) (rate(thanos_replicate_replication_runs_total{job=~".*thanos-bucket-replicate.*"}[5m]))) * 100 >= 10'
+              severity: critical
+              for: 5m
+            - name: Thanos Bucket Replicate Run Latency
+              description: 'Thanos Replicate {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for the replicate operations.'
+              query: '(histogram_quantile(0.99, sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_bucket{job=~".*thanos-bucket-replicate.*"}[5m]))) > 20 and  sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_bucket{job=~".*thanos-bucket-replicate.*"}[5m])) > 0)'
+              severity: critical
+              for: 5m
+          - name: Thanos Component Absent
+            slug: thanos-component-absent
+            rules:
+            - name: Thanos Compact Is Down
+              description: 'ThanosCompact has disappeared. Prometheus target for the component cannot be discovered.'
+              query: 'absent(up{job=~".*thanos-compact.*"} == 1)'
+              severity: critical
+              for: 5m
+            - name: Thanos Query Is Down
+              description: 'ThanosQuery has disappeared. Prometheus target for the component cannot be discovered.'
+              query: 'absent(up{job=~".*thanos-query.*"} == 1)'
+              severity: critical
+              for: 5m
+            - name: Thanos Receive Is Down
+              description: 'ThanosReceive has disappeared. Prometheus target for the component cannot be discovered.'
+              query: 'absent(up{job=~".*thanos-receive.*"} == 1)'
+              severity: critical
+              for: 5m
+            - name: Thanos Rule Is Down
+              description: 'ThanosRule has disappeared. Prometheus target for the component cannot be discovered.'
+              query: 'absent(up{job=~".*thanos-rule.*"} == 1)'
+              severity: critical
+              for: 5m
+            - name: Thanos Sidecar Is Down
+              description: 'ThanosSidecar has disappeared. Prometheus target for the component cannot be discovered.'
+              query: 'absent(up{job=~".*thanos-sidecar.*"} == 1)'
+              severity: critical
+              for: 5m
+            - name: Thanos Store Is Down
+              description: 'ThanosStore has disappeared. Prometheus target for the component cannot be discovered.'
+              query: absent(up{job=~".*thanos-store.*"} == 1)
+              severity: critical
+              for: 5m
+
       - name: Loki
         exporters:
           - name: Embedded exporter
