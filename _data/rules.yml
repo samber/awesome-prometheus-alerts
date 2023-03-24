@@ -254,7 +254,7 @@ groups:
                 severity: warning
               - name: Host physical component too hot
                 description: "Physical hardware component too hot"
-                query: 'node_hwmon_temp_celsius > 75'
+                query: 'node_hwmon_temp_celsius * ignoring(label) group_left(instance, job, node, sensor) node_hwmon_sensor_label{label!="tctl"} > 75'
                 severity: warning
                 for: 5m
               - name: Host node overtemperature alarm
