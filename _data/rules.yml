@@ -792,7 +792,7 @@ groups:
                 severity: critical
               - name: MongoDB replication headroom
                 description: MongoDB replication headroom is <= 0
-                query: 'sum(avg(mongodb_oplog_stats_start - mongodb_oplog_stats_end)) - sum(avg(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"})) <= 0'
+                query: 'sum(avg(mongodb_mongod_replset_oplog_head_timestamp - mongodb_mongod_replset_oplog_tail_timestamp)) - sum(avg(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"})) <= 0'
                 severity: critical
               - name: MongoDB number cursors open
                 description: Too many cursors opened by MongoDB for clients (> 10k)
