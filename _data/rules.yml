@@ -788,7 +788,7 @@ groups:
                 severity: critical
               - name: MongoDB replication lag
                 description: Mongodb replication lag is more than 10s
-                query: 'mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"} > 10'
+                query: '(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"}) / 1000 > 10'
                 severity: critical
               - name: MongoDB replication headroom
                 description: MongoDB replication headroom is <= 0
