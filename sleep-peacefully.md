@@ -18,6 +18,7 @@ Example:
 
 ```yml
 # rules.yml
+
 groups:
   - name: timezones
     rules:
@@ -53,15 +54,15 @@ groups:
     - record: not_europe_paris_weekday
       expr: absent(europe_paris_weekday)
 
-    - record: europe_london_daytime
+    - record: europe_london_business_hours
       expr: 9 < europe_london_hour < 18
-    - record: europe_paris_daytime
+    - record: europe_paris_business_hours
       expr: 9 < europe_paris_hour < 18
     # opposite
-    - record: not_europe_london_daytime
-      expr: absent(europe_london_daytime)
-    - record: not_europe_paris_daytime
-      expr: absent(europe_paris_daytime)
+    - record: not_europe_london_business_hours
+      expr: absent(europe_london_business_hours)
+    - record: not_europe_paris_business_hours
+      expr: absent(europe_paris_business_hours)
 
     # new year's day / xmas / labor day / all saints' day / ...
     - record: europe_french_public_holidays
