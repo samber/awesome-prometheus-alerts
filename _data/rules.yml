@@ -1,7 +1,7 @@
 
 #
 # The following yaml cannot be copy-pasted to Prometheus configuration.
-#     Please navigate to https://awesome-prometheus-alerts.grep.to/rules instead.
+#     Please navigate to https://samber.github.io/awesome-prometheus-alerts/rules instead.
 #
 # Contributing guidelines:
 #      https://github.com/samber/awesome-prometheus-alerts/blob/master/CONTRIBUTING.md

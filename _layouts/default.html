@@ -87,15 +87,15 @@
 
   <header class="page-header" role="banner">
     <h1 class="project-name">
-      <a href="/" style="color: white">
+      <a href="{{ '/' | relative_url }}" style="color: white">
         {{ site.title | default: site.github.repository_name }}
       </a>
     </h1>
     <h2 class="project-tagline">{{ site.description | default: site.github.project_tagline }}</h2>
-    <a href="/alertmanager" class="btn">Global configuration</a>
-    <a href="/rules" class="btn">Rules</a>
-    <a href="/sleep-peacefully" class="btn">Sleep peacefully</a>
-    <a href="/blackbox-exporter" class="btn">Blackbox</a>
+    <a href="{{ '/alertmanager' | relative_url  }}" class="btn">Global configuration</a>
+    <a href="{{ '/rules' | relative_url }}" class="btn">Rules</a>
+    <a href="{{ '/sleep-peacefully' | relative_url }}" class="btn">Sleep peacefully</a>
+    <a href="{{ '/blackbox-exporter' | relative_url }}" class="btn">Blackbox</a>
     <a href="https://github.com/samber/awesome-prometheus-alerts/blob/master/CONTRIBUTING.md" class="btn">
       Contribute on GitHub
     </a>
@@ -117,11 +117,11 @@
         </a>
       </li>
       <li>
-        <a href="https://twitter.com/share?via=samuelberthe&related=samuelberthe&text=🚨 📊 Here is a collection of Awesome Prometheus Alerts&url=https://awesome-prometheus-alerts.grep.to"
+        <a href="https://twitter.com/share?via=samuelberthe&related=samuelberthe&text=🚨 📊 Here is a collection of Awesome Prometheus Alerts&url=https://samber.github.io/awesome-prometheus-alerts"
           class="fa fa-twitter" target="_blank"></a>
       </li>
       <li>
-        <a href="http://www.linkedin.com/shareArticle?mini=true&url=https://awesome-prometheus-alerts.grep.to"
+        <a href="http://www.linkedin.com/shareArticle?mini=true&url=https://samber.github.io/awesome-prometheus-alerts/"
           class="fa fa-linkedin" target="_blank"></a>
       </li>
     </ul>
