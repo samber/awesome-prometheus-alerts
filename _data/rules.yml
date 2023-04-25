@@ -138,44 +138,44 @@ groups:
             rules:
               - name: Host out of memory
                 description: Node memory is filling up (< 10% left)
-                query: '(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host memory under memory pressure
                 description: The node is under heavy memory pressure. High rate of major page faults
-                query: '(rate(node_vmstat_pgmajfault[1m]) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(rate(node_vmstat_pgmajfault[1m]) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host Memory is under utilized
                 description: 'Node memory is < 20% for 1 week. Consider reducing memory space.'
-                query: '(100 - (rate(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(100 - (rate(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
                 for: 1w
                 comments: |
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host unusual network throughput in
                 description: Host network interfaces are probably receiving too much data (> 100 MB/s)
-                query: '(sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 5m
               - name: Host unusual network throughput out
                 description: Host network interfaces are probably sending too much data (> 100 MB/s)
-                query: '(sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 5m
               - name: Host unusual disk read rate
                 description: Disk is probably reading too much data (> 50 MB/s)
-                query: '(sum by (instance) (rate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(sum by (instance) (rate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 5m
               - name: Host unusual disk write rate
                 description: Disk is probably writing too much data (> 50 MB/s)
-                query: '(sum by (instance) (rate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(sum by (instance) (rate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host out of disk space
                 description: Disk is almost full (< 10% left)
-                query: '((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
@@ -184,7 +184,7 @@ groups:
                 for: 2m
               - name: Host disk will fill in 24 hours
                 description: Filesystem is predicted to run out of space within the next 24 hours at current write rate
-                query: '((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
@@ -193,51 +193,51 @@ groups:
                 for: 2m
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
-                query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host inodes will fill in 24 hours
                 description: Filesystem is predicted to run out of inodes within the next 24 hours at current write rate
-                query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and predict_linear(node_filesystem_files_free[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and predict_linear(node_filesystem_files_free[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host unusual disk read latency
                 description: Disk latency is growing (read operations > 100ms)
-                query: '(rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host unusual disk write latency
                 description: Disk latency is growing (write operations > 100ms)
-                query: '(rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host high CPU load
                 description: CPU load is > 80%
-                query: '(sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host CPU is under utilized
                 description: 'CPU load is < 20% for 1 week. Consider reducing the number of CPUs.'
-                query: '(100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
                 for: 1w
                 comments: |
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host CPU steal noisy neighbor
                 description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
-                query: '(avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host CPU high iowait
                 description: CPU iowait > 10%. A high iowait means that you are disk or network bound.
-                query: '(avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) * 100 > 10) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) * 100 > 10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host unusual disk IO
                 description: 'Time spent in IO is too high on {{ $labels.instance }}. Check storage for issues.'
-                query: '(rate(node_disk_io_time_seconds_total[1m]) > 0.5) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(rate(node_disk_io_time_seconds_total[1m]) > 0.5) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 5m
               - name: Host context switching
                 description: Context switching is growing on node (> 1000 / s)
-                query: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 comments: |
                   1000 context switches is an arbitrary number.
@@ -245,86 +245,86 @@ groups:
                   Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
               - name: Host swap is filling up
                 description: Swap is filling up (>80%)
-                query: '((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host systemd service crashed
                 description: "systemd service crashed"
-                query: '(node_systemd_unit_state{state="failed"} == 1) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_systemd_unit_state{state="failed"} == 1) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host physical component too hot
                 description: "Physical hardware component too hot"
-                query: '((node_hwmon_temp_celsius * ignoring(label) group_left(instance, job, node, sensor) node_hwmon_sensor_label{label!="tctl"} > 75)) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '((node_hwmon_temp_celsius * ignoring(label) group_left(instance, job, node, sensor) node_hwmon_sensor_label{label!="tctl"} > 75)) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 5m
               - name: Host node overtemperature alarm
                 description: "Physical node temperature alarm triggered"
-                query: '(node_hwmon_temp_crit_alarm_celsius == 1) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_hwmon_temp_crit_alarm_celsius == 1) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
               - name: Host RAID array got inactive
                 description: 'RAID array {{ $labels.device }} is in degraded state due to one or more disks failures. Number of spare drives is insufficient to fix issue automatically.'
-                query: '(node_md_state{state="inactive"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_md_state{state="inactive"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
               - name: Host RAID disk failure
                 description: 'At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap'
-                query: '(node_md_disks{state="failed"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_md_disks{state="failed"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host kernel version deviations
                 description: Different kernel versions are running
-                query: '(count(sum(label_replace(node_uname_info, "kernel", "$1", "release", "([0-9]+.[0-9]+.[0-9]+).*")) by (kernel)) > 1) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(count(sum(label_replace(node_uname_info, "kernel", "$1", "release", "([0-9]+.[0-9]+.[0-9]+).*")) by (kernel)) > 1) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 6h
               - name: Host OOM kill detected
                 description: OOM kill detected
-                query: '(increase(node_vmstat_oom_kill[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(increase(node_vmstat_oom_kill[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host EDAC Correctable Errors detected
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 5 minutes.'
-                query: '(increase(node_edac_correctable_errors_total[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(increase(node_edac_correctable_errors_total[1m]) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
               - name: Host EDAC Uncorrectable Errors detected
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} uncorrectable memory errors reported by EDAC in the last 5 minutes.'
-                query: '(node_edac_uncorrectable_errors_total > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_edac_uncorrectable_errors_total > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host Network Receive Errors
                 description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} receive errors in the last two minutes.'
-                query: '(rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host Network Transmit Errors
                 description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last two minutes.'
-                query: '(rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host Network Interface Saturated
                 description: 'The network interface "{{ $labels.device }}" on "{{ $labels.instance }}" is getting overloaded.'
-                query: '((rate(node_network_receive_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"} > 0.8 < 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'    # < to 10Gb to prevent +inf when max speed is unknown
+                query: '((rate(node_network_receive_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"} > 0.8 < 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'    # < to 10Gb to prevent +inf when max speed is unknown
                 severity: warning
                 for: 1m
               - name: Host Network Bond Degraded
                 description: 'Bond "{{ $labels.device }}" degraded on "{{ $labels.instance }}".'
-                query: '((node_bonding_active - node_bonding_slaves) != 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '((node_bonding_active - node_bonding_slaves) != 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host conntrack limit
                 description: 'The number of conntrack is approaching limit'
-                query: '(node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 5m
               - name: Host clock skew
                 description: 'Clock skew detected. Clock is out of sync. Ensure NTP is configured correctly on this host.'
-                query: '((node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0)) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '((node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0)) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host clock not synchronising
                 description: 'Clock not synchronising. Ensure NTP is configured on this host.'
-                query: '(min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host requires reboot
                 description: '{{ $labels.instance }} requires a reboot.'
-                query: '(node_reboot_required > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~"hostname.*"}'
+                query: '(node_reboot_required > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
                 for: 4h
 
