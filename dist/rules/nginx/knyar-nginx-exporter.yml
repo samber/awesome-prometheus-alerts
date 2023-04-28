@@ -23,7 +23,7 @@ groups:
         description: "Too many HTTP requests with status 5xx (> 5%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NginxLatencyHigh
-      expr: 'histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[2m])) by (host, node)) > 3'
+      expr: 'histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[2m])) by (host, node, le)) > 3'
       for: 2m
       labels:
         severity: warning
