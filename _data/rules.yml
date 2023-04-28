@@ -1371,7 +1371,7 @@ groups:
                 for: 1m
               - name: Nginx latency high
                 description: Nginx p99 latency is higher than 3 seconds
-                query: 'histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[2m])) by (host, node)) > 3'
+                query: 'histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[2m])) by (host, node, le)) > 3'
                 severity: warning
                 for: 2m
 
