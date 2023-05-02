@@ -5,7 +5,7 @@
 
 ## Wordwide probes
 
-<a href="https://github.com/prometheus/blackbox_exporter" target="_blank">Blackbox Exporter</a> gives you the ability to probe endpoints over HTTP, HTTPS, DNS, TCP and ICMP.</a>
+<a href="https://github.com/prometheus/blackbox_exporter" target="_blank">Blackbox Exporter</a> gives you the ability to probe endpoints over HTTP, HTTPS, DNS, TCP and ICMP.
 
 You should deploy blackbox exporters in multiple Point of Presence around the globe, to monitor latency. Feel free to use the following endpoints for your own projects:
 
