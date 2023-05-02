@@ -15,11 +15,11 @@
   Hello world
 </h2>
 
-<a href="/alertmanager">
+<a href="/awesome-prometheus-alerts/alertmanager">
   AlertManager configuration
 </a>
 
-<a href="/sleep-peacefully">
+<a href="/awesome-prometheus-alerts/sleep-peacefully">
   Alerting time window
 </a>
 
@@ -43,7 +43,7 @@
       <ul>
         {% for service in group.services %}
         <li>
-          <a href="/rules#{{ service.name | replace: " ", "-" | downcase }}">
+          <a href="/awesome-prometheus-alerts/rules#{{ service.name | replace: " ", "-" | downcase }}">
             {{ service.name }}
           </a>
         </li>
