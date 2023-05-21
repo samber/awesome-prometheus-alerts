@@ -347,12 +347,12 @@ groups:
                 for: 5m
                 comments: |
                   This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
-              - name: Container CPU usage
-                description: Container CPU usage is above 80%
+              - name: Container High CPU utilization
+                description: Container CPU utilization is above 80%
                 query: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) > 80'
                 severity: warning
                 for: 2m
-              - name: Container Memory usage
+              - name: Container High Memory usage
                 description: Container Memory usage is above 80%
                 query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
                 severity: warning
@@ -368,6 +368,17 @@ groups:
                 query: 'rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1'
                 severity: warning
                 for: 2m
+              - name: Container Low CPU utilization
+                description: Container CPU utilization is under 20% for 1 week. Consider reducing the allocated CPU.
+                query: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) < 20'
+                severity: info
+                for: 7d
+              - name: Container Low Memory usage
+                description: Container Memory usage is under 20% for 1 week. Consider reducing the allocated memory.
+                query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) < 20'
+                severity: info
+                for: 7d
+
 
       - name: Blackbox
         exporters:
