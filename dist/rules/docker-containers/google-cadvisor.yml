@@ -22,22 +22,22 @@ groups:
         summary: Container absent (instance {{ $labels.instance }})
         description: "A container is absent for 5 min\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ContainerCpuUsage
+    - alert: ContainerHighCpuUtilization
       expr: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) > 80'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Container CPU usage (instance {{ $labels.instance }})
-        description: "Container CPU usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Container High CPU utilization (instance {{ $labels.instance }})
+        description: "Container CPU utilization is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ContainerMemoryUsage
+    - alert: ContainerHighMemoryUsage
       expr: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Container Memory usage (instance {{ $labels.instance }})
+        summary: Container High Memory usage (instance {{ $labels.instance }})
         description: "Container Memory usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ContainerVolumeUsage
@@ -57,3 +57,21 @@ groups:
       annotations:
         summary: Container high throttle rate (instance {{ $labels.instance }})
         description: "Container is being throttled\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ContainerLowCpuUtilization
+      expr: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) < 20'
+      for: 7d
+      labels:
+        severity: info
+      annotations:
+        summary: Container Low CPU utilization (instance {{ $labels.instance }})
+        description: "Container CPU utilization is under 20% for 1 week. Consider reducing the allocated CPU.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ContainerLowMemoryUsage
+      expr: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) < 20'
+      for: 7d
+      labels:
+        severity: info
+      annotations:
+        summary: Container Low Memory usage (instance {{ $labels.instance }})
+        description: "Container Memory usage is under 20% for 1 week. Consider reducing the allocated memory.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
