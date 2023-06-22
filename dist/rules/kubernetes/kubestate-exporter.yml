@@ -10,7 +10,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes Node not ready (instance {{ $labels.instance }})
+        summary: Kubernetes node not ready (instance {{ $labels.instance }})
         description: "Node {{ $labels.node }} has been unready for a long time\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesMemoryPressure
@@ -65,7 +65,7 @@ groups:
         severity: warning
       annotations:
         summary: Kubernetes Job failed (instance {{ $labels.instance }})
-        description: "Job {{ $labels.namespace }}/{{ $labels.exported_job }} failed to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesCronjobSuspended
       expr: 'kube_cronjob_spec_suspend != 0'
