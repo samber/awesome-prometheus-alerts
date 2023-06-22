@@ -1680,7 +1680,7 @@ groups:
                 query: '(kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1'
                 severity: warning
               - name: Kubernetes Job failed
-                description: "Job {{ $labels.namespace }}/{{ $labels.exported_job }} failed to complete"
+                description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete"
                 query: 'kube_job_status_failed > 0'
                 severity: warning
               - name: Kubernetes CronJob suspended
