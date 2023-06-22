@@ -1650,7 +1650,7 @@ groups:
             slug: kubestate-exporter
             doc_url: https://github.com/kubernetes/kube-state-metrics/tree/master/docs
             rules:
-              - name: Kubernetes Node ready
+              - name: Kubernetes node not ready
                 description: Node {{ $labels.node }} has been unready for a long time
                 query: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
                 severity: critical
