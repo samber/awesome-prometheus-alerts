@@ -146,8 +146,8 @@ groups:
                 query: '(rate(node_vmstat_pgmajfault[1m]) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
-              - name: Host Memory is under utilized
-                description: 'Node memory is < 20% for 1 week. Consider reducing memory space.'
+              - name: Host Memory is underutilized
+                description: 'Node memory is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})'
                 query: '(100 - (rate(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
                 for: 1w
@@ -215,7 +215,8 @@ groups:
                 description: CPU load is > 80%
                 query: '(sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
-              - name: Host CPU is under utilized
+                for: 10m
+              - name: Host CPU is underutilized
                 description: 'CPU load is < 20% for 1 week. Consider reducing the number of CPUs.'
                 query: '(100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
