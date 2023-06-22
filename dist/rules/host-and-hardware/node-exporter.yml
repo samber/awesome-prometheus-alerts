@@ -167,13 +167,13 @@ groups:
         description: "Time spent in IO is too high on {{ $labels.instance }}. Check storage for issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostContextSwitching
-      expr: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+      expr: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: Host context switching (instance {{ $labels.instance }})
-        description: "Context switching is growing on node (> 1000 / s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Context switching is growing on the node (> 10000 / s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostSwapIsFillingUp
       expr: '((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
@@ -218,7 +218,7 @@ groups:
         severity: critical
       annotations:
         summary: Host RAID array got inactive (instance {{ $labels.instance }})
-        description: "RAID array {{ $labels.device }} is in degraded state due to one or more disks failures. Number of spare drives is insufficient to fix issue automatically.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "RAID array {{ $labels.device }} is in a degraded state due to one or more disk failures. The number of spare drives is insufficient to fix the issue automatically.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostRaidDiskFailure
       expr: '(node_md_disks{state="failed"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
