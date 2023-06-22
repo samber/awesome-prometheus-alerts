@@ -237,12 +237,12 @@ groups:
                 severity: warning
                 for: 5m
               - name: Host context switching
-                description: Context switching is growing on node (> 1000 / s)
-                query: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: Context switching is growing on the node (> 10000 / s)
+                query: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 comments: |
-                  1000 context switches is an arbitrary number.
-                  Alert threshold depends on nature of application.
+                  10000 context switches is an arbitrary number.
+                  The alert threshold depends on the nature of the application.
                   Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
               - name: Host swap is filling up
                 description: Swap is filling up (>80%)
@@ -263,7 +263,7 @@ groups:
                 query: '(node_hwmon_temp_crit_alarm_celsius == 1) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
               - name: Host RAID array got inactive
-                description: 'RAID array {{ $labels.device }} is in degraded state due to one or more disks failures. Number of spare drives is insufficient to fix issue automatically.'
+                description: 'RAID array {{ $labels.device }} is in a degraded state due to one or more disk failures. The number of spare drives is insufficient to fix the issue automatically.'
                 query: '(node_md_state{state="inactive"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
               - name: Host RAID disk failure
