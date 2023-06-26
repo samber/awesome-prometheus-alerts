@@ -86,13 +86,13 @@ groups:
         description: "Redis is running out of configured maxmemory (> 90%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RedisTooManyConnections
-      expr: 'redis_connected_clients > 100'
+      expr: 'redis_connected_clients / redis_config_maxclients * 100 > 90'
       for: 2m
       labels:
         severity: warning
       annotations:
         summary: Redis too many connections (instance {{ $labels.instance }})
-        description: "Redis instance has too many connections\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Redis is running out of connections (> 90% used)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RedisNotEnoughConnections
       expr: 'redis_connected_clients < 5'
