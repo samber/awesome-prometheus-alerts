@@ -770,8 +770,8 @@ groups:
                 severity: warning
                 for: 2m
               - name: Redis too many connections
-                description: Redis instance has too many connections
-                query: 'redis_connected_clients > 100'
+                description: Redis is running out of connections (> 90% used)
+                query: 'redis_connected_clients / redis_config_maxclients * 100 > 90'
                 severity: warning
                 for: 2m
               - name: Redis not enough connections
