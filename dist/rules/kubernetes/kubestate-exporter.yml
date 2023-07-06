@@ -257,7 +257,7 @@ groups:
         description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesJobSlowCompletion
-      expr: 'kube_job_spec_completions - kube_job_status_succeeded > 0'
+      expr: 'kube_job_spec_completions - kube_job_status_succeeded - kube_job_status_failed > 0'
       for: 12h
       labels:
         severity: critical
