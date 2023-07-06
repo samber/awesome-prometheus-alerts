@@ -32,7 +32,7 @@ groups:
         description: "Too many infinity tokens {{ $labels.instance }}: {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: VaultClusterHealth
-      expr: 'sum(vault_core_active) / count(vault_core_active) > 0.5'
+      expr: 'sum(vault_core_active) / count(vault_core_active) <= 0.5'
       for: 0m
       labels:
         severity: critical
