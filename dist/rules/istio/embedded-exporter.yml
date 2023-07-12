@@ -77,13 +77,13 @@ groups:
         description: "Istio average requests execution is longer than 100ms.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: IstioLatency99Percentile
-      expr: 'histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1'
+      expr: 'histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1000'
       for: 1m
       labels:
         severity: warning
       annotations:
         summary: Istio latency 99 percentile (instance {{ $labels.instance }})
-        description: "Istio 1% slowest requests are longer than 1s.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Istio 1% slowest requests are longer than 1000ms.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: IstioPilotDuplicateEntry
       expr: 'sum(rate(pilot_duplicate_envoy_clusters{}[5m])) > 0'
