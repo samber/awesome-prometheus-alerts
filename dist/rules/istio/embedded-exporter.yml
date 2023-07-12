@@ -83,7 +83,7 @@ groups:
         severity: warning
       annotations:
         summary: Istio latency 99 percentile (instance {{ $labels.instance }})
-        description: "Istio 1% slowest requests are longer than 1s.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Istio 1% slowest requests are longer than 1000ms.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: IstioPilotDuplicateEntry
       expr: 'sum(rate(pilot_duplicate_envoy_clusters{}[5m])) > 0'
