@@ -350,7 +350,7 @@ groups:
                   This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
               - name: Container High CPU utilization
                 description: Container CPU utilization is above 80%
-                query: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) > 80'
+                query: '(sum(rate(container_cpu_usage_seconds_total{pod!=""}[3m])) by (instance, pod) / sum(container_spec_cpu_quota / container_spec_cpu_period) by (instance, pod) * 100) > 80'
                 severity: warning
                 for: 2m
               - name: Container High Memory usage
