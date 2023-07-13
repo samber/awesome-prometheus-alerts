@@ -702,6 +702,17 @@ groups:
                 query: increase(mssql_deadlocks[1m]) > 5
                 severity: warning
 
+      - name: Patroni
+        exporters:
+          - name: Embedded exporter (Patroni >= 2.1.0)
+            slug: embedded-exporter-patroni
+            doc_url: https://patroni.readthedocs.io/en/latest/rest_api.html?highlight=prometheus#monitoring-endpoint
+            rules:
+              - name: Patroni has no Leader
+                description: A leader node (neither primary nor standby) cannot be found inside the cluster {{ $labels.scope }}
+                query: (max by (scope) (patroni_master) < 1) and (max by (scope) (patroni_standby_leader) < 1)
+                severity: critical
+
       - name: PGBouncer
         exporters:
           - name: spreaker/prometheus-pgbouncer-exporter
