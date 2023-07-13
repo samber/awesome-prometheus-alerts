@@ -25,13 +25,27 @@ jobs:
         run: |
           gem install liquid-cli
           cat _data/rules.yml | yq -I 0 -o json > _data/rules.json
-          cat test/template.yml | liquid "$(< _data/rules.json)" > test/rules.yml
+
+          for service in $(cat _data/rules.json | jq -r '.groups[].services[] | @base64'); do
+            subdir=test/rules/$(echo ${service} | base64 --decode | jq -r '.name | ascii_downcase | split(" ") | join("-")')
+            mkdir -p "${subdir}"
+
+            # groupName=$(echo "{% assign groupName = name | split: ' ' %}{% capture groupNameCamelcase %}{% for word in groupName %}{{ word | capitalize }} {% endfor %}{% endcapture %} {{ groupNameCamelcase | remove: ' ' | remove: '-' }}" | liquid $(echo ${service} | base64 --decode | jq -r '.name | ascii_downcase | split(" ") | join("-")'))
+    
+            for exporter in $(echo ${service} | base64 --decode | jq -r '.exporters[] | @base64'); do
+              exporterName=$(echo ${exporter} | base64 --decode | jq -r '.slug')
+              cat dist/template.yml | liquid "$(echo ${exporter} | base64 --decode)" > ${subdir}/${exporterName}.yml
+              echo ${subdir}/${exporterName}.yml
+            done
+          done
+
+          rm _data/rules.json
 
       - name: Check Prometheus alert rules
         uses: peimanja/promtool-github-actions@master
         with:
           promtool_actions_subcommand: 'rules'
-          promtool_actions_files: 'test/rules.yml'
+          promtool_actions_files: 'test/rules/*/*.yml'
           promtool_actions_comment: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,4 +3,4 @@ _site/
 .jekyll-cache/
 .jekyll-metadata
 _data/rules.json
-test/rules.yml
+test/rules/
