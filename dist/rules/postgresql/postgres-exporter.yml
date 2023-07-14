@@ -59,7 +59,7 @@ groups:
         description: "PostgreSQL instance has too many connections (> 80%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlNotEnoughConnections
-      expr: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) < 5'
+      expr: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) > 5'
       for: 2m
       labels:
         severity: warning
