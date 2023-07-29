@@ -1339,6 +1339,33 @@ groups:
                 for: 1m
                 severity: critical
 
+      - name: Nats
+        exporters:
+          - name: nats-io/prometheus-nats-exporter
+            slug: nats-exporter
+            doc_url: https://github.com/nats-io/prometheus-nats-exporter
+            rules:
+              - name: Nats high connection count
+                description: High number of NATS connections ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_varz_connections > 100'
+                severity: warning
+                for: 3m
+              - name: Nats high pending bytes
+                description: High number of NATS pending bytes ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_connz_pending_bytes > 100000'
+                severity: warning
+                for: 3m
+              - name: Nats high subscriptions count
+                description: High number of NATS subscriptions ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_connz_subscriptions > 50'
+                severity: warning
+                for: 3m
+              - name: Nats high routes count
+                description: High number of NATS routes ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_routez_num_routes > 10'
+                severity: warning
+                for: 3m
+
       - name: Solr
         exporters:
           - name: embedded exporter
