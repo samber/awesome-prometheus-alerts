@@ -1,0 +1,41 @@
+groups:
+
+- name: NatsExporter
+
+  rules:
+
+    - alert: NatsHighConnectionCount
+      expr: 'gnatsd_varz_connections > 100'
+      for: 3m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high connection count (instance {{ $labels.instance }})
+        description: "High number of NATS connections ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighPendingBytes
+      expr: 'gnatsd_connz_pending_bytes > 100000'
+      for: 3m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high pending bytes (instance {{ $labels.instance }})
+        description: "High number of NATS pending bytes ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighSubscriptionsCount
+      expr: 'gnatsd_connz_subscriptions > 50'
+      for: 3m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high subscriptions count (instance {{ $labels.instance }})
+        description: "High number of NATS subscriptions ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighRoutesCount
+      expr: 'gnatsd_routez_num_routes > 10'
+      for: 3m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high routes count (instance {{ $labels.instance }})
+        description: "High number of NATS routes ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
