@@ -125,8 +125,8 @@ groups:
               description: 'Prometheus encountered {{ $value }} TSDB WAL truncation failures'
               query: 'increase(prometheus_tsdb_wal_truncations_failed_total[1m]) > 0'
               severity: critical
-            - name: Prometheus timeserie cardinality
-              description: 'The "{{ $labels.name }}" timeserie cardinality is getting very high: {{ $value }}'
+            - name: Prometheus timeseries cardinality
+              description: 'The "{{ $labels.name }}" timeseries cardinality is getting very high: {{ $value }}'
               query: 'label_replace(count by(__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") > 10000'
               severity: warning
 
