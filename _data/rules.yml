@@ -619,7 +619,7 @@ groups:
                 severity: warning
               - name: Postgresql too many connections
                 description: PostgreSQL instance has too many connections (> 80%).
-                query: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) > pg_settings_max_connections * 0.8'
+                expr: 'sum by (instance, job, server) (pg_stat_activity_count) > min by (instance, job, server) (pg_settings_max_connections * 0.8)'
                 severity: warning
                 for: 2m
               - name: Postgresql not enough connections
