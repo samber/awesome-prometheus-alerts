@@ -28,6 +28,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 
 - [MySQL](https://samber.github.io/awesome-prometheus-alerts/rules#mysql)
 - [PostgreSQL](https://samber.github.io/awesome-prometheus-alerts/rules#postgresql)
+- [SQL Server](https://samber.github.io/awesome-prometheus-alerts/rules#sql-server)
 - [Patroni](https://samber.github.io/awesome-prometheus-alerts/rules#patroni)
 - [PGBouncer](https://samber.github.io/awesome-prometheus-alerts/rules#pgbouncer)
 - [Redis](https://samber.github.io/awesome-prometheus-alerts/rules#redis)
