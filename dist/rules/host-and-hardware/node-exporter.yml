@@ -312,7 +312,7 @@ groups:
 
     - alert: HostClockSkew
       expr: '((node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0)) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
-      for: 2m
+      for: 10m
       labels:
         severity: warning
       annotations:

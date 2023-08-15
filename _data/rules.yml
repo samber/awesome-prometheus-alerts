@@ -125,8 +125,8 @@ groups:
               description: 'Prometheus encountered {{ $value }} TSDB WAL truncation failures'
               query: 'increase(prometheus_tsdb_wal_truncations_failed_total[1m]) > 0'
               severity: critical
-            - name: Prometheus timeserie cardinality
-              description: 'The "{{ $labels.name }}" timeserie cardinality is getting very high: {{ $value }}'
+            - name: Prometheus timeseries cardinality
+              description: 'The "{{ $labels.name }}" timeseries cardinality is getting very high: {{ $value }}'
               query: 'label_replace(count by(__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") > 10000'
               severity: warning
 
@@ -196,6 +196,10 @@ groups:
                 query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
+              - name: Host filesystem device error
+                description: {{ $labels.instance }}: Device error with the {{ $labels.mountpoint }} filesystem
+                query: 'node_filesystem_device_error == 1'
+                severity: critical
               - name: Host inodes will fill in 24 hours
                 description: Filesystem is predicted to run out of inodes within the next 24 hours at current write rate
                 query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and predict_linear(node_filesystem_files_free[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
@@ -317,7 +321,7 @@ groups:
                 description: 'Clock skew detected. Clock is out of sync. Ensure NTP is configured correctly on this host.'
                 query: '((node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0)) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
-                for: 2m
+                for: 10m
               - name: Host clock not synchronising
                 description: 'Clock not synchronising. Ensure NTP is configured on this host.'
                 query: '(min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
@@ -1339,6 +1343,33 @@ groups:
                 for: 1m
                 severity: critical
 
+      - name: Nats
+        exporters:
+          - name: nats-io/prometheus-nats-exporter
+            slug: nats-exporter
+            doc_url: https://github.com/nats-io/prometheus-nats-exporter
+            rules:
+              - name: Nats high connection count
+                description: High number of NATS connections ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_varz_connections > 100'
+                severity: warning
+                for: 3m
+              - name: Nats high pending bytes
+                description: High number of NATS pending bytes ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_connz_pending_bytes > 100000'
+                severity: warning
+                for: 3m
+              - name: Nats high subscriptions count
+                description: High number of NATS subscriptions ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_connz_subscriptions > 50'
+                severity: warning
+                for: 3m
+              - name: Nats high routes count
+                description: High number of NATS routes ({{ $value }}) for {{ $labels.instance }}
+                query: 'gnatsd_routez_num_routes > 10'
+                severity: warning
+                for: 3m
+
       - name: Solr
         exporters:
           - name: embedded exporter
@@ -1985,8 +2016,8 @@ groups:
                 severity: warning
                 for: 1m
               - name: Istio latency 99 percentile
-                description: Istio 1% slowest requests are longer than 1s.
-                query: 'histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1'
+                description: Istio 1% slowest requests are longer than 1000ms.
+                query: 'histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1000'
                 severity: warning
                 for: 1m
               - name: Istio Pilot Duplicate Entry
