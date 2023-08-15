@@ -197,7 +197,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: Host filesystem device error
-                description: {{ $labels.instance }}: Device error with the {{ $labels.mountpoint }} filesystem
+                description: '{{ $labels.instance }}: Device error with the {{ $labels.mountpoint }} filesystem'
                 query: 'node_filesystem_device_error == 1'
                 severity: critical
               - name: Host inodes will fill in 24 hours
@@ -2301,7 +2301,7 @@ groups:
                 description: 'Vault cluster is not healthy {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
                 query: 'sum(vault_core_active) / count(vault_core_active) <= 0.5'
                 severity: critical
-                  
+
 
       - name: Cloudflare
         exporters:
