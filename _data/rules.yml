@@ -1818,7 +1818,7 @@ groups:
                   Threshold should be customized for each cronjob name.
               - name: Kubernetes job slow completion
                 description: Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.
-                query: 'kube_job_spec_completions - kube_job_status_succeeded > 0'
+                query: 'kube_job_spec_completions - kube_job_status_succeeded - kube_job_status_failed > 0'
                 severity: critical
                 for: 12h
               - name: Kubernetes API server errors
