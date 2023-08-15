@@ -2569,7 +2569,7 @@ groups:
             rules:
               - name: Loki process too many restarts
                 description: A loki process had too many restarts (target {{ $labels.instance }})
-                query: changes(process_start_time_seconds{job=~"loki"}[15m]) > 2
+                query: changes(process_start_time_seconds{job=~".*loki.*"}[15m]) > 2
                 severity: warning
               - name: Loki request errors
                 description: The {{ $labels.job }} and {{ $labels.route }} are experiencing errors
