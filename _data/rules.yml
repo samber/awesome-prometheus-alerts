@@ -746,7 +746,7 @@ groups:
                 severity: critical
               - name: Redis disconnected slaves
                 description: Redis not replicating for all slaves. Consider reviewing the redis replication status.
-                query: 'count without (instance, job) (redis_connected_slaves) - sum without (instance, job) (redis_connected_slaves) - 1 > 1'
+                query: 'count without (instance, job) (redis_connected_slaves) - sum without (instance, job) (redis_connected_slaves) - 1 > 0'
                 severity: critical
               - name: Redis replication broken
                 description: Redis instance lost a slave
