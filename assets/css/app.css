@@ -112,6 +112,6 @@ h2 {
 /* https://github.com/samber/awesome-prometheus-alerts/issues/356 */
 @media screen and (min-width: 64em) {
     .main-content {
-        max-width: 80rem;
+        max-width: 85rem;
     }
 }
