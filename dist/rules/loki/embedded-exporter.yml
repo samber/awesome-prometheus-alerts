@@ -5,7 +5,7 @@ groups:
   rules:
 
     - alert: LokiProcessTooManyRestarts
-      expr: 'changes(process_start_time_seconds{job=~"loki"}[15m]) > 2'
+      expr: 'changes(process_start_time_seconds{job=~".*loki.*"}[15m]) > 2'
       for: 0m
       labels:
         severity: warning

@@ -1,0 +1,14 @@
+groups:
+
+- name: EmbeddedExporterPatroni
+
+  rules:
+
+    - alert: PatroniHasNoLeader
+      expr: '(max by (scope) (patroni_master) < 1) and (max by (scope) (patroni_standby_leader) < 1)'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Patroni has no Leader (instance {{ $labels.instance }})
+        description: "A leader node (neither primary nor standby) cannot be found inside the cluster {{ $labels.scope }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
