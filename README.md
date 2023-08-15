@@ -39,6 +39,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Zookeeper](https://samber.github.io/awesome-prometheus-alerts/rules#zookeeper)
 - [Kafka](https://samber.github.io/awesome-prometheus-alerts/rules#kafka)
 - [Pulsar](https://samber.github.io/awesome-prometheus-alerts/rules#pulsar)
+- [Nats](https://samber.github.io/awesome-prometheus-alerts/rules#nats)
 - [Solr](https://samber.github.io/awesome-prometheus-alerts/rules#solr)
 
 #### Reverse proxies and load balancers
