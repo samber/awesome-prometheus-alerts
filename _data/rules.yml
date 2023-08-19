@@ -1817,7 +1817,7 @@ groups:
                 severity: warning
                 for: 10m
               - name: Kubernetes DaemonSet misscheduled
-                description: Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} arerunning where they are not supposed to run
+                description: Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are running where they are not supposed to run
                 query: 'kube_daemonset_status_number_misscheduled > 0'
                 severity: critical
                 for: 1m
