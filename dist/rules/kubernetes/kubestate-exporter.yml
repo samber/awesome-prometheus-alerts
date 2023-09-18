@@ -95,7 +95,7 @@ groups:
         description: "Volume is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesVolumeFullInFourDays
-      expr: 'predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0'
+      expr: 'predict_linear(kubelet_volume_stats_available_bytes[6h:5m], 4 * 24 * 3600) < 0'
       for: 0m
       labels:
         severity: critical
