@@ -80,7 +80,7 @@ route:
     - receiver: "pager"
       group_wait: 10s
       match_re:
-        severity: critial
+        severity: critical
       continue: true
 
 receivers:
