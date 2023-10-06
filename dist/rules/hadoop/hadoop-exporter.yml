@@ -1,0 +1,102 @@
+groups:
+  - name: HadoopAlerts
+    rules:
+      # Alert rule for NameNode availability
+      - alert: HadoopNameNodeDown
+        expr: up{job="hadoop-namenode"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hadoop NameNode is down"
+          description: "The Hadoop NameNode service is unavailable."
+
+      # Alert rule for ResourceManager availability
+      - alert: HadoopResourceManagerDown
+        expr: up{job="hadoop-resourcemanager"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hadoop ResourceManager is down"
+          description: "The Hadoop ResourceManager service is unavailable."
+
+      # Alert rule for DataNode status
+      - alert: HadoopDataNodeOutOfService
+        expr: hadoop_datanode_last_heartbeat == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Hadoop DataNode is out of service"
+          description: "The Hadoop DataNode is not sending heartbeats."
+
+      # Alert rule for low HDFS disk space
+      - alert: HadoopHDFSDiskSpaceLow
+        expr: (hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low HDFS Disk Space"
+          description: "Available HDFS disk space is running low."
+
+      # Alert rule for excessive MapReduce task failures
+      - alert: HadoopMapReduceTaskFailures
+        expr: hadoop_mapreduce_task_failures_total > 100
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Excessive MapReduce Task Failures"
+          description: "There is an unusually high number of MapReduce task failures."
+
+      # Alert rule for high ResourceManager memory usage
+      - alert: HadoopResourceManagerMemoryHigh
+        expr: hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High ResourceManager Memory Usage"
+          description: "The Hadoop ResourceManager is approaching its memory limit."
+
+      # Alert rule for high YARN container allocation failures
+      - alert: HadoopYARNContainerAllocationFailures
+        expr: hadoop_yarn_container_allocation_failures_total > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High YARN Container Allocation Failures"
+          description: "There is a significant number of YARN container allocation failures."
+
+      # Alert rule for excessive HBase region server region count
+      - alert: HadoopHBaseRegionCountHigh
+        expr: hadoop_hbase_region_count > 5000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Excessive HBase Region Count"
+          description: "The HBase cluster has an unusually high number of regions."
+
+      # Alert rule for low HBase region server heap space
+      - alert: HadoopHBaseRegionServerHeapLow
+        expr: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes < 0.2
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low HBase Region Server Heap Space"
+          description: "HBase Region Servers are running low on heap space."
+
+      # Alert rule for high HBase Write Requests latency
+      - alert: HadoopHBaseWriteRequestsLatencyHigh
+        expr: hadoop_hbase_write_requests_latency_seconds > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HBase Write Requests Latency"
+          description: "HBase Write Requests are experiencing high latency."
