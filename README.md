@@ -41,6 +41,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Pulsar](https://samber.github.io/awesome-prometheus-alerts/rules#pulsar)
 - [Nats](https://samber.github.io/awesome-prometheus-alerts/rules#nats)
 - [Solr](https://samber.github.io/awesome-prometheus-alerts/rules#solr)
+- [Hadoop](https://samber.github.io/awesome-prometheus-alerts/rules#hadoop)
 
 #### Reverse proxies and load balancers
 
