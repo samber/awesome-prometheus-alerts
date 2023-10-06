@@ -1405,6 +1405,83 @@ groups:
                 query: 'solr_collections_live_nodes < 2'
                 severity: critical
 
+      - name: Hadoop
+        exporters:
+          - name: hadoop/jmx_exporter
+            slug: jmx_exporter
+            doc_url: https://github.com/prometheus/jmx_exporter
+            rules:
+              # Alert rule for NameNode availability
+              - name: Hadoop Name Node Down
+                query: up{job="hadoop-namenode"} == 0
+                for: 5m
+                severity: critical
+                description: "The Hadoop NameNode service is unavailable."
+
+              # Alert rule for ResourceManager availability
+              - name: Hadoop Resource Manager Down
+                query: up{job="hadoop-resourcemanager"} == 0
+                for: 5m
+                severity: critical
+                description: "The Hadoop ResourceManager service is unavailable."
+
+              # Alert rule for DataNode status
+              - name: Hadoop Data Node Out Of Service
+                query: hadoop_datanode_last_heartbeat == 0
+                for: 10m
+                severity: warning
+                description: "The Hadoop DataNode is not sending heartbeats."
+
+              # Alert rule for low HDFS disk space
+              - name: Hadoop HDFS Disk Space Low
+                query: (hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1
+                for: 15m
+                severity: warning
+                description: "Available HDFS disk space is running low."
+
+              # Alert rule for excessive MapReduce task failures
+              - name: Hadoop Map Reduce Task Failures
+                query: hadoop_mapreduce_task_failures_total > 100
+                for: 10m
+                severity: critical
+                description: "There is an unusually high number of MapReduce task failures."
+
+              # Alert rule for high ResourceManager memory usage
+              - name: Hadoop Resource Manager Memory High
+                query: hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8
+                for: 15m
+                severity: warning
+                description: "The Hadoop ResourceManager is approaching its memory limit."
+
+              # Alert rule for high YARN container allocation failures
+              - name: Hadoop YARN Container Allocation Failures
+                query: hadoop_yarn_container_allocation_failures_total > 10
+                for: 10m
+                severity: warning
+                description: "There is a significant number of YARN container allocation failures."
+
+              # Alert rule for excessive HBase region server region count
+              - name: Hadoop HBase Region Count High
+                query: hadoop_hbase_region_count > 5000
+                for: 15m
+                severity: warning
+                description: "The HBase cluster has an unusually high number of regions."
+
+              # Alert rule for low HBase region server heap space
+              - name: Hadoop HBase Region Server Heap Low
+                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes < 0.2
+                for: 10m
+                severity: critical
+                description: "HBase Region Servers are running low on heap space."
+
+              # Alert rule for high HBase Write Requests latency
+              - name: Hadoop HBase Write Requests Latency High
+                query: hadoop_hbase_write_requests_latency_seconds > 0.5
+                for: 10m
+                severity: warning
+                description: "HBase Write Requests are experiencing high latency."
+
+
   - name: Reverse proxies and load balancers
     services:
       - name: Nginx
