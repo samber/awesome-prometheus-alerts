@@ -906,45 +906,45 @@ groups:
             slug: rabbitmq-exporter
             doc_url: https://github.com/rabbitmq/rabbitmq-prometheus
             rules:
-              - name: Rabbitmq node down
+              - name: RabbitMQ node down
                 description: Less than 3 nodes running in RabbitMQ cluster
                 query: 'sum(rabbitmq_build_info) < 3'
                 severity: critical
-              - name: Rabbitmq node not distributed
+              - name: RabbitMQ node not distributed
                 description: Distribution link state is not 'up'
                 query: 'erlang_vm_dist_node_state < 3'
                 severity: critical
-              - name: Rabbitmq instances different versions
-                description: Running different version of Rabbitmq in the same cluster, can lead to failure.
+              - name: RabbitMQ instances different versions
+                description: Running different version of RabbitMQ in the same cluster, can lead to failure.
                 query: 'count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1'
                 severity: warning
                 for: 1h
-              - name: Rabbitmq memory high
+              - name: RabbitMQ memory high
                 description: A node use more than 90% of allocated RAM
                 query: 'rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90'
                 severity: warning
                 for: 2m
-              - name: Rabbitmq file descriptors usage
+              - name: RabbitMQ file descriptors usage
                 description: A node use more than 90% of file descriptors
                 query: 'rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90'
                 severity: warning
                 for: 2m
-              - name: Rabbitmq too many unack messages
+              - name: RabbitMQ too many unack messages
                 description: Too many unacknowledged messages
                 query: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
                 severity: warning
                 for: 1m
-              - name: Rabbitmq too many connections
+              - name: RabbitMQ too many connections
                 description: The total connections of a node is too high
                 query: 'rabbitmq_connections > 1000'
                 severity: warning
                 for: 2m
-              - name: Rabbitmq no queue consumer
+              - name: RabbitMQ no queue consumer
                 description: A queue has less than 1 consumer
                 query: 'rabbitmq_queue_consumers < 1'
                 severity: warning
                 for: 1m   # allows a short service restart
-              - name: Rabbitmq unroutable messages
+              - name: RabbitMQ unroutable messages
                 description: A queue has unroutable messages
                 query: 'increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0'
                 severity: warning
@@ -954,61 +954,61 @@ groups:
             slug: kbudde-rabbitmq-exporter
             doc_url: https://github.com/kbudde/rabbitmq_exporter
             rules:
-              - name: Rabbitmq down
+              - name: RabbitMQ down
                 description: RabbitMQ node down
                 query: 'rabbitmq_up == 0'
                 severity: critical
-              - name: Rabbitmq cluster down
+              - name: RabbitMQ cluster down
                 description: Less than 3 nodes running in RabbitMQ cluster
                 query: 'sum(rabbitmq_running) < 3'
                 severity: critical
-              - name: Rabbitmq cluster partition
+              - name: RabbitMQ cluster partition
                 description: Cluster partition
                 query: 'rabbitmq_partitions > 0'
                 severity: critical
-              - name: Rabbitmq out of memory
+              - name: RabbitMQ out of memory
                 description: Memory available for RabbmitMQ is low (< 10%)
                 query: 'rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90'
                 severity: warning
                 for: 2m
-              - name: Rabbitmq too many connections
+              - name: RabbitMQ too many connections
                 description: RabbitMQ instance has too many connections (> 1000)
                 query: 'rabbitmq_connectionsTotal > 1000'
                 severity: warning
                 for: 2m
-              - name: Rabbitmq dead letter queue filling up
+              - name: RabbitMQ dead letter queue filling up
                 description: Dead letter queue is filling up (> 10 msgs)
                 query: 'rabbitmq_queue_messages{queue="my-dead-letter-queue"} > 10'
                 severity: warning
                 for: 1m
                 comments: |
                   Indicate the queue name in dedicated label.
-              - name: Rabbitmq too many messages in queue
+              - name: RabbitMQ too many messages in queue
                 description: Queue is filling up (> 1000 msgs)
                 query: 'rabbitmq_queue_messages_ready{queue="my-queue"} > 1000'
                 severity: warning
                 for: 2m
                 comments: |
                   Indicate the queue name in dedicated label.
-              - name: Rabbitmq slow queue consuming
+              - name: RabbitMQ slow queue consuming
                 description: Queue messages are consumed slowly (> 60s)
                 query: 'time() - rabbitmq_queue_head_message_timestamp{queue="my-queue"} > 60'
                 severity: warning
                 for: 2m
                 comments: |
                   Indicate the queue name in dedicated label.
-              - name: Rabbitmq no consumer
+              - name: RabbitMQ no consumer
                 description: Queue has no consumer
                 query: 'rabbitmq_queue_consumers == 0'
                 severity: critical
                 for: 1m    # allows a short service restart
-              - name: Rabbitmq too many consumers
+              - name: RabbitMQ too many consumers
                 description: Queue should have only 1 consumer
                 query: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
                 severity: critical
                 comments: |
                   Indicate the queue name in dedicated label.
-              - name: Rabbitmq unactive exchange
+              - name: RabbitMQ unactive exchange
                 description: Exchange receive less than 5 msgs per second
                 query: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
                 severity: warning
