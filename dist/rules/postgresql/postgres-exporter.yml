@@ -183,3 +183,12 @@ groups:
       annotations:
         summary: Postgresql bloat table high (> 80%) (instance {{ $labels.instance }})
         description: "The table {{ $labels.relname }} is bloated. You should execute `VACUUM {{ $labels.relname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlInvalidIndex
+      expr: 'pg_genaral_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
+      for: 6h
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql invalid index (instance {{ $labels.instance }})
+        description: "The table {{ $labels.relname }} has an invalid index: {{ $labels.indexrelname }}. You should execute `DROP INDEX {{ $labels.indexrelname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
