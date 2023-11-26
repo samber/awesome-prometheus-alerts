@@ -241,7 +241,7 @@ groups:
                 severity: warning
                 for: 5m
               - name: Host context switching
-                description: Context switching is growing on the node (> 10000 / s)
+                description: Context switching is growing on the node (> 10000 / CPU / s)
                 query: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 comments: |
