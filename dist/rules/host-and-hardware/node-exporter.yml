@@ -182,7 +182,7 @@ groups:
         severity: warning
       annotations:
         summary: Host context switching (instance {{ $labels.instance }})
-        description: "Context switching is growing on the node (> 10000 / s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Context switching is growing on the node (> 10000 / CPU / s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostSwapIsFillingUp
       expr: '((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
