@@ -1776,16 +1776,19 @@ groups:
             doc_url: https://github.com/kubernetes/kube-state-metrics/tree/master/docs
             rules:
               - name: Kubernetes Node not ready
+                summary: Kubernetes Node ready (node {{ $labels.node }})
                 description: Node {{ $labels.node }} has been unready for a long time
                 query: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
                 severity: critical
                 for: 10m
               - name: Kubernetes Node memory pressure
+                summary: Kubernetes memory pressure (node {{ $labels.node }})
                 description: "Node {{ $labels.node }} has MemoryPressure condition"
                 query: 'kube_node_status_condition{condition="MemoryPressure",status="true"} == 1'
                 severity: critical
                 for: 2m
               - name: Kubernetes Node disk pressure
+                summary: Kubernetes disk pressure (node {{ $labels.node }})
                 description: "Node {{ $labels.node }} has DiskPressure condition"
                 query: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
                 severity: critical
@@ -1801,18 +1804,22 @@ groups:
                 severity: warning
                 for: 2m
               - name: Kubernetes Container oom killer
+                summary: Kubernetes container oom killer ({{ $labels.namespace }}/{{ $labels.pod }}:{{ $labels.container }})
                 description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ $value }} times in the last 10 minutes."
                 query: '(kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1'
                 severity: warning
               - name: Kubernetes Job failed
+                summary: Kubernetes Job failed ({{ $labels.namespace }}/{{ $labels.job_name }})
                 description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete"
                 query: 'kube_job_status_failed > 0'
                 severity: warning
               - name: Kubernetes CronJob suspended
+                summary: Kubernetes CronJob suspended ({{ $labels.namespace }}/{{ $labels.cronjob }})
                 description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is suspended"
                 query: 'kube_cronjob_spec_suspend != 0'
                 severity: warning
               - name: Kubernetes PersistentVolumeClaim pending
+                summary: Kubernetes PersistentVolumeClaim pending ({{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }})
                 description: "PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is pending"
                 query: 'kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1'
                 severity: warning
@@ -1827,10 +1834,12 @@ groups:
                 query: 'predict_linear(kubelet_volume_stats_available_bytes[6h:5m], 4 * 24 * 3600) < 0'
                 severity: critical
               - name: Kubernetes PersistentVolume error
+                summary: Kubernetes PersistentVolumeClaim pending ({{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }})
                 description: "Persistent volume {{ $labels.persistentvolume }} is in bad state"
                 query: 'kube_persistentvolume_status_phase{phase=~"Failed|Pending", job="kube-state-metrics"} > 0'
                 severity: critical
               - name: Kubernetes StatefulSet down
+                summary: Kubernetes StatefulSet down ({{ $labels.namespace }}/{{ $labels.statefulset }})
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} went down
                 query: 'kube_statefulset_replicas != kube_statefulset_status_replicas_ready > 0'
                 severity: critical
@@ -1854,21 +1863,25 @@ groups:
                 query: 'max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler) > 3'  # allow minimum 3 replicas running
                 severity: info
               - name: Kubernetes Pod not healthy
+                summary: Kubernetes Pod not healthy ({{ $labels.namespace }}/{{ $labels.pod }})
                 description: Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-running state for longer than 15 minutes.
                 query: 'sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0'
                 severity: critical
                 for: 15m
               - name: Kubernetes pod crash looping
+                summary: Kubernetes pod crash looping ({{ $labels.namespace }}/{{ $labels.pod }})
                 description: Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping
                 query: 'increase(kube_pod_container_status_restarts_total[1m]) > 3'
                 severity: warning
                 for: 2m
               - name: Kubernetes ReplicaSet replicas mismatch
+                summary: Kubernetes ReplicasSet mismatch ({{ $labels.namespace }}/{{ $labels.replicaset }})
                 description: ReplicaSet {{ $labels.namespace }}/{{ $labels.replicaset }} replicas mismatch
                 query: 'kube_replicaset_spec_replicas != kube_replicaset_status_ready_replicas'
                 severity: warning
                 for: 10m
               - name: Kubernetes Deployment replicas mismatch
+                summary: Kubernetes Deployment replicas mismatch ({{ $labels.namespace }}/{{ $labels.deployment }})
                 description: Deployment {{ $labels.namespace }}/{{ $labels.deployment }} replicas mismatch
                 query: 'kube_deployment_spec_replicas != kube_deployment_status_replicas_available'
                 severity: warning
@@ -1879,37 +1892,44 @@ groups:
                 severity: warning
                 for: 10m
               - name: Kubernetes Deployment generation mismatch
+                summary: Kubernetes Deployment generation mismatch ({{ $labels.namespace }}/{{ $labels.deployment }})
                 description: Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has failed but has not been rolled back.
                 query: 'kube_deployment_status_observed_generation != kube_deployment_metadata_generation'
                 severity: critical
                 for: 10m
               - name: Kubernetes StatefulSet generation mismatch
+                summary: Kubernetes StatefulSet generation mismatch ({{ $labels.namespace }}/{{ $labels.statefulset }})
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} has failed but has not been rolled back.
                 query: 'kube_statefulset_status_observed_generation != kube_statefulset_metadata_generation'
                 severity: critical
                 for: 10m
               - name: Kubernetes StatefulSet update not rolled out
+                summary: Kubernetes StatefulSet update not rolled out ({{ $labels.namespace }}/{{ $labels.statefulset }})
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} update has not been rolled out.
                 query: 'max without (revision) (kube_statefulset_status_current_revision unless kube_statefulset_status_update_revision) * (kube_statefulset_replicas != kube_statefulset_status_replicas_updated)'
                 severity: warning
                 for: 10m
               - name: Kubernetes DaemonSet rollout stuck
+                summary: Kubernetes DaemonSet rollout stuck ({{ $labels.namespace }}/{{ $labels.daemonset }})
                 description: Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are not scheduled or not ready
                 query: 'kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 or kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_current_number_scheduled > 0'
                 severity: warning
                 for: 10m
               - name: Kubernetes DaemonSet misscheduled
+                summary: Kubernetes DaemonSet misscheduled ({{ $labels.namespace }}/{{ $labels.daemonset }})
                 description: Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are running where they are not supposed to run
                 query: 'kube_daemonset_status_number_misscheduled > 0'
                 severity: critical
                 for: 1m
               - name: Kubernetes CronJob too long
+                summary: Kubernetes CronJob too long ({{ $labels.namespace }}/{{ $labels.cronjob }})
                 description: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.
                 query: 'time() - kube_cronjob_next_schedule_time > 3600'
                 severity: warning
                 comments: |
                   Threshold should be customized for each cronjob name.
               - name: Kubernetes Job slow completion
+                summary: Kubernetes job slow completion ({{ $labels.namespace }}/{{ $labels.job_name }})
                 description: Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.
                 query: 'kube_job_spec_completions - kube_job_status_succeeded - kube_job_status_failed > 0'
                 severity: critical
