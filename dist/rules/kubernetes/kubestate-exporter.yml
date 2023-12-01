@@ -10,7 +10,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes Node not ready (instance {{ $labels.instance }})
+        summary: Kubernetes Node ready (node {{ $labels.node }})
         description: "Node {{ $labels.node }} has been unready for a long time\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesNodeMemoryPressure
@@ -19,7 +19,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes Node memory pressure (instance {{ $labels.instance }})
+        summary: Kubernetes memory pressure (node {{ $labels.node }})
         description: "Node {{ $labels.node }} has MemoryPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesNodeDiskPressure
@@ -28,7 +28,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes Node disk pressure (instance {{ $labels.instance }})
+        summary: Kubernetes disk pressure (node {{ $labels.node }})
         description: "Node {{ $labels.node }} has DiskPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesNodeNetworkUnavailable
@@ -55,7 +55,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes Container oom killer (instance {{ $labels.instance }})
+        summary: Kubernetes container oom killer ({{ $labels.namespace }}/{{ $labels.pod }}:{{ $labels.container }})
         description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ $value }} times in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesJobFailed
@@ -64,7 +64,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes Job failed (instance {{ $labels.instance }})
+        summary: Kubernetes Job failed ({{ $labels.namespace }}/{{ $labels.job_name }})
         description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesCronjobSuspended
@@ -73,7 +73,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes CronJob suspended (instance {{ $labels.instance }})
+        summary: Kubernetes CronJob suspended ({{ $labels.namespace }}/{{ $labels.cronjob }})
         description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is suspended\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesPersistentvolumeclaimPending
@@ -82,7 +82,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes PersistentVolumeClaim pending (instance {{ $labels.instance }})
+        summary: Kubernetes PersistentVolumeClaim pending ({{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }})
         description: "PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is pending\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesVolumeOutOfDiskSpace
@@ -109,7 +109,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes PersistentVolume error (instance {{ $labels.instance }})
+        summary: Kubernetes PersistentVolumeClaim pending ({{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }})
         description: "Persistent volume {{ $labels.persistentvolume }} is in bad state\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesStatefulsetDown
@@ -118,7 +118,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes StatefulSet down (instance {{ $labels.instance }})
+        summary: Kubernetes StatefulSet down ({{ $labels.namespace }}/{{ $labels.statefulset }})
         description: "StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} went down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesHpaScaleInability
@@ -163,7 +163,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes Pod not healthy (instance {{ $labels.instance }})
+        summary: Kubernetes Pod not healthy ({{ $labels.namespace }}/{{ $labels.pod }})
         description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-running state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesPodCrashLooping
@@ -172,7 +172,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes pod crash looping (instance {{ $labels.instance }})
+        summary: Kubernetes pod crash looping ({{ $labels.namespace }}/{{ $labels.pod }})
         description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesReplicasetReplicasMismatch
@@ -181,7 +181,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes ReplicaSet replicas mismatch (instance {{ $labels.instance }})
+        summary: Kubernetes ReplicasSet mismatch ({{ $labels.namespace }}/{{ $labels.replicaset }})
         description: "ReplicaSet {{ $labels.namespace }}/{{ $labels.replicaset }} replicas mismatch\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesDeploymentReplicasMismatch
@@ -190,7 +190,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes Deployment replicas mismatch (instance {{ $labels.instance }})
+        summary: Kubernetes Deployment replicas mismatch ({{ $labels.namespace }}/{{ $labels.deployment }})
         description: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} replicas mismatch\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesStatefulsetReplicasMismatch
@@ -208,7 +208,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes Deployment generation mismatch (instance {{ $labels.instance }})
+        summary: Kubernetes Deployment generation mismatch ({{ $labels.namespace }}/{{ $labels.deployment }})
         description: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has failed but has not been rolled back.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesStatefulsetGenerationMismatch
@@ -217,7 +217,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes StatefulSet generation mismatch (instance {{ $labels.instance }})
+        summary: Kubernetes StatefulSet generation mismatch ({{ $labels.namespace }}/{{ $labels.statefulset }})
         description: "StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} has failed but has not been rolled back.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesStatefulsetUpdateNotRolledOut
@@ -226,7 +226,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes StatefulSet update not rolled out (instance {{ $labels.instance }})
+        summary: Kubernetes StatefulSet update not rolled out ({{ $labels.namespace }}/{{ $labels.statefulset }})
         description: "StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} update has not been rolled out.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesDaemonsetRolloutStuck
@@ -235,7 +235,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes DaemonSet rollout stuck (instance {{ $labels.instance }})
+        summary: Kubernetes DaemonSet rollout stuck ({{ $labels.namespace }}/{{ $labels.daemonset }})
         description: "Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are not scheduled or not ready\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesDaemonsetMisscheduled
@@ -244,7 +244,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes DaemonSet misscheduled (instance {{ $labels.instance }})
+        summary: Kubernetes DaemonSet misscheduled ({{ $labels.namespace }}/{{ $labels.daemonset }})
         description: "Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are running where they are not supposed to run\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesCronjobTooLong
@@ -253,7 +253,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes CronJob too long (instance {{ $labels.instance }})
+        summary: Kubernetes CronJob too long ({{ $labels.namespace }}/{{ $labels.cronjob }})
         description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more than 1h to complete.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesJobSlowCompletion
@@ -262,7 +262,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Kubernetes Job slow completion (instance {{ $labels.instance }})
+        summary: Kubernetes job slow completion ({{ $labels.namespace }}/{{ $labels.job_name }})
         description: "Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesApiServerErrors
