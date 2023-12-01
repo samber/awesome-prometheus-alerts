@@ -11,6 +11,6 @@ groups:
       labels:
         severity: {{ rule.severity }}
       annotations:
-        summary: {{ rule.name }} (instance {% raw %}{{ $labels.instance }}{% endraw %})
+        summary: {% if rule.summary %}{{ rule.summary }}{% else %}{{ rule.name }} (instance {% raw %}{{ $labels.instance }}{% endraw %}){% endif %}
         description: "{{ rule.description | replace: '"', '\"' }}\n  VALUE = {% raw %}{{ $value }}{% endraw %}\n  LABELS = {% raw %}{{ $labels }}{% endraw %}"
 {% endfor %}
