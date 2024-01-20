@@ -85,6 +85,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules#promtail)
 - [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules#cortex)
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
+- [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
 
 ## 🤝 Contributing
 

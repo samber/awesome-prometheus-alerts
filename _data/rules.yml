@@ -2819,3 +2819,33 @@ groups:
                 description: UPS load is > 80%
                 query: 'apcupsd_ups_load_percent > 80'
                 severity: warning
+
+      - name: Graph Node
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            rules:
+              - name: Provider failed because net_version failed
+                description: "Failed net_version for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`"
+                query: 'eth_rpc_status == 1'
+                severity: critical
+              - name: Provider failed because get genesis failed
+                description: "Failed to get genesis for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`"
+                query: 'eth_rpc_status == 2'
+                severity: critical
+              - name: Provider failed because net_version timeout
+                description: "net_version timeout for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`"
+                query: 'eth_rpc_status == 3'
+                severity: critical
+              - name: Provider failed because get genesis timeout
+                description: "Timeout to get genesis for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`"
+                query: 'eth_rpc_status == 4'
+                severity: critical
+              - name: Store connection is too slow
+                description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`"
+                query: 'store_connection_wait_time_ms > 10'
+                severity: warning
+              - name: Store connection is too slow
+                description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`"
+                query: 'store_connection_wait_time_ms > 20'
+                severity: critical
