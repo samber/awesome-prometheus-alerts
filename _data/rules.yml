@@ -148,7 +148,7 @@ groups:
                 for: 2m
               - name: Host Memory is underutilized
                 description: 'Node memory is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})'
-                query: '(100 - (rate(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                query: '(100 - (avg_over_time(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
                 for: 1w
                 comments: |
