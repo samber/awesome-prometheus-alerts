@@ -18,6 +18,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 
 - [Prometheus self-monitoring](https://samber.github.io/awesome-prometheus-alerts/rules#prometheus-internals)
 - [Host/Hardware](https://samber.github.io/awesome-prometheus-alerts/rules#host-and-hardware)
+- [SMART](https://samber.github.io/awesome-prometheus-alerts/rules#smart)
 - [Docker Containers](https://samber.github.io/awesome-prometheus-alerts/rules#docker-containers)
 - [Blackbox](https://samber.github.io/awesome-prometheus-alerts/rules#blackbox)
 - [Windows](https://samber.github.io/awesome-prometheus-alerts/rules#windows-server)
