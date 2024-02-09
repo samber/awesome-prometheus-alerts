@@ -1,0 +1,50 @@
+groups:
+
+- name: SmartctlExporter
+
+  rules:
+
+    - alert: SmartDeviceTemperatureWarning
+      expr: 'smartctl_device_temperature > 60'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Smart device temperature warning (instance {{ $labels.instance }})
+        description: "Device temperature  warning (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SmartDeviceTemperatureCritical
+      expr: 'smartctl_device_temperature > 80'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Smart device temperature critical (instance {{ $labels.instance }})
+        description: "Device temperature critical  (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SmartCriticalWarning
+      expr: 'smartctl_device_critical_warning > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Smart critical warning (instance {{ $labels.instance }})
+        description: "device has critical warning (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SmartMediaErrors
+      expr: 'smartctl_device_media_errors > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Smart media errors (instance {{ $labels.instance }})
+        description: "device has media errors (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SmartNvmeWearoutIndicator
+      expr: 'smartctl_device_available_spare{device=~"nvme.*"} < smartctl_device_available_spare_threshold{device=~"nvme.*"}'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Smart NVME Wearout Indicator (instance {{ $labels.instance }})
+        description: "NVMe device is wearing out (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
