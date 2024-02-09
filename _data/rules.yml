@@ -361,7 +361,7 @@ groups:
                 for: 15m
               - name: Smart NVME Wearout Indicator
                 description: NVMe device is wearing out (instance {{ $labels.instance }})
-                query: smartctl_device_available_spare{device=~"nvme"} < smartctl_device_available_spare_threshold{device=~"nvme"}
+                query: smartctl_device_available_spare{device=~"nvme.*"} < smartctl_device_available_spare_threshold{device=~"nvme.*"}
                 severity: critical
                 for: 15m
  
