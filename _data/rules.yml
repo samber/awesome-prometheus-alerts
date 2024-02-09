@@ -333,6 +333,38 @@ groups:
                 severity: info
                 for: 4h
 
+      - name: S.M.A.R.T Device Monitoring
+        exporters:
+          - name: smartctl-exporter
+            slug: smartctl-exporter
+            doc_url: https://github.com/prometheus-community/smartctl_exporter
+            rules:
+              - name: Smart device temperature warning
+                description: Device temperature  warning (instance {{ $labels.instance }})
+                query: smartctl_device_temperature > 60
+                severity: warning
+                for: 2m
+              - name: Smart device temperature critical
+                description: Device temperature critical  (instance {{ $labels.instance }})
+                query: smartctl_device_temperature > 80
+                severity: critical
+                for: 2m
+              - name: Smart critical warning
+                description: device has critical warning (instance {{ $labels.instance }})
+                query: smartctl_device_critical_warning > 0
+                severity: critical
+                for: 15m
+              - name: Smart media errors
+                description: device has media errors (instance {{ $labels.instance }})
+                query: smartctl_device_media_errors > 0
+                severity: critical
+                for: 15m
+              - name: Smart NVME Wearout Indicator
+                description: NVMe device is wearing out (instance {{ $labels.instance }})
+                query: smartctl_device_available_spare{device=~"nvme"} < smartctl_device_available_spare_threshold{device=~"nvme"}
+                severity: critical
+                for: 15m
+ 
       - name: Docker containers
         exporters:
           - name: google/cAdvisor
