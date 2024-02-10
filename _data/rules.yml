@@ -193,16 +193,16 @@ groups:
                 for: 2m
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
-                query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                query: '(node_filesystem_files_free{fstype!="msdosfs"} / node_filesystem_files{fstype!="msdosfs"} * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host filesystem device error
-                description: '{{ $labels.instance }}: Device error with the {{ $labels.mountpoint }} filesystem'
-                query: 'node_filesystem_device_error == 1'
+                description: "{{ $labels.instance }}: Device error with the {{ $labels.mountpoint }} filesystem"
+                query: "node_filesystem_device_error == 1"
                 severity: critical
               - name: Host inodes will fill in 24 hours
                 description: Filesystem is predicted to run out of inodes within the next 24 hours at current write rate
-                query: '(node_filesystem_files_free / node_filesystem_files * 100 < 10 and predict_linear(node_filesystem_files_free[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                query: '(node_filesystem_files_free{fstype!="msdosfs"} / node_filesystem_files{fstype!="msdosfs"} * 100 < 10 and predict_linear(node_filesystem_files_free{fstype!="msdosfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly{fstype!="msdosfs"} == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host unusual disk read latency
