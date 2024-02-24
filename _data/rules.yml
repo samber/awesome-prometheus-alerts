@@ -338,31 +338,36 @@ groups:
             slug: smartctl-exporter
             doc_url: https://github.com/prometheus-community/smartctl_exporter
             rules:
-              - name: Smart device temperature warning
-                description: Device temperature  warning (instance {{ $labels.instance }})
-                query: smartctl_device_temperature > 60
+              - name: SMART device temperature warning
+                description: Device temperature warning (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                query: avg_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) > 60
                 severity: warning
-                for: 2m
-              - name: Smart device temperature critical
-                description: Device temperature critical  (instance {{ $labels.instance }})
-                query: smartctl_device_temperature > 80
+              - name: SMART device temperature critical
+                description: Device temperature critical (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                query: max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= 70
                 severity: critical
-                for: 2m
-              - name: Smart critical warning
-                description: device has critical warning (instance {{ $labels.instance }})
+              # Datacenter drives have a trip temperature
+              - name: SMART device temperature was over trip value
+                description: Device temperature over trip value (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                query: max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) smartctl_device_temperature{temperature_type="drive_trip"}
+                severity: critical
+              - name: SMART status
+                description: Device has a SMART status failure (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                query: smartctl_device_smart_status != 1
+                severity: critical
+              - name: SMART critical warning
+                description: Disk controller has critical warning (instance {{ $labels.instance }}, drive {{ $labels.device }})
                 query: smartctl_device_critical_warning > 0
                 severity: critical
-                for: 15m
-              - name: Smart media errors
-                description: device has media errors (instance {{ $labels.instance }})
+              - name: SMART media errors
+                description: Disk controller detected media errors (instance {{ $labels.instance }}, drive {{ $labels.device }})
                 query: smartctl_device_media_errors > 0
                 severity: critical
-                for: 15m
-              - name: Smart NVME Wearout Indicator
-                description: NVMe device is wearing out (instance {{ $labels.instance }})
-                query: smartctl_device_available_spare{device=~"nvme.*"} < smartctl_device_available_spare_threshold{device=~"nvme.*"}
+              - name: SMART Wearout Indicator
+                description: Device is wearing out (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                # The threshold is not present on devices that do not support it
+                query: smartctl_device_available_spare < smartctl_device_available_spare_threshold
                 severity: critical
-                for: 15m
 
       - name: Docker containers
         exporters:
