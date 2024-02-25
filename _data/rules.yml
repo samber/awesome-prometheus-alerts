@@ -137,53 +137,46 @@ groups:
             rules:
               - name: Host out of memory
                 description: Node memory is filling up (< 10% left)
-                query: '(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                query: '(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < .10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host memory under memory pressure
-                description: The node is under heavy memory pressure. High rate of major page faults
-                query: '(rate(node_vmstat_pgmajfault[1m]) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: The node is under heavy memory pressure. High rate of loading memory pages from disk.
+                query: '(rate(node_vmstat_pgmajfault[5m]) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
-                for: 2m
               - name: Host Memory is underutilized
-                description: "Node memory is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})"
-                query: '(100 - (avg_over_time(node_memory_MemAvailable_bytes[30m]) / node_memory_MemTotal_bytes * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: "Node memory usage is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})"
+                # We use MemFree, many buffers (ZFS, databases etc) are declared as available memory, but would perform poorly if reduced
+                query: '((avg_over_time(node_memory_MemFree_bytes[30m]) / node_memory_MemTotal_bytes) > .80) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
                 for: 1w
                 comments: |
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host unusual network throughput in
-                description: Host network interfaces are probably receiving too much data (> 100 MB/s)
-                query: '(sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: "Host receive bandwidth is high (>80%)"
+                query: '((rate(node_network_receive_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80) * on (instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
-                for: 5m
               - name: Host unusual network throughput out
-                description: Host network interfaces are probably sending too much data (> 100 MB/s)
-                query: '(sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: "Host transmit bandwidth is high (>80%)"
+                query: '((rate(node_network_transmit_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80) * on (instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
-                for: 5m
               - name: Host unusual disk read rate
-                description: Disk is probably reading too much data (> 50 MB/s)
-                query: '(sum by (instance) (rate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: "Disk is too busy (IO wait > 80%)"
+                query: '(rate(node_disk_io_time_seconds_total[5m]) > .80) * on (instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
-                for: 5m
-              - name: Host unusual disk write rate
-                description: Disk is probably writing too much data (> 50 MB/s)
-                query: '(sum by (instance) (rate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
-                severity: warning
-                for: 2m
               - name: Host out of disk space
-                description: Disk is almost full (< 10% left)
-                query: '((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
-                severity: warning
+                description: "Disk is almost full (< 10% left)"
+                # Network filesystems have quotas etc. and should not be included in this alert
+                query: '(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} / node_filesystem_size_bytes < .10 and on (instance, device, mountpoint) node_filesystem_readonly == 0) * on (instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                severity: critical
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
                   "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
                   Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
                 for: 2m
-              - name: Host disk will fill in 24 hours
-                description: Filesystem is predicted to run out of space within the next 24 hours at current write rate
-                query: '((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+              - name: Host disk may fill in 24 hours
+                description: Filesystem will likely run out of space within the next 24 hours
+                query: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[1h], 86400) <= 0 and node_filesystem_avail_bytes > 0'
                 severity: warning
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
@@ -192,16 +185,21 @@ groups:
                 for: 2m
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
-                query: '(node_filesystem_files_free{fstype!="msdosfs"} / node_filesystem_files{fstype!="msdosfs"} * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
-                severity: warning
+                query: '(node_filesystem_files_free{fstype!="msdosfs"} / node_filesystem_files{fstype!="msdosfs"} < .10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                severity: critical
                 for: 2m
               - name: Host filesystem device error
-                description: "{{ $labels.instance }}: Device error with the {{ $labels.mountpoint }} filesystem"
-                query: "node_filesystem_device_error == 1"
+                description: "Error stat-ing the {{ $labels.mountpoint }} filesystem"
+                query: 'node_filesystem_device_error{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} == 1'
                 severity: critical
+                comments: |
+                  This indicates there was a problem getting information for the filesystem via statfs. 
+                  This is usually due to permissions issues or virtual filesystems.
+                  Please add ignored mountpoints in node_exporter parameters like
+                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
               - name: Host inodes will fill in 24 hours
                 description: Filesystem is predicted to run out of inodes within the next 24 hours at current write rate
-                query: '(node_filesystem_files_free{fstype!="msdosfs"} / node_filesystem_files{fstype!="msdosfs"} * 100 < 10 and predict_linear(node_filesystem_files_free{fstype!="msdosfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly{fstype!="msdosfs"} == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                query: 'predict_linear(node_filesystem_files_free{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[1h], 86400) <= 0 and node_filesystem_files_free > 0'
                 severity: warning
                 for: 2m
               - name: Host unusual disk read latency
@@ -216,12 +214,12 @@ groups:
                 for: 2m
               - name: Host high CPU load
                 description: CPU load is > 80%
-                query: '(sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                query: '((avg by (instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > .80) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 10m
               - name: Host CPU is underutilized
-                description: "CPU load is < 20% for 1 week. Consider reducing the number of CPUs."
-                query: '(100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: "CPU load has been < 20% for 1 week. Consider reducing the number of CPUs."
+                query: '((avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > .80) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: info
                 for: 1w
                 comments: |
@@ -231,14 +229,13 @@ groups:
                 query: '(avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host CPU high iowait
-                description: CPU iowait > 10%. A high iowait means that you are disk or network bound.
-                query: '(avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) * 100 > 10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: CPU iowait > 10%. Your CPU is idling waiting for storage to respond.
+                query: '(avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) > .10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
               - name: Host unusual disk IO
-                description: "Time spent in IO is too high on {{ $labels.instance }}. Check storage for issues."
-                query: '(rate(node_disk_io_time_seconds_total[1m]) > 0.5) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities."
+                query: '(rate(node_disk_io_time_seconds_total[5m]) > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
-                for: 5m
               - name: Host context switching
                 description: Context switching is growing on the node (> 10000 / CPU / s)
                 query: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
@@ -265,19 +262,19 @@ groups:
                 description: "Physical node temperature alarm triggered"
                 query: '(node_hwmon_temp_crit_alarm_celsius == 1) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
-              - name: Host RAID array got inactive
-                description: "RAID array {{ $labels.device }} is in a degraded state due to one or more disk failures. The number of spare drives is insufficient to fix the issue automatically."
-                query: '(node_md_state{state="inactive"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+              - name: Host Software RAID is not active
+                description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining."
+                query: '(node_md_disks_required - on(device, instance) node_md_disks{state="active"}) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
-              - name: Host RAID disk failure
-                description: "At least one device in RAID array on {{ $labels.instance }} failed. Array {{ $labels.md_device }} needs attention and possibly a disk swap"
+              - name: Host Software RAID disk failure
+                description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} needs attention."
                 query: '(node_md_disks{state="failed"} > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
               - name: Host kernel version deviations
-                description: Different kernel versions are running
-                query: '(count(sum(label_replace(node_uname_info, "kernel", "$1", "release", "([0-9]+.[0-9]+.[0-9]+).*")) by (kernel)) > 1) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
-                severity: warning
+                description: Kernel version for {{ $labels.instance }} has changed
+                query: 'changes(node_uname_info[1h]) == 0'
+                severity: info
                 for: 6h
               - name: Host OOM kill detected
                 description: OOM kill detected
@@ -301,11 +298,6 @@ groups:
                 query: '(rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: warning
                 for: 2m
-              - name: Host Network Interface Saturated
-                description: 'The network interface "{{ $labels.device }}" on "{{ $labels.instance }}" is getting overloaded.'
-                query: '((rate(node_network_receive_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*|^vnet.*|^veth.*|^tun.*"} > 0.8 < 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}' # < to 10Gb to prevent +inf when max speed is unknown
-                severity: warning
-                for: 1m
               - name: Host Network Bond Degraded
                 description: 'Bond "{{ $labels.device }}" degraded on "{{ $labels.instance }}".'
                 query: '((node_bonding_active - node_bonding_slaves) != 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
@@ -339,32 +331,32 @@ groups:
             doc_url: https://github.com/prometheus-community/smartctl_exporter
             rules:
               - name: SMART device temperature warning
-                description: Device temperature warning (instance {{ $labels.instance }}, drive {{ $labels.device }})
-                query: avg_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) > 60
+                description: Device temperature warning on {{ $labels.instance }} drive {{ $labels.device }})
+                query: avg_over_time(smartctl_device_temperature{temperature_type="current"} [5m]) > 60
                 severity: warning
               - name: SMART device temperature critical
-                description: Device temperature critical (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                description: Device temperature critical on {{ $labels.instance }} drive {{ $labels.device }})
                 query: max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= 70
                 severity: critical
               # Datacenter drives have a trip temperature
               - name: SMART device temperature was over trip value
-                description: Device temperature over trip value (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                description: Device temperature over trip value on {{ $labels.instance }} drive {{ $labels.device }})
                 query: max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) smartctl_device_temperature{temperature_type="drive_trip"}
                 severity: critical
               - name: SMART status
-                description: Device has a SMART status failure (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                description: Device has a SMART status failure on {{ $labels.instance }} drive {{ $labels.device }})
                 query: smartctl_device_smart_status != 1
                 severity: critical
               - name: SMART critical warning
-                description: Disk controller has critical warning (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                description: Disk controller has critical warning on {{ $labels.instance }} drive {{ $labels.device }})
                 query: smartctl_device_critical_warning > 0
                 severity: critical
               - name: SMART media errors
-                description: Disk controller detected media errors (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                description: Disk controller detected media errors on {{ $labels.instance }} drive {{ $labels.device }})
                 query: smartctl_device_media_errors > 0
                 severity: critical
               - name: SMART Wearout Indicator
-                description: Device is wearing out (instance {{ $labels.instance }}, drive {{ $labels.device }})
+                description: Device is wearing out on {{ $labels.instance }} drive {{ $labels.device }})
                 # The threshold is not present on devices that do not support it
                 query: smartctl_device_available_spare < smartctl_device_available_spare_threshold
                 severity: critical
