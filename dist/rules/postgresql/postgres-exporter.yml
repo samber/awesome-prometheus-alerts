@@ -53,7 +53,7 @@ groups:
       expr: 'sum by (instance, job, server) (pg_stat_activity_count) > min by (instance, job, server) (pg_settings_max_connections * 0.8)'
       for: 2m
       labels:
-        severity: warning
+        severity: critical
       annotations:
         summary: Postgresql too many connections (instance {{ $labels.instance }})
         description: "PostgreSQL instance has too many connections (> 80%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
@@ -62,7 +62,7 @@ groups:
       expr: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) < 5'
       for: 2m
       labels:
-        severity: warning
+        severity: critical
       annotations:
         summary: Postgresql not enough connections (instance {{ $labels.instance }})
         description: "PostgreSQL instance should have more connections (> 5)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
@@ -86,8 +86,8 @@ groups:
         description: "Ratio of transactions being aborted compared to committed is > 2 %\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlCommitRateLow
-      expr: 'rate(pg_stat_database_xact_commit[1m]) < 10'
-      for: 2m
+      expr: 'increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[1m]) < 5'
+      for: 5m
       labels:
         severity: critical
       annotations:
@@ -140,7 +140,7 @@ groups:
         description: "PostgreSQL dead tuples is too large\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlConfigurationChanged
-      expr: '{__name__=~"pg_settings_.*"} != ON(__name__) {__name__=~"pg_settings_([^t]|t[^r]|tr[^a]|tra[^n]|tran[^s]|trans[^a]|transa[^c]|transac[^t]|transact[^i]|transacti[^o]|transactio[^n]|transaction[^_]|transaction_[^r]|transaction_r[^e]|transaction_re[^a]|transaction_rea[^d]|transaction_read[^_]|transaction_read_[^o]|transaction_read_o[^n]|transaction_read_on[^l]|transaction_read_onl[^y]).*"} OFFSET 5m'
+      expr: 'changes(label_replace({__name__=~"pg_settings_.*"},"name","$1","__name__", "(.+)")[1h:]) > 0'
       for: 0m
       labels:
         severity: info
@@ -155,7 +155,7 @@ groups:
         severity: critical
       annotations:
         summary: Postgresql SSL compression active (instance {{ $labels.instance }})
-        description: "Database connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Database allows connections with SSL compression enabled.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTooManyLocksAcquired
       expr: '((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
