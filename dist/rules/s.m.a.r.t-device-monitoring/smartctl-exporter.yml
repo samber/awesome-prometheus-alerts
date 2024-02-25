@@ -5,13 +5,13 @@ groups:
   rules:
 
     - alert: SmartDeviceTemperatureWarning
-      expr: 'avg_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) > 60'
+      expr: 'avg_over_time(smartctl_device_temperature{temperature_type="current"} [5m]) > 60'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: SMART device temperature warning (instance {{ $labels.instance }})
-        description: "Device temperature warning (instance {{ $labels.instance }}, drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Device temperature warning on {{ $labels.instance }} drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SmartDeviceTemperatureCritical
       expr: 'max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= 70'
@@ -20,7 +20,7 @@ groups:
         severity: critical
       annotations:
         summary: SMART device temperature critical (instance {{ $labels.instance }})
-        description: "Device temperature critical (instance {{ $labels.instance }}, drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Device temperature critical on {{ $labels.instance }} drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SmartDeviceTemperatureWasOverTripValue
       expr: 'max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) smartctl_device_temperature{temperature_type="drive_trip"}'
@@ -29,7 +29,7 @@ groups:
         severity: critical
       annotations:
         summary: SMART device temperature was over trip value (instance {{ $labels.instance }})
-        description: "Device temperature over trip value (instance {{ $labels.instance }}, drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Device temperature over trip value on {{ $labels.instance }} drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SmartStatus
       expr: 'smartctl_device_smart_status != 1'
@@ -38,7 +38,7 @@ groups:
         severity: critical
       annotations:
         summary: SMART status (instance {{ $labels.instance }})
-        description: "Device has a SMART status failure (instance {{ $labels.instance }}, drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Device has a SMART status failure on {{ $labels.instance }} drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SmartCriticalWarning
       expr: 'smartctl_device_critical_warning > 0'
@@ -47,7 +47,7 @@ groups:
         severity: critical
       annotations:
         summary: SMART critical warning (instance {{ $labels.instance }})
-        description: "Disk controller has critical warning (instance {{ $labels.instance }}, drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Disk controller has critical warning on {{ $labels.instance }} drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SmartMediaErrors
       expr: 'smartctl_device_media_errors > 0'
@@ -56,7 +56,7 @@ groups:
         severity: critical
       annotations:
         summary: SMART media errors (instance {{ $labels.instance }})
-        description: "Disk controller detected media errors (instance {{ $labels.instance }}, drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Disk controller detected media errors on {{ $labels.instance }} drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SmartWearoutIndicator
       expr: 'smartctl_device_available_spare < smartctl_device_available_spare_threshold'
@@ -65,4 +65,4 @@ groups:
         severity: critical
       annotations:
         summary: SMART Wearout Indicator (instance {{ $labels.instance }})
-        description: "Device is wearing out (instance {{ $labels.instance }}, drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Device is wearing out on {{ $labels.instance }} drive {{ $labels.device }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
