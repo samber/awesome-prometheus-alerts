@@ -211,13 +211,13 @@ groups:
         summary: Host node overtemperature alarm (instance {{ $labels.instance }})
         description: "Physical node temperature alarm triggered\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: HostSoftwareRaidIsNotActive
-      expr: '(node_md_disks_required - on(device, instance) node_md_disks{state="active"}) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+    - alert: HostSoftwareRaidInsufficientDrives
+      expr: '((node_md_disks_required - on(device, instance) node_md_disks{state="active"}) > 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Host Software RAID is not active (instance {{ $labels.instance }})
+        summary: Host Software RAID insufficient drives (instance {{ $labels.instance }})
         description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostSoftwareRaidDiskFailure
@@ -230,7 +230,7 @@ groups:
         description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} needs attention.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostKernelVersionDeviations
-      expr: 'changes(node_uname_info[1h]) == 0'
+      expr: 'changes(node_uname_info[1h]) > 0'
       for: 6h
       labels:
         severity: info
