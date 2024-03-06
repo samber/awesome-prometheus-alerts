@@ -86,7 +86,7 @@ groups:
         description: "Ratio of transactions being aborted compared to committed is > 2 %\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlCommitRateLow
-      expr: 'increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[1m]) < 5'
+      expr: 'increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[5m]) < 5'
       for: 5m
       labels:
         severity: critical
