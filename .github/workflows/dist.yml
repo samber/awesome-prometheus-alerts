@@ -9,8 +9,6 @@ on:
 jobs:
   publish:
     name: Publish
-    # Check if the PR is not from a fork or manually executed
-    if: ${{ (github.repository_owner == 'samber') || (github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo

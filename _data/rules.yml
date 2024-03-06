@@ -126,7 +126,8 @@ groups:
                 severity: critical
               - name: Prometheus timeseries cardinality
                 description: 'The "{{ $labels.name }}" timeseries cardinality is getting very high: {{ $value }}'
-                query: 'label_replace(count by(__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") > 10000'
+                # Node CPU seconds total and Node SystemD Unit State are always high cardinality due to systemd containing services and CPU containing cores
+                query: '(label_replace(count by (__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") unless on (__name__) ({__name__=~"node_cpu_seconds_total|node_systemd_unit_state"})) > 10000'
                 severity: warning
 
       - name: Host and hardware
@@ -147,9 +148,8 @@ groups:
               - name: Host Memory is underutilized
                 description: "Node memory usage is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})"
                 # We use MemFree, many buffers (ZFS, databases etc) are declared as available memory, but would perform poorly if reduced
-                query: '((avg_over_time(node_memory_MemFree_bytes[30m]) / node_memory_MemTotal_bytes) > .80)'
+                query: 'min_over_time(node_memory_MemFree_bytes[1w]) > node_memory_MemTotal_bytes * .8'
                 severity: info
-                for: 1w
                 comments: |
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host unusual network throughput in
@@ -214,16 +214,16 @@ groups:
                 for: 2m
               - name: Host high CPU load
                 description: CPU load is > 80%
-                query: '((avg by (instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > .80)'
+                query: '(avg by (instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > .80'
                 severity: warning
                 for: 10m
               - name: Host CPU is underutilized
                 description: "CPU load has been < 20% for 1 week. Consider reducing the number of CPUs."
-                query: '(avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > .80'
+                query: '(min by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > 0.8'
                 severity: info
-                for: 1w
                 comments: |
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
+                for: 1w
               - name: Host CPU steal noisy neighbor
                 description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
                 query: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
@@ -255,12 +255,15 @@ groups:
                 severity: warning
               - name: Host physical component too hot
                 description: "Physical hardware component too hot"
-                query: 'node_hwmon_temp_celsius * ignoring(label) group_left(instance, job, node, sensor) node_hwmon_sensor_label{label!="tctl"} > 75'
+                # Some components have different max temperatures (eg. 65 for hard drive sensors, 90-100 for CPU).
+                # This is defined for all sensors, the crit value may not be defined for everything.
+                query: 'node_hwmon_temp_celsius > node_hwmon_temp_max_celsius'
                 severity: warning
                 for: 5m
               - name: Host node overtemperature alarm
                 description: "Physical node temperature alarm triggered"
-                query: '(node_hwmon_temp_crit_alarm_celsius == 1)'
+                # This is a critical alarm, some things (eg. NVMe) have just the temp alarm.
+                query: 'node_hwmon_temp_crit_alarm_celsius == 1 or node_hwmon_temp_alarm == 1'
                 severity: critical
               - name: Host Software RAID insufficient drives
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining."
@@ -672,7 +675,7 @@ groups:
                 severity: warning
               - name: Postgresql commit rate low
                 description: Postgresql seems to be processing very few transactions
-                query: 'increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[1m]) < 5'
+                query: 'increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[5m]) < 5'
                 severity: critical
                 for: 5m
               - name: Postgresql low XID consumption
