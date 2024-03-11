@@ -50,8 +50,8 @@ groups:
         description: "Container Volume usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ContainerHighThrottleRate
-      expr: 'rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1'
-      for: 2m
+      expr: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 75 / 100 )'
+      for: 5m
       labels:
         severity: warning
       annotations:
