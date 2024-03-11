@@ -401,7 +401,7 @@ groups:
                 for: 2m
               - name: Container high throttle rate
                 description: Container is being throttled
-                query: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 75 / 100 )'
+                query: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 )'
                 severity: warning
                 for: 5m
               - name: Container Low CPU utilization
