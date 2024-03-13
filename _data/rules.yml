@@ -645,13 +645,14 @@ groups:
                 description: Postgresql exporter is showing errors. A query may be buggy in query.yaml
                 query: "pg_exporter_last_scrape_error > 0"
                 severity: critical
+                # With modern PostgreSQL versions, auto-vacuum doesn't run if it is not required, only after a certain number of tuples have been modified.
               - name: Postgresql table not auto vacuumed
                 description: Table {{ $labels.relname }} has not been auto vacuumed for 10 days
-                query: "(pg_stat_user_tables_last_autovacuum > 0) and (time() - pg_stat_user_tables_last_autovacuum) > 60 * 60 * 24 * 10"
+                query: "((pg_stat_user_tables_n_tup_del + pg_stat_user_tables_n_tup_upd + pg_stat_user_tables_n_tup_hot_upd) > pg_settings_autovacuum_vacuum_threshold) and (time() - pg_stat_user_tables_last_autovacuum) > 864000"
                 severity: warning
               - name: Postgresql table not auto analyzed
                 description: Table {{ $labels.relname }} has not been auto analyzed for 10 days
-                query: "(pg_stat_user_tables_last_autoanalyze > 0) and (time() - pg_stat_user_tables_last_autoanalyze) > 24 * 60 * 60 * 10"
+                query: "((pg_stat_user_tables_n_tup_del + pg_stat_user_tables_n_tup_upd + pg_stat_user_tables_n_tup_hot_upd) > pg_settings_autovacuum_analyze_threshold) and (time() - pg_stat_user_tables_last_autoanalyze) > 864000"
                 severity: warning
               - name: Postgresql too many connections
                 description: PostgreSQL instance has too many connections (> 80%).
