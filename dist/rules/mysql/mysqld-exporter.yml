@@ -22,6 +22,15 @@ groups:
         summary: MySQL too many connections (> 80%) (instance {{ $labels.instance }})
         description: "More than 80% of MySQL connections are in use on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: MySQL high prepared statements utilization (> 80%)
+      expr: 'max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL high prepared statements utilization (> 80%) (instance {{ $labels.instance }})
+        description: "High utilization of prepared statements (>80%) on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: MysqlHighThreadsRunning
       expr: 'max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60'
       for: 2m
