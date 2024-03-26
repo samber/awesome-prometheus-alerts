@@ -248,7 +248,7 @@ groups:
         description: "Prometheus encountered {{ $value }} TSDB WAL truncation failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PrometheusTimeseriesCardinality
-      expr: 'label_replace(count by(__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") > 10000'
+      expr: '(label_replace(count by (__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") unless on (__name__) ({__name__=~"node_cpu_seconds_total|node_systemd_unit_state"})) > 10000'
       for: 0m
       labels:
         severity: warning
