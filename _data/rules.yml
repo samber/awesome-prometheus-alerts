@@ -126,8 +126,8 @@ groups:
                 severity: critical
               - name: Prometheus timeseries cardinality
                 description: 'The "{{ $labels.name }}" timeseries cardinality is getting very high: {{ $value }}'
-                # Node CPU seconds total and Node SystemD Unit State are always high cardinality due to systemd containing services and CPU containing cores
-                query: '(label_replace(count by (__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") unless on (__name__) ({__name__=~"node_cpu_seconds_total|node_systemd_unit_state"})) > 10000'
+                # Node CPU and Node SystemD Unit State are always high cardinality due to systemd containing services and CPU containing cores
+                query: '(label_replace(count by (__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") unless on (__name__) ({__name__=~"node_cpu.*|node_systemd_unit_state"})) > 10000'
                 severity: warning
 
       - name: Host and hardware
