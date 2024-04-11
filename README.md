@@ -4,6 +4,21 @@
 
 Collection available here: **[https://samber.github.io/awesome-prometheus-alerts](https://samber.github.io/awesome-prometheus-alerts)**
 
+<div align="center">
+  <hr>
+  <sup><b>Sponsored by:</b></sup>
+  <br>
+  <a href="https://betterstack.com">
+    <div>
+      <img src="https://samber.github.io/awesome-prometheus-alerts/assets/sponsor-betterstack.png" width="200" alt="Better Stack">
+    </div>
+    <div>
+      Better Stack lets you centralize, search, and visualize your logs.
+    </div>
+  </a>
+  <hr>
+</div>
+
 ## ✨ Contents
 
 - [Rules](#-rules)

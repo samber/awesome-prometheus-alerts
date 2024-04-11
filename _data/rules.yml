@@ -595,6 +595,11 @@ groups:
                 query: "max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80"
                 severity: warning
                 for: 2m
+              - name: MySQL high prepared statements utilization (> 80%)
+                description: "High utilization of prepared statements (>80%) on {{ $labels.instance }}"
+                query: "max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80"
+                severity: warning
+                for: 2m
               - name: MySQL high threads running
                 description: "More than 60% of MySQL connections are in running state on {{ $labels.instance }}"
                 query: "max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60"
