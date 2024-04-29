@@ -199,6 +199,7 @@ groups:
                 description: "{{ $labels.instance }}: Device error with the {{ $labels.mountpoint }} filesystem"
                 query: "node_filesystem_device_error == 1"
                 severity: critical
+                for: 2m
               - name: Host inodes will fill in 24 hours
                 description: Filesystem is predicted to run out of inodes within the next 24 hours at current write rate
                 query: '(node_filesystem_files_free{fstype!="msdosfs"} / node_filesystem_files{fstype!="msdosfs"} * 100 < 10 and predict_linear(node_filesystem_files_free{fstype!="msdosfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly{fstype!="msdosfs"} == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
