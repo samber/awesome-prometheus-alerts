@@ -96,7 +96,7 @@ groups:
 
     - alert: HostFilesystemDeviceError
       expr: 'node_filesystem_device_error == 1'
-      for: 0m
+      for: 2m
       labels:
         severity: critical
       annotations:
