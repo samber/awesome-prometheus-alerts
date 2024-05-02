@@ -77,7 +77,7 @@ groups:
         description: "Redis is running out of system memory (> 90%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RedisOutOfConfiguredMaxmemory
-      expr: 'redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90'
+      expr: 'redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90 and on(instance) redis_memory_max_bytes > 0'
       for: 2m
       labels:
         severity: warning
