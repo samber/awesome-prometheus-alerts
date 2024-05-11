@@ -1,0 +1,131 @@
+groups:
+- name: EmbeddedExporter
+  rules:
+    - alert: ClickHouseMemoryUsageCritical
+      expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: ClickHouse Memory Usage Critical (instance {{ $labels.instance }})
+        description: "Memory usage is critically high, over 90%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseMemoryUsageWarning
+      expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: ClickHouse Memory Usage Warning (instance {{ $labels.instance }})
+        description: "Memory usage is over 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseDiskSpaceLowDefault
+      expr: 'ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 20'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: ClickHouse Disk Space Low on Default (instance {{ $labels.instance }})
+        description: "Disk space on default is below 20%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseDiskSpaceCriticalDefault
+      expr: 'ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 10'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: ClickHouse Disk Space Critical on Default Disk (instance {{ $labels.instance }})
+        description: "Disk space on default disk is critically low, below 10%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseDiskSpaceLowBackups
+      expr: 'ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: ClickHouse Disk Space Low on Backups (instance {{ $labels.instance }})
+        description: "Disk space on backups is below 20%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseReplicaErrors
+      expr: 'ClickHouseErrorMetric_ALL_REPLICAS_ARE_STALE == 1 or ClickHouseErrorMetric_ALL_REPLICAS_LOST == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: ClickHouse Replica Errors Detected (instance {{ $labels.instance }})
+        description: "Critical replica errors detected, either all replicas are stale or lost.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseNoAvailableReplicas
+      expr: 'ClickHouseErrorMetric_NO_AVAILABLE_REPLICA == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: No Available Replicas in ClickHouse (instance {{ $labels.instance }})
+        description: "No available replicas in ClickHouse.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseNoLiveReplicas
+      expr: 'ClickHouseErrorMetric_TOO_FEW_LIVE_REPLICAS == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: No Live Replicas in ClickHouse (instance {{ $labels.instance }})
+        description: "There are too few live replicas available, risking data loss and service disruption.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
+    - alert: ClickHouseNetworkUsageHigh
+      expr: 'ClickHouseMetrics_NetworkSend > 1000 or ClickHouseMetrics_NetworkReceive > 1000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: High Network Traffic in ClickHouse (instance {{ $labels.instance }})
+        description: "Network traffic is unusually high, may affect cluster performance.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseHighTCPConnections
+      expr: 'ClickHouseMetrics_TCPConnection > 1500'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: High TCP Connections in ClickHouse (instance {{ $labels.instance }})
+        description: "High number of TCP connections, indicating heavy client or inter-cluster communication.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseInterserverConnectionIssues
+      expr: 'increase(ClickHouseMetrics_InterserverConnection[5m]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Interserver Connection Issues in ClickHouse (instance {{ $labels.instance }})
+        description: "An increase in interserver connections may indicate replication or distributed query handling issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseZooKeeperConnectionIssues
+      expr: 'avg(ClickHouseMetrics_ZooKeeperSession) != 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: ZooKeeper Connection Issues in ClickHouse (instance {{ $labels.instance }})
+        description: "ClickHouse is experiencing issues with ZooKeeper connections, which may affect cluster state and coordination.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseAuthenticationFailures
+      expr: 'increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Authentication Failures in ClickHouse (instance {{ $labels.instance }})
+        description: "Authentication failures detected, indicating potential security issues or misconfiguration.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseAccessDeniedErrors
+      expr: 'increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Access Denied Errors in ClickHouse (instance {{ $labels.instance }})
+        description: "Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
