@@ -52,6 +52,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [RabbitMQ](https://samber.github.io/awesome-prometheus-alerts/rules#rabbitmq)
 - [Elasticsearch](https://samber.github.io/awesome-prometheus-alerts/rules#elasticsearch)
 - [Cassandra](https://samber.github.io/awesome-prometheus-alerts/rules#cassandra)
+- [Clickhouse](https://samber.github.io/awesome-prometheus-alerts/rules#clickhouse)
 - [Zookeeper](https://samber.github.io/awesome-prometheus-alerts/rules#zookeeper)
 - [Kafka](https://samber.github.io/awesome-prometheus-alerts/rules#kafka)
 - [Pulsar](https://samber.github.io/awesome-prometheus-alerts/rules#pulsar)
