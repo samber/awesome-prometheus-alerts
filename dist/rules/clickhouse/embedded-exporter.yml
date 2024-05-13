@@ -3,7 +3,7 @@ groups:
   rules:
     - alert: ClickHouseMemoryUsageCritical
       expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90'
-      for: 2m
+      for: 5m
       labels:
         severity: critical
       annotations:
@@ -12,7 +12,7 @@ groups:
 
     - alert: ClickHouseMemoryUsageWarning
       expr: 'ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80'
-      for: 2m
+      for: 5m
       labels:
         severity: warning
       annotations:
