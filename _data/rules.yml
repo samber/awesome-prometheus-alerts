@@ -1878,7 +1878,7 @@ groups:
                 for: 1m
               - name: Kubernetes HPA scale inability
                 description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is unable to scale
-                query: 'kube_horizontalpodautoscaler_status_condition{status="true", condition="ScalingLimited"} == 1'
+                query: '(kube_horizontalpodautoscaler_spec_max_replicas - kube_horizontalpodautoscaler_status_desired_replicas) * on (horizontalpodautoscaler,namespace) (kube_horizontalpodautoscaler_status_condition{condition="ScalingLimited", status="true"} == 1) == 0'
                 severity: warning
                 for: 2m
               - name: Kubernetes HPA metrics unavailability
