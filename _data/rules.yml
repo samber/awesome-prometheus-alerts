@@ -1990,7 +1990,7 @@ groups:
                 severity: warning
               - name: Kubernetes HPA scale maximum
                 description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has hit maximum number of desired pods
-                query: "kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas"
+                query: '(kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas) and (kube_horizontalpodautoscaler_spec_max_replicas > 1) and (kube_horizontalpodautoscaler_spec_min_replicas != kube_horizontalpodautoscaler_spec_max_replicas)'
                 severity: info
                 for: 2m
               - name: Kubernetes HPA underutilized
