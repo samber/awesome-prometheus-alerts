@@ -2071,7 +2071,7 @@ groups:
                 for: 12h
               - name: Kubernetes API server errors
                 description: Kubernetes API server is experiencing high error rate
-                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) * 100 > 3'
+                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) by (instance, job) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) * 100 > 3'
                 severity: critical
                 for: 2m
               - name: Kubernetes API client errors
