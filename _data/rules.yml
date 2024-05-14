@@ -2071,7 +2071,7 @@ groups:
                 for: 12h
               - name: Kubernetes API server errors
                 description: Kubernetes API server is experiencing high error rate
-                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"^(?:5..)$"}[1m])) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) * 100 > 3'
+                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) * 100 > 3'
                 severity: critical
                 for: 2m
               - name: Kubernetes API client errors
@@ -2089,7 +2089,7 @@ groups:
                 severity: critical
               - name: Kubernetes API server latency
                 description: "Kubernetes API server has a 99th percentile latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}."
-                query: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{subresource!="log",verb!~"^(?:CONNECT|WATCHLIST|WATCH|PROXY)$"} [10m])) WITHOUT (instance, resource)) > 1'
+                query: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{subresource!="log",verb!~"(?:CONNECT|WATCHLIST|WATCH|PROXY)"} [10m])) WITHOUT (instance, resource)) > 1'
                 severity: warning
                 for: 2m
 
