@@ -127,7 +127,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes HPA scale inability (instance {{ $labels.instance }})
+        summary: Kubernetes HPA scale inability ({{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }})
         description: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is unable to scale\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesHpaMetricsUnavailability
@@ -136,7 +136,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Kubernetes HPA metrics unavailability (instance {{ $labels.instance }})
+        summary: Kubernetes HPA metrics unavailability ({{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }})
         description: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is unable to collect metrics\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesHpaScaleMaximum
@@ -145,16 +145,16 @@ groups:
       labels:
         severity: info
       annotations:
-        summary: Kubernetes HPA scale maximum (instance {{ $labels.instance }})
+        summary: Kubernetes HPA scale maximum ({{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }})
         description: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has hit maximum number of desired pods\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesHpaUnderutilized
-      expr: 'max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler) > 3'
+      expr: 'max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler, namespace) > 3'
       for: 0m
       labels:
         severity: info
       annotations:
-        summary: Kubernetes HPA underutilized (instance {{ $labels.instance }})
+        summary: Kubernetes HPA underutilized ({{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }})
         description: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is constantly at minimum replicas for 50% of the time. Potential cost saving here.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesPodNotHealthy
