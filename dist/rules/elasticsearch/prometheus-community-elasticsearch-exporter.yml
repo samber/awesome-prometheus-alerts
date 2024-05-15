@@ -149,7 +149,7 @@ groups:
         description: "The indexing latency on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchHighIndexingRate
-      expr: 'elasticsearch_indices_indexing_index_total > 100000'
+      expr: 'sum(rate(elasticsearch_indices_indexing_index_total[1m]))> 10000'
       for: 5m
       labels:
         severity: warning
@@ -158,7 +158,7 @@ groups:
         description: "The indexing rate on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchHighQueryRate
-      expr: 'elasticsearch_indices_search_query_total > 100000'
+      expr: 'sum(rate(elasticsearch_indices_search_query_total[1m])) > 100'
       for: 5m
       labels:
         severity: warning
