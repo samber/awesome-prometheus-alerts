@@ -876,11 +876,6 @@ groups:
                 query: 'avg by(instance) (rate(mongodb_ss_connections{conn_type="current"}[1m])) / avg by(instance) (sum (mongodb_ss_connections) by (instance)) * 100 > 80'
                 severity: warning
                 for: 2m
-              - name: MongoDB virtual memory usage
-                description: High memory usage
-                query: "(sum(mongodb_ss_mem_virtual) BY (instance) / sum(mongodb_ss_mem_resident) BY (instance)) > 3"
-                severity: warning
-                for: 2m
 
           - name: dcu/mongodb_exporter
             slug: dcu-mongodb-exporter
