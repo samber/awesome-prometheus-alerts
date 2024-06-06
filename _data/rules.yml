@@ -2421,7 +2421,7 @@ groups:
             rules:
               - name: Minio cluster disk offline
                 description: "Minio cluster disk is offline"
-                query: "minio_cluster_disk_offline_total > 0"
+                query: "minio_cluster_drive_offline_total > 0"
                 severity: critical
               - name: Minio node disk offline
                 description: "Minio cluster node disk is offline"
