@@ -175,14 +175,17 @@ groups:
         summary: Host unusual disk IO (instance {{ $labels.instance }})
         description: "Time spent in IO is too high on {{ $labels.instance }}. Check storage for issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: HostContextSwitching
-      expr: '((rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 10000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+    - alert: HostContextSwitchingHigh
+      expr: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"}))
+/
+(rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2
+'
       for: 0m
       labels:
         severity: warning
       annotations:
-        summary: Host context switching (instance {{ $labels.instance }})
-        description: "Context switching is growing on the node (> 10000 / CPU / s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Host context switching high (instance {{ $labels.instance }})
+        description: "Context switching is growing on the node (twice the daily average during the last 15m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostSwapIsFillingUp
       expr: '((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
