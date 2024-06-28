@@ -842,6 +842,19 @@ groups:
                 query: "increase(redis_rejected_connections_total[1m]) > 0"
                 severity: critical
 
+      - name: Meilisearch
+        exporters:
+          - doc_url: https://github.com/orgs/meilisearch/discussions/625
+            rules:                
+              - name: Meilisearch index is empty
+                description: Meilisearch instance is down
+                query: 'meilisearch_index_docs_count{index="$Index"} = 0'
+                severity: warning
+              - name: Meilisearch http response time
+                description: Meilisearch http response time is too high
+                query: "meilisearch_http_response_time_seconds > 0.5"
+                severity: warning
+
       - name: MongoDB
         exporters:
           - name: percona/mongodb_exporter
