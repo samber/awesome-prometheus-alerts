@@ -844,11 +844,13 @@ groups:
 
       - name: Meilisearch
         exporters:
-          - doc_url: https://github.com/orgs/meilisearch/discussions/625
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://github.com/orgs/meilisearch/discussions/625
             rules:                
               - name: Meilisearch index is empty
                 description: Meilisearch instance is down
-                query: 'meilisearch_index_docs_count{index="$Index"} = 0'
+                query: 'meilisearch_index_docs_count{index="$Index"} == 0'
                 severity: warning
               - name: Meilisearch http response time
                 description: Meilisearch http response time is too high
