@@ -842,21 +842,6 @@ groups:
                 query: "increase(redis_rejected_connections_total[1m]) > 0"
                 severity: critical
 
-      - name: Meilisearch
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            doc_url: https://github.com/orgs/meilisearch/discussions/625
-            rules:                
-              - name: Meilisearch index is empty
-                description: Meilisearch instance is down
-                query: 'meilisearch_index_docs_count == 0'
-                severity: warning
-              - name: Meilisearch http response time
-                description: Meilisearch http response time is too high
-                query: "meilisearch_http_response_time_seconds > 0.5"
-                severity: warning
-
       - name: MongoDB
         exporters:
           - name: percona/mongodb_exporter
@@ -1161,6 +1146,21 @@ groups:
                 query: "elasticsearch_indices_search_fetch_time_seconds / elasticsearch_indices_search_fetch_total > 1"
                 severity: warning
                 for: 5m                 
+
+      - name: Meilisearch
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://github.com/orgs/meilisearch/discussions/625
+            rules:                
+              - name: Meilisearch index is empty
+                description: Meilisearch instance is down
+                query: 'meilisearch_index_docs_count == 0'
+                severity: warning
+              - name: Meilisearch http response time
+                description: Meilisearch http response time is too high
+                query: "meilisearch_http_response_time_seconds > 0.5"
+                severity: warning
 
       - name: Cassandra
         exporters:
