@@ -27,7 +27,7 @@ groups:
                 severity: critical
               - name: Prometheus target missing with warmup time
                 description: Allow a job time to start up (10 minutes) before alerting that it's down.
-                query: "sum by (instance, job) ((up == 0) * on (instance) group_right(job) (node_time_seconds - node_boot_time_seconds > 600))"
+                query: "sum by (instance, job) ((up == 0) * on (instance) group_left (__name__) (node_time_seconds - node_boot_time_seconds > 600))"
                 severity: critical
               - name: Prometheus configuration reload failure
                 description: Prometheus configuration reload error
