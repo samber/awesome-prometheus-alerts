@@ -5,7 +5,7 @@ groups:
   rules:
 
     - alert: MeilisearchIndexIsEmpty
-      expr: meilisearch_index_docs_count{index="$Index"} == 0
+      expr: meilisearch_index_docs_count == 0
       for: 5m
       labels:
         severity: warning
