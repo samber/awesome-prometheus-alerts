@@ -1,0 +1,23 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: MeilisearchIndexIsEmpty
+      expr: meilisearch_index_docs_count == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: the index {{ $labels.Index }} is empty
+        description: "The index {{ $labels.Index }} is empty at the moment, and shouldnt be empty\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        
+    - alert: MeilisearchHttpResponseTimeIsTooHigh
+      expr: rate(meilisearch_http_response_time_seconds_sum[5m]) / rate(meilisearch_http_response_time_seconds_count[5m]) > 0.5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: the meilisearch server http response time is too high
+        description: "The meilisearch server http response time is too high at the moment\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
