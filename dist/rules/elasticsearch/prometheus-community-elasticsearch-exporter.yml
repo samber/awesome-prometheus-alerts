@@ -138,3 +138,39 @@ groups:
       annotations:
         summary: Elasticsearch no new documents (instance {{ $labels.instance }})
         description: "No new documents for 10 min!\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchHighIndexingLatency
+      expr: 'elasticsearch_indices_indexing_index_time_seconds_total / elasticsearch_indices_indexing_index_total > 0.0005'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Elasticsearch High Indexing Latency (instance {{ $labels.instance }})
+        description: "The indexing latency on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchHighIndexingRate
+      expr: 'sum(rate(elasticsearch_indices_indexing_index_total[1m]))> 10000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Elasticsearch High Indexing Rate (instance {{ $labels.instance }})
+        description: "The indexing rate on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchHighQueryRate
+      expr: 'sum(rate(elasticsearch_indices_search_query_total[1m])) > 100'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Elasticsearch High Query Rate (instance {{ $labels.instance }})
+        description: "The query rate on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchHighQueryLatency
+      expr: 'elasticsearch_indices_search_fetch_time_seconds / elasticsearch_indices_search_fetch_total > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Elasticsearch High Query Latency (instance {{ $labels.instance }})
+        description: "The query latency on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -197,6 +197,7 @@ groups:
                   This is usually due to permissions issues or virtual filesystems.
                   Please add ignored mountpoints in node_exporter parameters like
                   "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+                for: 2m
               - name: Host inodes will fill in 24 hours
                 description: Filesystem is predicted to run out of inodes within the next 24 hours at current write rate
                 query: 'predict_linear(node_filesystem_files_free{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[1h], 86400) <= 0 and node_filesystem_files_free > 0'
@@ -236,12 +237,16 @@ groups:
                 description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities."
                 query: 'rate(node_disk_io_time_seconds_total[5m]) > 0.8'
                 severity: warning
-              - name: Host context switching
-                description: Context switching is growing on the node (> 10000 / CPU / s)
-                query: '(rate(node_context_switches_total[5m])) / (count without(cpu, mode) (node_cpu_seconds_total{mode="idle"})) > 10000'
+                for: 5m
+              - name: Host context switching high
+                description: Context switching is growing on the node (twice the daily average during the last 15m)
+                query: |
+                  (rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"}))
+                  /
+                  (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2
                 severity: warning
                 comments: |
-                  10000 context switches is an arbitrary number.
+                  x2 context switches is an arbitrary number.
                   The alert threshold depends on the nature of the application.
                   Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
               - name: Host swap is filling up
@@ -833,7 +838,7 @@ groups:
                   The exporter must be started with --include-system-metrics flag or REDIS_EXPORTER_INCL_SYSTEM_METRICS=true environment variable.
               - name: Redis out of configured maxmemory
                 description: Redis is running out of configured maxmemory (> 90%)
-                query: "redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90"
+                query: "redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90 and on(instance) redis_memory_max_bytes > 0"
                 severity: warning
                 for: 2m
               - name: Redis too many connections
@@ -886,11 +891,6 @@ groups:
               - name: MongoDB too many connections
                 description: Too many connections (> 80%)
                 query: 'avg by(instance) (rate(mongodb_ss_connections{conn_type="current"}[1m])) / avg by(instance) (sum (mongodb_ss_connections) by (instance)) * 100 > 80'
-                severity: warning
-                for: 2m
-              - name: MongoDB virtual memory usage
-                description: High memory usage
-                query: "(sum(mongodb_ss_mem_virtual) BY (instance) / sum(mongodb_ss_mem_resident) BY (instance)) > 3"
                 severity: warning
                 for: 2m
 
@@ -1137,8 +1137,43 @@ groups:
                 severity: warning
                 for: 15m
               - name: Elasticsearch no new documents
-                description: No new documents for 10 min!
+                description: "No new documents for 10 min!"
                 query: 'increase(elasticsearch_indices_indexing_index_total{es_data_node="true"}[10m]) < 1'
+                severity: warning
+              - name: Elasticsearch High Indexing Latency
+                description: "The indexing latency on Elasticsearch cluster is higher than the threshold."
+                query: "elasticsearch_indices_indexing_index_time_seconds_total / elasticsearch_indices_indexing_index_total > 0.0005"
+                severity: warning
+                for: 10m
+              - name: Elasticsearch High Indexing Rate
+                description: "The indexing rate on Elasticsearch cluster is higher than the threshold."
+                query: "sum(rate(elasticsearch_indices_indexing_index_total[1m]))> 10000"
+                severity: warning
+                for: 5m
+              - name: Elasticsearch High Query Rate
+                description: "The query rate on Elasticsearch cluster is higher than the threshold."
+                query: "sum(rate(elasticsearch_indices_search_query_total[1m])) > 100"
+                severity: warning
+                for: 5m
+              - name: Elasticsearch High Query Latency
+                description: "The query latency on Elasticsearch cluster is higher than the threshold."
+                query: "elasticsearch_indices_search_fetch_time_seconds / elasticsearch_indices_search_fetch_total > 1"
+                severity: warning
+                for: 5m
+
+      - name: Meilisearch
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://github.com/orgs/meilisearch/discussions/625
+            rules:
+              - name: Meilisearch index is empty
+                description: Meilisearch instance is down
+                query: 'meilisearch_index_docs_count == 0'
+                severity: warning
+              - name: Meilisearch http response time
+                description: Meilisearch http response time is too high
+                query: "meilisearch_http_response_time_seconds > 0.5"
                 severity: warning
 
       - name: Cassandra
@@ -1291,6 +1326,88 @@ groups:
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:cache:keycache:hitrate:value"} < .85'
                 severity: critical
                 for: 2m
+
+      - name: Clickhouse
+        exporters:
+          - name: Embedded Exporter
+            slug: embedded-exporter
+            doc_url: https://clickhouse.com/docs/en/operations/system-tables/metrics
+            rules:
+              - name: ClickHouse Memory Usage Critical
+                description: Memory usage is critically high, over 90%.
+                query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90"
+                severity: critical
+                for: 5m
+              - name: ClickHouse Memory Usage Warning
+                description: Memory usage is over 80%.
+                query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80"
+                severity: warning
+                for: 5m
+              - name: ClickHouse Disk Space Low on Default
+                description: Disk space on default is below 20%.
+                query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 20"
+                severity: warning
+                for: 2m
+              - name: ClickHouse Disk Space Critical on Default
+                description: Disk space on default disk is critically low, below 10%.
+                query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 10"
+                severity: critical
+                for: 2m
+              - name: ClickHouse Disk Space Low on Backups
+                description: Disk space on backups is below 20%.
+                query: "ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20"
+                severity: warning
+                for: 2m
+              - name: ClickHouse Replica Errors
+                description: Critical replica errors detected, either all replicas are stale or lost.
+                query: "ClickHouseErrorMetric_ALL_REPLICAS_ARE_STALE == 1 or ClickHouseErrorMetric_ALL_REPLICAS_LOST == 1"
+                severity: critical
+                for: 0m
+              - name: ClickHouse No Available Replicas
+                description: No available replicas in ClickHouse.
+                query: "ClickHouseErrorMetric_NO_AVAILABLE_REPLICA == 1"
+                severity: critical
+                for: 0m
+              - name: ClickHouse No Live Replicas
+                description: There are too few live replicas available, risking data loss and service disruption.
+                query: "ClickHouseErrorMetric_TOO_FEW_LIVE_REPLICAS == 1"
+                severity: critical
+                for: 0m
+              - name: ClickHouse High Network Traffic
+                description: Network traffic is unusually high, may affect cluster performance.
+                query: "ClickHouseMetrics_NetworkSend > 250 or ClickHouseMetrics_NetworkReceive > 250"
+                severity: warning
+                for: 5m
+                comments: |
+                  Please replace the threshold with an appropriate value
+              - name: ClickHouse High TCP Connections
+                description: High number of TCP connections, indicating heavy client or inter-cluster communication.
+                query: "ClickHouseMetrics_TCPConnection > 400"
+                severity: warning
+                for: 5m
+                comments: |
+                  Please replace the threshold with an appropriate value
+              - name: ClickHouse Interserver Connection Issues
+                description: An increase in interserver connections may indicate replication or distributed query handling issues.
+                query: "increase(ClickHouseMetrics_InterserverConnection[5m]) > 0"
+                severity: warning
+                for: 1m
+              - name: ClickHouse ZooKeeper Connection Issues
+                description: ClickHouse is experiencing issues with ZooKeeper connections, which may affect cluster state and coordination.
+                query: "avg(ClickHouseMetrics_ZooKeeperSession) != 1"
+                severity: warning
+                for: 3m
+              - name: ClickHouse Authentication Failures
+                description: Authentication failures detected, indicating potential security issues or misconfiguration.
+                query: "increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 0"
+                severity: info
+                for: 0m
+              - name: ClickHouse Access Denied Errors
+                description: Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts.
+                query: "increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0"
+                severity: info
+                for: 0m
+
 
       - name: Zookeeper
         exporters:
@@ -1695,7 +1812,7 @@ groups:
                 severity: critical
               - name: HAProxy backend max active session
                 description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
-                query: "((sum by (backend) (avg_over_time(haproxy_backend_max_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80"
+                query: "((sum by (backend) (avg_over_time(haproxy_backend_current_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80"
                 severity: warning
                 for: 2m
               - name: HAProxy pending requests
@@ -1891,7 +2008,7 @@ groups:
                 for: 1m
               - name: Kubernetes HPA scale inability
                 description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is unable to scale
-                query: 'kube_horizontalpodautoscaler_status_condition{status="false", condition="AbleToScale"} == 1'
+                query: '(kube_horizontalpodautoscaler_spec_max_replicas - kube_horizontalpodautoscaler_status_desired_replicas) * on (horizontalpodautoscaler,namespace) (kube_horizontalpodautoscaler_status_condition{condition="ScalingLimited", status="true"} == 1) == 0'
                 severity: warning
                 for: 2m
               - name: Kubernetes HPA metrics unavailability
@@ -1900,7 +2017,7 @@ groups:
                 severity: warning
               - name: Kubernetes HPA scale maximum
                 description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has hit maximum number of desired pods
-                query: "kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas"
+                query: '(kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas) and (kube_horizontalpodautoscaler_spec_max_replicas > 1) and (kube_horizontalpodautoscaler_spec_min_replicas != kube_horizontalpodautoscaler_spec_max_replicas)'
                 severity: info
                 for: 2m
               - name: Kubernetes HPA underutilized
@@ -1981,7 +2098,7 @@ groups:
                 for: 12h
               - name: Kubernetes API server errors
                 description: Kubernetes API server is experiencing high error rate
-                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"^(?:5..)$"}[1m])) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) * 100 > 3'
+                query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) by (instance, job) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) * 100 > 3'
                 severity: critical
                 for: 2m
               - name: Kubernetes API client errors
@@ -1999,7 +2116,7 @@ groups:
                 severity: critical
               - name: Kubernetes API server latency
                 description: "Kubernetes API server has a 99th percentile latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}."
-                query: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{subresource!="log",verb!~"^(?:CONNECT|WATCHLIST|WATCH|PROXY)$"} [10m])) WITHOUT (instance, resource)) > 1'
+                query: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{verb!~"(?:CONNECT|WATCHLIST|WATCH|PROXY)"} [10m])) WITHOUT (subresource)) > 1'
                 severity: warning
                 for: 2m
 
@@ -2336,7 +2453,7 @@ groups:
             rules:
               - name: Minio cluster disk offline
                 description: "Minio cluster disk is offline"
-                query: "minio_cluster_disk_offline_total > 0"
+                query: "minio_cluster_drive_offline_total > 0"
                 severity: critical
               - name: Minio node disk offline
                 description: "Minio cluster node disk is offline"

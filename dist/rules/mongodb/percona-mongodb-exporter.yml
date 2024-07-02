@@ -66,12 +66,3 @@ groups:
       annotations:
         summary: MongoDB too many connections (instance {{ $labels.instance }})
         description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: MongodbVirtualMemoryUsage
-      expr: '(sum(mongodb_ss_mem_virtual) BY (instance) / sum(mongodb_ss_mem_resident) BY (instance)) > 3'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: MongoDB virtual memory usage (instance {{ $labels.instance }})
-        description: "High memory usage\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
