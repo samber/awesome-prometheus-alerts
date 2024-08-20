@@ -1537,7 +1537,7 @@ groups:
                 for: 3m
               - name: Nats high memory usage
                 description: NATS server memory usage is above 200MB for {{ $labels.instance }}
-                query: "gnatsd_varz_mem > 200000000"
+                query: "gnatsd_varz_mem > 200 * 1024 * 1024"
                 severity: warning
                 for: 5m
               - name: Nats slow consumers
@@ -1547,7 +1547,7 @@ groups:
                 for: 3m
               - name: Nats server down
                 description: NATS server has been down for more than 5 minutes
-                query: "absent(gnatsd_connz_total)"
+                query: "absent(up{job='nats'})"
                 severity: critical
                 for: 5m
               - name: High CPU usage on NATS server
@@ -1576,7 +1576,7 @@ groups:
                 severity: warning
                 for: 5m
               - name: High pending messages in NATS
-                description: NATS server has more than 100,000 pending messages
+                description: NATS server has more than 100,000 pending bytes
                 query: "gnatsd_connz_pending_bytes > 100000"
                 severity: warning
                 for: 5m
@@ -1596,8 +1596,8 @@ groups:
                 severity: warning
                 for: 5m
               - name: Max payload size exceeded in NATS
-                description: The max payload size allowed by NATS has been exceeded
-                query: "max(gnatsd_varz_max_payload) > 1000000"
+                description: The max payload size allowed by NATS has been exceeded (1MB)
+                query: "max(gnatsd_varz_max_payload) > 1024 * 1024"
                 severity: critical
                 for: 5m
               - name: Leaf node connection issue in NATS
