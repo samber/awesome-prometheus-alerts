@@ -1550,22 +1550,22 @@ groups:
                 query: "absent(gnatsd_connz_total)"
                 severity: critical
                 for: 5m
-              - name: High CPU usage on NATS server
+              - name: Nats high CPU usage
                 description: NATS server is using more than 80% CPU for the last 5 minutes
                 query: "rate(gnatsd_varz_cpu[5m]) > 0.8"
                 severity: warning
                 for: 5m
-              - name: High number of connections in NATS
+              - name: Nats high number of connections
                 description: NATS server has more than 1000 active connections
                 query: "gnatsd_connz_num_connections > 1000"
                 severity: warning
                 for: 5m
-              - name: High JetStream store usage
+              - name: Nats high JetStream store usage
                 description: JetStream store usage is over 80%
                 query: "gnatsd_varz_jetstream_stats_storage / gnatsd_varz_jetstream_config_max_storage > 0.8"
                 severity: warning
                 for: 5m
-              - name: High JetStream memory usage
+              - name: Nats high JetStream memory usage
                 description: JetStream memory usage is over 80%
                 query: "gnatsd_varz_jetstream_stats_memory / gnatsd_varz_jetstream_config_max_memory > 0.8"
                 severity: warning
@@ -1575,42 +1575,42 @@ groups:
                 query: "gnatsd_connz_subscriptions > 1000"
                 severity: warning
                 for: 5m
-              - name: High pending messages in NATS
+              - name: Nats high pending messages
                 description: NATS server has more than 100,000 pending messages
                 query: "gnatsd_connz_pending_bytes > 100000"
                 severity: warning
                 for: 5m
-              - name: Errors in NATS
+              - name: Nats too many errors
                 description: NATS server has encountered errors in the last 5 minutes
                 query: "increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 0"
                 severity: warning
                 for: 5m
-              - name: JetStream consumers exceeded
+              - name: Nats JetStream consumers exceeded
                 description: JetStream has more than 100 active consumers
                 query: "sum(gnatsd_varz_jetstream_stats_accounts) > 100"
                 severity: warning
                 for: 5m
-              - name: Frequent authentication timeouts in NATS
+              - name: Nats frequent authentication timeouts
                 description: There have been more than 5 authentication timeouts in the last 5 minutes
                 query: "increase(gnatsd_varz_auth_timeout[5m]) > 5"
                 severity: warning
                 for: 5m
-              - name: Max payload size exceeded in NATS
+              - name: Nats max payload size exceeded
                 description: The max payload size allowed by NATS has been exceeded
                 query: "max(gnatsd_varz_max_payload) > 1000000"
                 severity: critical
                 for: 5m
-              - name: Leaf node connection issue in NATS
+              - name: Nats leaf node connection issue
                 description: No leaf node connections have been established in the last 5 minutes
                 query: "increase(gnatsd_varz_leafnodes[5m]) == 0"
                 severity: critical
                 for: 5m
-              - name: Max ping operations exceeded in NATS
+              - name: Nats max ping operations exceeded
                 description: The maximum number of ping operations in NATS has exceeded 50
                 query: "gnatsd_varz_ping_max > 50"
                 severity: warning
                 for: 5m
-              - name: Write deadline exceeded in NATS
+              - name: Nats write deadline exceeded
                 description: The write deadline has been exceeded in NATS, indicating potential message delivery issues
                 query: "gnatsd_varz_write_deadline > 10"
                 severity: critical
