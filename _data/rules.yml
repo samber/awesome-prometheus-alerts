@@ -730,9 +730,11 @@ groups:
                   See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
               - name: Postgresql invalid index
                 description: "The table {{ $labels.relname }} has an invalid index: {{ $labels.indexrelname }}. You should execute `DROP INDEX {{ $labels.indexrelname }};`"
-                query: 'pg_genaral_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
+                query: 'pg_general_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
                 severity: warning
                 for: 6h
+                comments: |
+                  See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
 
       - name: SQL Server
         exporters:
