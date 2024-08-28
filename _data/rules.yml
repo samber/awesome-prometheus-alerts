@@ -1549,7 +1549,7 @@ groups:
                 for: 3m
               - name: Nats server down
                 description: NATS server has been down for more than 5 minutes
-                query: "absent(up{job="nats"})"
+                query: 'absent(up{job="nats"})'
                 severity: critical
                 for: 5m
               - name: Nats high CPU usage
