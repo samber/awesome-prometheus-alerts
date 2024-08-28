@@ -267,7 +267,7 @@ groups:
                 for: 5m
               - name: Host node overtemperature alarm
                 description: "Physical node temperature alarm triggered"
-                query: '(node_hwmon_temp_crit_alarm_celsius == 1) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
+                query: '((node_hwmon_temp_crit_alarm_celsius == 1) or (node_hwmon_temp_alarm == 1)) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
               - name: Host RAID array got inactive
                 description: "RAID array {{ $labels.device }} is in a degraded state due to one or more disk failures. The number of spare drives is insufficient to fix the issue automatically."
