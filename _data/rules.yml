@@ -267,8 +267,7 @@ groups:
                 for: 5m
               - name: Host node overtemperature alarm
                 description: "Physical node temperature alarm triggered"
-                # This is a critical alarm, some things (eg. NVMe) have just the temp alarm.
-                query: 'node_hwmon_temp_crit_alarm_celsius == 1 or node_hwmon_temp_alarm == 1'
+                query: '((node_hwmon_temp_crit_alarm_celsius == 1) or (node_hwmon_temp_alarm == 1)) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}'
                 severity: critical
               - name: Host Software RAID insufficient drives
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining."
@@ -744,9 +743,11 @@ groups:
                   See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
               - name: Postgresql invalid index
                 description: "The table {{ $labels.relname }} has an invalid index: {{ $labels.indexrelname }}. You should execute `DROP INDEX {{ $labels.indexrelname }};`"
-                query: 'pg_genaral_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
+                query: 'pg_general_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
                 severity: warning
                 for: 6h
+                comments: |
+                  See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
 
       - name: SQL Server
         exporters:
@@ -1546,9 +1547,90 @@ groups:
                 for: 3m
               - name: Nats high routes count
                 description: High number of NATS routes ({{ $value }}) for {{ $labels.instance }}
-                query: "gnatsd_routez_num_routes > 10"
+                query: "gnatsd_varz_routes > 10"
                 severity: warning
                 for: 3m
+              - name: Nats high memory usage
+                description: NATS server memory usage is above 200MB for {{ $labels.instance }}
+                query: "gnatsd_varz_mem > 200 * 1024 * 1024"
+                severity: warning
+                for: 5m
+              - name: Nats slow consumers
+                description: There are slow consumers in NATS for {{ $labels.instance }}
+                query: "gnatsd_varz_slow_consumers > 0"
+                severity: critical
+                for: 3m
+              - name: Nats server down
+                description: NATS server has been down for more than 5 minutes
+                query: 'absent(up{job="nats"})'
+                severity: critical
+                for: 5m
+              - name: Nats high CPU usage
+                description: NATS server is using more than 80% CPU for the last 5 minutes
+                query: "rate(gnatsd_varz_cpu[5m]) > 0.8"
+                severity: warning
+                for: 5m
+              - name: Nats high number of connections
+                description: NATS server has more than 1000 active connections
+                query: "gnatsd_connz_num_connections > 1000"
+                severity: warning
+                for: 5m
+              - name: Nats high JetStream store usage
+                description: JetStream store usage is over 80%
+                query: "gnatsd_varz_jetstream_stats_storage / gnatsd_varz_jetstream_config_max_storage > 0.8"
+                severity: warning
+                for: 5m
+              - name: Nats high JetStream memory usage
+                description: JetStream memory usage is over 80%
+                query: "gnatsd_varz_jetstream_stats_memory / gnatsd_varz_jetstream_config_max_memory > 0.8"
+                severity: warning
+                for: 5m
+              - name: Nats high number of subscriptions
+                description: NATS server has more than 1000 active subscriptions
+                query: "gnatsd_connz_subscriptions > 1000"
+                severity: warning
+                for: 5m
+              - name: Nats high pending bytes
+                description: NATS server has more than 100,000 pending bytes
+                query: "gnatsd_connz_pending_bytes > 100000"
+                severity: warning
+                for: 5m
+              - name: Nats too many errors
+                description: NATS server has encountered errors in the last 5 minutes
+                query: "increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 0"
+                severity: warning
+                for: 5m
+              - name: Nats JetStream consumers exceeded
+                description: JetStream has more than 100 active consumers
+                query: "sum(gnatsd_varz_jetstream_stats_accounts) > 100"
+                severity: warning
+                for: 5m
+              - name: Nats frequent authentication timeouts
+                description: There have been more than 5 authentication timeouts in the last 5 minutes
+                query: "increase(gnatsd_varz_auth_timeout[5m]) > 5"
+                severity: warning
+                for: 5m
+              - name: Nats max payload size exceeded
+                description: The max payload size allowed by NATS has been exceeded (1MB)
+                query: "max(gnatsd_varz_max_payload) > 1024 * 1024"
+                severity: critical
+                for: 5m
+              - name: Nats leaf node connection issue
+                description: No leaf node connections have been established in the last 5 minutes
+                query: "increase(gnatsd_varz_leafnodes[5m]) == 0"
+                severity: critical
+                for: 5m
+              - name: Nats max ping operations exceeded
+                description: The maximum number of ping operations in NATS has exceeded 50
+                query: "gnatsd_varz_ping_max > 50"
+                severity: warning
+                for: 5m
+              - name: Nats write deadline exceeded
+                description: The write deadline has been exceeded in NATS, indicating potential message delivery issues
+                query: "gnatsd_varz_write_deadline > 10"
+                severity: critical
+                for: 5m
+
 
       - name: Solr
         exporters:

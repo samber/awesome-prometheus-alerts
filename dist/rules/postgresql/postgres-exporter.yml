@@ -185,7 +185,7 @@ groups:
         description: "The table {{ $labels.relname }} is bloated. You should execute `VACUUM {{ $labels.relname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlInvalidIndex
-      expr: 'pg_genaral_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
+      expr: 'pg_general_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
       for: 6h
       labels:
         severity: warning

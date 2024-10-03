@@ -32,10 +32,154 @@ groups:
         description: "High number of NATS subscriptions ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NatsHighRoutesCount
-      expr: 'gnatsd_routez_num_routes > 10'
+      expr: 'gnatsd_varz_routes > 10'
       for: 3m
       labels:
         severity: warning
       annotations:
         summary: Nats high routes count (instance {{ $labels.instance }})
         description: "High number of NATS routes ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighMemoryUsage
+      expr: 'gnatsd_varz_mem > 200 * 1024 * 1024'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high memory usage (instance {{ $labels.instance }})
+        description: "NATS server memory usage is above 200MB for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsSlowConsumers
+      expr: 'gnatsd_varz_slow_consumers > 0'
+      for: 3m
+      labels:
+        severity: critical
+      annotations:
+        summary: Nats slow consumers (instance {{ $labels.instance }})
+        description: "There are slow consumers in NATS for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsServerDown
+      expr: 'absent(up{job="nats"})'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Nats server down (instance {{ $labels.instance }})
+        description: "NATS server has been down for more than 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighCpuUsage
+      expr: 'rate(gnatsd_varz_cpu[5m]) > 0.8'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high CPU usage (instance {{ $labels.instance }})
+        description: "NATS server is using more than 80% CPU for the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighNumberOfConnections
+      expr: 'gnatsd_connz_num_connections > 1000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high number of connections (instance {{ $labels.instance }})
+        description: "NATS server has more than 1000 active connections\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighJetstreamStoreUsage
+      expr: 'gnatsd_varz_jetstream_stats_storage / gnatsd_varz_jetstream_config_max_storage > 0.8'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high JetStream store usage (instance {{ $labels.instance }})
+        description: "JetStream store usage is over 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighJetstreamMemoryUsage
+      expr: 'gnatsd_varz_jetstream_stats_memory / gnatsd_varz_jetstream_config_max_memory > 0.8'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high JetStream memory usage (instance {{ $labels.instance }})
+        description: "JetStream memory usage is over 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighNumberOfSubscriptions
+      expr: 'gnatsd_connz_subscriptions > 1000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high number of subscriptions (instance {{ $labels.instance }})
+        description: "NATS server has more than 1000 active subscriptions\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsHighPendingBytes
+      expr: 'gnatsd_connz_pending_bytes > 100000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats high pending bytes (instance {{ $labels.instance }})
+        description: "NATS server has more than 100,000 pending bytes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsTooManyErrors
+      expr: 'increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats too many errors (instance {{ $labels.instance }})
+        description: "NATS server has encountered errors in the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsJetstreamConsumersExceeded
+      expr: 'sum(gnatsd_varz_jetstream_stats_accounts) > 100'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats JetStream consumers exceeded (instance {{ $labels.instance }})
+        description: "JetStream has more than 100 active consumers\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsFrequentAuthenticationTimeouts
+      expr: 'increase(gnatsd_varz_auth_timeout[5m]) > 5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats frequent authentication timeouts (instance {{ $labels.instance }})
+        description: "There have been more than 5 authentication timeouts in the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsMaxPayloadSizeExceeded
+      expr: 'max(gnatsd_varz_max_payload) > 1024 * 1024'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Nats max payload size exceeded (instance {{ $labels.instance }})
+        description: "The max payload size allowed by NATS has been exceeded (1MB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsLeafNodeConnectionIssue
+      expr: 'increase(gnatsd_varz_leafnodes[5m]) == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Nats leaf node connection issue (instance {{ $labels.instance }})
+        description: "No leaf node connections have been established in the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsMaxPingOperationsExceeded
+      expr: 'gnatsd_varz_ping_max > 50'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nats max ping operations exceeded (instance {{ $labels.instance }})
+        description: "The maximum number of ping operations in NATS has exceeded 50\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: NatsWriteDeadlineExceeded
+      expr: 'gnatsd_varz_write_deadline > 10'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Nats write deadline exceeded (instance {{ $labels.instance }})
+        description: "The write deadline has been exceeded in NATS, indicating potential message delivery issues\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
