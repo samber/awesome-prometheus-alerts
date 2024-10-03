@@ -1,6 +1,7 @@
 name: Publish
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -8,8 +9,6 @@ on:
 jobs:
   publish:
     name: Publish
-    # Check if the PR is not from a fork
-    if: github.repository_owner == 'samber'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
