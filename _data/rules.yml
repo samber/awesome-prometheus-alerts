@@ -1132,12 +1132,12 @@ groups:
                 description: "The indexing latency on Elasticsearch cluster is higher than the threshold."
                 query: "elasticsearch_indices_indexing_index_time_seconds_total / elasticsearch_indices_indexing_index_total > 0.0005"
                 severity: warning
-                for: 10m       
+                for: 10m
               - name: Elasticsearch High Indexing Rate
                 description: "The indexing rate on Elasticsearch cluster is higher than the threshold."
                 query: "sum(rate(elasticsearch_indices_indexing_index_total[1m]))> 10000"
                 severity: warning
-                for: 5m     
+                for: 5m
               - name: Elasticsearch High Query Rate
                 description: "The query rate on Elasticsearch cluster is higher than the threshold."
                 query: "sum(rate(elasticsearch_indices_search_query_total[1m])) > 100"
@@ -1147,14 +1147,14 @@ groups:
                 description: "The query latency on Elasticsearch cluster is higher than the threshold."
                 query: "elasticsearch_indices_search_fetch_time_seconds / elasticsearch_indices_search_fetch_total > 1"
                 severity: warning
-                for: 5m                 
+                for: 5m
 
       - name: Meilisearch
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
             doc_url: https://github.com/orgs/meilisearch/discussions/625
-            rules:                
+            rules:
               - name: Meilisearch index is empty
                 description: Meilisearch instance is down
                 query: 'meilisearch_index_docs_count == 0'
@@ -2043,6 +2043,11 @@ groups:
                 summary: Kubernetes Job failed ({{ $labels.namespace }}/{{ $labels.job_name }})
                 description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete"
                 query: "kube_job_status_failed > 0"
+                severity: warning
+              - name: Kubernetes Job not starting
+                summary: Kubernetes Job not starting ({{ $labels.namespace }}/{{ $labels.job_name }})
+                description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} did not start for 10 minutes"
+                query: "kube_job_status_active == 0 and kube_job_status_failed == 0 and kube_job_status_succeeded == 0 and (time() - kube_job_status_start_time) > 600"
                 severity: warning
               - name: Kubernetes CronJob suspended
                 summary: Kubernetes CronJob suspended ({{ $labels.namespace }}/{{ $labels.cronjob }})
