@@ -67,6 +67,15 @@ groups:
         summary: Kubernetes Job failed ({{ $labels.namespace }}/{{ $labels.job_name }})
         description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: KubernetesJobNotStarting
+      expr: 'kube_job_status_active == 0 and kube_job_status_failed == 0 and kube_job_status_succeeded == 0 and (time() - kube_job_status_start_time) > 600'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Kubernetes Job not starting ({{ $labels.namespace }}/{{ $labels.job_name }})
+        description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} did not start for 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: KubernetesCronjobSuspended
       expr: 'kube_cronjob_spec_suspend != 0'
       for: 0m
