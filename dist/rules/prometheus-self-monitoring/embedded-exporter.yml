@@ -32,7 +32,7 @@ groups:
         description: "A Prometheus job does not have living target anymore.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PrometheusTargetMissingWithWarmupTime
-      expr: 'sum by (instance, job) ((up == 0) * on (instance) group_right(job) (node_time_seconds - node_boot_time_seconds > 600))'
+      expr: 'sum by (instance, job) ((up == 0) * on (instance) group_left (__name__) (node_time_seconds - node_boot_time_seconds > 600))'
       for: 0m
       labels:
         severity: critical
@@ -248,7 +248,7 @@ groups:
         description: "Prometheus encountered {{ $value }} TSDB WAL truncation failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PrometheusTimeseriesCardinality
-      expr: 'label_replace(count by(__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") > 10000'
+      expr: '(label_replace(count by (__name__) ({__name__=~".+"}), "name", "$1", "__name__", "(.+)") unless on (__name__) ({__name__=~"node_cpu.*|node_systemd_unit_state"})) > 10000'
       for: 0m
       labels:
         severity: warning
