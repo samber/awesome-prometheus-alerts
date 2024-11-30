@@ -56,7 +56,7 @@ groups:
         severity: warning
       annotations:
         summary: RabbitMQ too many ready messages (instance {{ $labels.instance }})
-        description: "Too many ready messages\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "RabbitMQ too many ready messages on {{ $labels.instace }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyUnackMessages
       expr: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
