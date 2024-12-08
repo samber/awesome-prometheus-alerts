@@ -2982,6 +2982,15 @@ groups:
                 severity: critical
                 for: 5m
 
+      - name: Grafana Alloy
+        exporters:
+          - slug: embedded-exporter
+            rules:
+              - name: Grafana Alloy service down
+                description: Alloy on (instance {{ $labels.instance }}) is not responding or has stopped running. 
+                query: 'count by (instance) (alloy_build_info) unless count by (instance) (alloy_build_info offset 2m)  '
+                severity: critical
+
       - name: Jenkins
         exporters:
           - name: Metric plugin
