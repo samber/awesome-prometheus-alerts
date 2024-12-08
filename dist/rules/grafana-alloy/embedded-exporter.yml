@@ -1,0 +1,14 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: GrafanaAlloyServiceDown
+      expr: 'count by (instance) (alloy_build_info) unless count by (instance) (alloy_build_info offset 2m)  '
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Grafana Alloy service down (instance {{ $labels.instance }})
+        description: "Alloy on (instance {{ $labels.instance }}) is not responding or has stopped running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
