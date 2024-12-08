@@ -102,6 +102,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Loki](https://samber.github.io/awesome-prometheus-alerts/rules#loki)
 - [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules#promtail)
 - [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules#cortex)
+- [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
 
