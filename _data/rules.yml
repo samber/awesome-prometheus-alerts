@@ -545,7 +545,7 @@ groups:
                 for: 5m
               - name: Netdata high memory usage
                 description: Netdata high memory usage (> 80%)
-                query: '100 / netdata_system_ram_MB_average * netdata_system_ram_MB_average{dimension=~"free|cached"} < 20'
+                query: '100 / netdata_system_ram_MiB_average * netdata_system_ram_MiB_average{dimension=~"free|cached"} < 20'
                 severity: warning
                 for: 5m
               - name: Netdata low disk space
