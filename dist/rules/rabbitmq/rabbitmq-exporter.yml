@@ -49,6 +49,15 @@ groups:
         summary: RabbitMQ file descriptors usage (instance {{ $labels.instance }})
         description: "A node use more than 90% of file descriptors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: RabbitmqTooManyReadyMessages
+      expr: 'sum(rabbitmq_queue_messages_ready) BY (queue) > 1000'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: RabbitMQ too many ready messages (instance {{ $labels.instance }})
+        description: "RabbitMQ too many ready messages on {{ $labels.instace }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: RabbitmqTooManyUnackMessages
       expr: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
       for: 1m

@@ -167,10 +167,7 @@ groups:
         description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostContextSwitchingHigh
-      expr: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"}))
-/
-(rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2
-'
+      expr: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"}))/(rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2'
       for: 0m
       labels:
         severity: warning

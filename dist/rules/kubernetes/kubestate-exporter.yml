@@ -41,7 +41,7 @@ groups:
         description: "Node {{ $labels.node }} has NetworkUnavailable condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesNodeOutOfPodCapacity
-      expr: 'sum by (node) ((kube_pod_status_phase{phase="Running"} == 1) + on(uid) group_left(node) (0 * kube_pod_info{pod_template_hash=""})) / sum by (node) (kube_node_status_allocatable{resource="pods"}) * 100 > 90'
+      expr: 'sum by (node) ((kube_pod_status_phase{phase="Running"} == 1) + on(uid, instance) group_left(node) (0 * kube_pod_info{pod_template_hash=""})) / sum by (node) (kube_node_status_allocatable{resource="pods"}) * 100 > 90'
       for: 2m
       labels:
         severity: warning
@@ -66,6 +66,15 @@ groups:
       annotations:
         summary: Kubernetes Job failed ({{ $labels.namespace }}/{{ $labels.job_name }})
         description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: KubernetesJobNotStarting
+      expr: 'kube_job_status_active == 0 and kube_job_status_failed == 0 and kube_job_status_succeeded == 0 and (time() - kube_job_status_start_time) > 600'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Kubernetes Job not starting ({{ $labels.namespace }}/{{ $labels.job_name }})
+        description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} did not start for 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesCronjobSuspended
       expr: 'kube_cronjob_spec_suspend != 0'
