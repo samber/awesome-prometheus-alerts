@@ -1,6 +1,7 @@
 name: Publish
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -24,11 +25,12 @@ jobs:
         uses: mikefarah/yq@master
 
       - name: Install liquid
-        run: gem install liquid-cli
+        run: |
+         gem install liquid -v 5.5.1
+         gem install liquid-cli 
 
       - name: Build rule configuration
         run: |
-          gem install liquid-cli
           cat _data/rules.yml | yq -I 0 -o json > _data/rules.json
 
           rm -rf dist/rules
