@@ -331,6 +331,18 @@ groups:
                 description: Device temperature critical on {{ $labels.instance }} drive {{ $labels.device }} over 70°C
                 query: '(max_over_time(smartctl_device_temperature{temperature_type="current"} [5m]) unless on (instance, device) smartctl_device_temperature{temperature_type="drive_trip"}) > 70'
                 severity: critical
+              - name: SMART device temperature over trip value
+                description: Device temperature over trip value on {{ $labels.instance }} drive {{ $labels.device }})
+                query: 'max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) smartctl_device_temperature{temperature_type="drive_trip"}'
+                severity: critical
+              - name: SMART device temperature nearing trip value
+                description: Device temperature at 80% of trip value on {{ $labels.instance }} drive {{ $labels.device }})
+                query: 'max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) (smartctl_device_temperature{temperature_type="drive_trip"} * .80)'
+                severity: warning
+              - name: SMART status
+                description: Device has a SMART status failure on {{ $labels.instance }} drive {{ $labels.device }})
+                query: 'smartctl_device_smart_status != 1'
+                severity: critical
               - name: SMART critical warning
                 description: Disk controller has critical warning on {{ $labels.instance }} drive {{ $labels.device }})
                 query: 'smartctl_device_critical_warning > 0'
