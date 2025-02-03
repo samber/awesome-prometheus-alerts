@@ -1950,6 +1950,27 @@ groups:
                 severity: critical
                 for: 1m
 
+      - name: Caddy
+        exporters:
+          - name: Embedded exporter
+            doc_url: https://caddyserver.com/docs/metrics
+            rules:
+              - name: Caddy Reverse Proxy Down
+                description: "All Caddy reverse proxies are down"
+                query: "count(caddy_reverse_proxy_upstreams_healthy) by (upstream) == 0"
+                severity: critical
+                for: 0m
+              - name: Caddy high HTTP 4xx error rate service
+                description: "Caddy service 4xx error rate is above 5%"
+                query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"4.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
+                severity: critical
+                for: 1m
+              - name: Caddy high HTTP 5xx error rate service
+                description: "Caddy service 5xx error rate is above 5%"
+                query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"5.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
+                severity: critical
+                for: 1m
+
   - name: Runtimes
     services:
       - name: PHP-FPM
@@ -2975,7 +2996,7 @@ groups:
           - slug: embedded-exporter
             rules:
               - name: Grafana Alloy service down
-                description: Alloy on (instance {{ $labels.instance }}) is not responding or has stopped running. 
+                description: Alloy on (instance {{ $labels.instance }}) is not responding or has stopped running.
                 query: 'count by (instance) (alloy_build_info) unless count by (instance) (alloy_build_info offset 2m)  '
                 severity: critical
 
