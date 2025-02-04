@@ -187,7 +187,7 @@ groups:
                 for: 2m
               - name: Host filesystem device error
                 description: "Error stat-ing the {{ $labels.mountpoint }} filesystem"
-                query: "node_filesystem_device_error{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} == 1"
+                query: 'node_filesystem_device_error{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} == 1'
                 severity: critical
                 for: 2m
               - name: Host inodes may fill in 24 hours
