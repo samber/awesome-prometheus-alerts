@@ -1,0 +1,32 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: CaddyReverseProxyDown
+      expr: 'count(caddy_reverse_proxy_upstreams_healthy) by (upstream) == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Caddy reverse proxy down (instance {{ $labels.instance }})
+        description: "All Caddy reverse proxies are down\n LABELS = {{ $labels }}"
+
+    - alert: CaddyHighHttp4xxErrorRateService
+      expr: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"4.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Caddy high HTTP 4xx error rate service (instance {{ $labels.instance }})
+        description: "Caddy service 4xx error rate is above 5%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CaddyHighHttp5xxErrorRateService
+      expr: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"5.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Caddy high HTTP 5xx error rate service (instance {{ $labels.instance }})
+        description: "Caddy service 5xx error rate is above 5%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
