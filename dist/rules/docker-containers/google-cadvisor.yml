@@ -57,16 +57,15 @@ groups:
       annotations:
         summary: Container high throttle rate (instance {{ $labels.instance }})
         description: "Container is being throttled\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-        
+
     - alert: ContainerHighLowChangeCpuUsage
-      expr: '(abs((  sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100)- (  sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m] offset 1m)) * 100)) or abs((  sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100)- (  sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[5m] offset 1m)) * 100)) )>25'
+      expr: '(abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m] offset 1m)) * 100)) or abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[5m] offset 1m)) * 100))) > 25'
       for: 0m
       labels:
         severity: info
       annotations:
-        summary: Container change CPU utilization (instance {{ $labels.instance }})
+        summary: Container high low change CPU usage (instance {{ $labels.instance }})
         description: "This alert rule monitors the absolute change in CPU usage within a time window and triggers an alert when the change exceeds 25%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
 
     - alert: ContainerLowCpuUtilization
       expr: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) < 20'
