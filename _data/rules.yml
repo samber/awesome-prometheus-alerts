@@ -396,6 +396,10 @@ groups:
                 query: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 )'
                 severity: warning
                 for: 5m
+              - name: Container high low change CPU usage
+                description: This alert rule monitors the absolute change in CPU usage within a time window and triggers an alert when the change exceeds 25%.
+                query: '(abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m] offset 1m)) * 100)) or abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[5m] offset 1m)) * 100))) > 25'
+                severity: info
               - name: Container Low CPU utilization
                 description: Container CPU utilization is under 20% for 1 week. Consider reducing the allocated CPU.
                 query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) < 20'
