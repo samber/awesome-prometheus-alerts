@@ -663,7 +663,7 @@ groups:
                 severity: warning
               - name: Postgresql commit rate low
                 description: Postgresql seems to be processing very few transactions
-                query: "increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[5m]) < 5"
+                query: 'increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[5m]) < 5'
                 severity: critical
                 for: 2m
               - name: Postgresql low XID consumption
