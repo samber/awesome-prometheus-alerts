@@ -1,6 +1,6 @@
 groups:
 
-- name: EmbeddedExporter
+- name: 
 
   rules:
 
@@ -10,8 +10,8 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Caddy reverse proxy down (instance {{ $labels.instance }})
-        description: "All Caddy reverse proxies are down\n LABELS = {{ $labels }}"
+        summary: Caddy Reverse Proxy Down (instance {{ $labels.instance }})
+        description: "All Caddy reverse proxies are down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CaddyHighHttp4xxErrorRateService
       expr: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"4.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
