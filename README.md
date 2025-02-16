@@ -4,6 +4,21 @@
 
 Collection available here: **[https://samber.github.io/awesome-prometheus-alerts](https://samber.github.io/awesome-prometheus-alerts)**
 
+<div align="center">
+  <hr>
+  <sup><b>Sponsored by:</b></sup>
+  <br>
+  <a href="https://betterstack.com">
+    <div>
+      <img src="https://samber.github.io/awesome-prometheus-alerts/assets/sponsor-betterstack.png" width="200" alt="Better Stack">
+    </div>
+    <div>
+      Better Stack lets you centralize, search, and visualize your logs.
+    </div>
+  </a>
+  <hr>
+</div>
+
 ## ✨ Contents
 
 - [Rules](#-rules)
@@ -18,6 +33,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 
 - [Prometheus self-monitoring](https://samber.github.io/awesome-prometheus-alerts/rules#prometheus-internals)
 - [Host/Hardware](https://samber.github.io/awesome-prometheus-alerts/rules#host-and-hardware)
+- [SMART](https://samber.github.io/awesome-prometheus-alerts/rules#smart)
 - [Docker Containers](https://samber.github.io/awesome-prometheus-alerts/rules#docker-containers)
 - [Blackbox](https://samber.github.io/awesome-prometheus-alerts/rules#blackbox)
 - [Windows](https://samber.github.io/awesome-prometheus-alerts/rules#windows-server)
@@ -35,12 +51,15 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [MongoDB](https://samber.github.io/awesome-prometheus-alerts/rules#mongodb)
 - [RabbitMQ](https://samber.github.io/awesome-prometheus-alerts/rules#rabbitmq)
 - [Elasticsearch](https://samber.github.io/awesome-prometheus-alerts/rules#elasticsearch)
+- [Meilisearch](https://samber.github.io/awesome-prometheus-alerts/rules#meilisearch)
 - [Cassandra](https://samber.github.io/awesome-prometheus-alerts/rules#cassandra)
+- [Clickhouse](https://samber.github.io/awesome-prometheus-alerts/rules#clickhouse)
 - [Zookeeper](https://samber.github.io/awesome-prometheus-alerts/rules#zookeeper)
 - [Kafka](https://samber.github.io/awesome-prometheus-alerts/rules#kafka)
 - [Pulsar](https://samber.github.io/awesome-prometheus-alerts/rules#pulsar)
 - [Nats](https://samber.github.io/awesome-prometheus-alerts/rules#nats)
 - [Solr](https://samber.github.io/awesome-prometheus-alerts/rules#solr)
+- [Hadoop](https://samber.github.io/awesome-prometheus-alerts/rules#hadoop)
 
 #### Reverse proxies and load balancers
 
@@ -48,6 +67,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Apache](https://samber.github.io/awesome-prometheus-alerts/rules#apache)
 - [HaProxy](https://samber.github.io/awesome-prometheus-alerts/rules#haproxy)
 - [Traefik](https://samber.github.io/awesome-prometheus-alerts/rules#traefik)
+- [Caddy](https://samber.github.io/awesome-prometheus-alerts/rules#caddy)
 
 #### Runtimes
 
@@ -83,7 +103,9 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Loki](https://samber.github.io/awesome-prometheus-alerts/rules#loki)
 - [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules#promtail)
 - [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules#cortex)
+- [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
+- [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
 
 ## 🤝 Contributing
 

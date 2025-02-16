@@ -10,7 +10,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Rabbitmq down (instance {{ $labels.instance }})
+        summary: RabbitMQ down (instance {{ $labels.instance }})
         description: "RabbitMQ node down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqClusterDown
@@ -19,7 +19,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Rabbitmq cluster down (instance {{ $labels.instance }})
+        summary: RabbitMQ cluster down (instance {{ $labels.instance }})
         description: "Less than 3 nodes running in RabbitMQ cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqClusterPartition
@@ -28,7 +28,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Rabbitmq cluster partition (instance {{ $labels.instance }})
+        summary: RabbitMQ cluster partition (instance {{ $labels.instance }})
         description: "Cluster partition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqOutOfMemory
@@ -37,7 +37,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq out of memory (instance {{ $labels.instance }})
+        summary: RabbitMQ out of memory (instance {{ $labels.instance }})
         description: "Memory available for RabbmitMQ is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyConnections
@@ -46,7 +46,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq too many connections (instance {{ $labels.instance }})
+        summary: RabbitMQ too many connections (instance {{ $labels.instance }})
         description: "RabbitMQ instance has too many connections (> 1000)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqDeadLetterQueueFillingUp
@@ -55,7 +55,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq dead letter queue filling up (instance {{ $labels.instance }})
+        summary: RabbitMQ dead letter queue filling up (instance {{ $labels.instance }})
         description: "Dead letter queue is filling up (> 10 msgs)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyMessagesInQueue
@@ -64,7 +64,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq too many messages in queue (instance {{ $labels.instance }})
+        summary: RabbitMQ too many messages in queue (instance {{ $labels.instance }})
         description: "Queue is filling up (> 1000 msgs)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqSlowQueueConsuming
@@ -73,7 +73,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq slow queue consuming (instance {{ $labels.instance }})
+        summary: RabbitMQ slow queue consuming (instance {{ $labels.instance }})
         description: "Queue messages are consumed slowly (> 60s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqNoConsumer
@@ -82,7 +82,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Rabbitmq no consumer (instance {{ $labels.instance }})
+        summary: RabbitMQ no consumer (instance {{ $labels.instance }})
         description: "Queue has no consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyConsumers
@@ -91,7 +91,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Rabbitmq too many consumers (instance {{ $labels.instance }})
+        summary: RabbitMQ too many consumers (instance {{ $labels.instance }})
         description: "Queue should have only 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqUnactiveExchange
@@ -100,5 +100,5 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq unactive exchange (instance {{ $labels.instance }})
+        summary: RabbitMQ unactive exchange (instance {{ $labels.instance }})
         description: "Exchange receive less than 5 msgs per second\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

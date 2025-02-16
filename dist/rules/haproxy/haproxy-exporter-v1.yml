@@ -77,7 +77,7 @@ groups:
         description: "Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be too high.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyBackendMaxActiveSession
-      expr: '((sum by (backend) (avg_over_time(haproxy_backend_max_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80'
+      expr: '((sum by (backend) (avg_over_time(haproxy_backend_current_sessions[2m]) * 100) / sum by (backend) (avg_over_time(haproxy_backend_limit_sessions[2m])))) > 80'
       for: 2m
       labels:
         severity: warning

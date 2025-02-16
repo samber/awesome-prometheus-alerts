@@ -23,7 +23,7 @@ groups:
         description: "A container is absent for 5 min\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ContainerHighCpuUtilization
-      expr: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) > 80'
+      expr: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) > 80'
       for: 2m
       labels:
         severity: warning
@@ -50,8 +50,8 @@ groups:
         description: "Container Volume usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ContainerHighThrottleRate
-      expr: 'rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1'
-      for: 2m
+      expr: 'sum(increase(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(increase(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 )'
+      for: 5m
       labels:
         severity: warning
       annotations:
@@ -69,7 +69,7 @@ groups:
 
 
     - alert: ContainerLowCpuUtilization
-      expr: '(sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) < 20'
+      expr: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) < 20'
       for: 7d
       labels:
         severity: info

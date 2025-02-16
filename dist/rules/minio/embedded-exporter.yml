@@ -5,7 +5,7 @@ groups:
   rules:
 
     - alert: MinioClusterDiskOffline
-      expr: 'minio_cluster_disk_offline_total > 0'
+      expr: 'minio_cluster_drive_offline_total > 0'
       for: 0m
       labels:
         severity: critical

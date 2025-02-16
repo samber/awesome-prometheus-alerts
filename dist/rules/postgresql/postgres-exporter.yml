@@ -32,7 +32,7 @@ groups:
         description: "Postgresql exporter is showing errors. A query may be buggy in query.yaml\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTableNotAutoVacuumed
-      expr: '(pg_stat_user_tables_last_autovacuum > 0) and (time() - pg_stat_user_tables_last_autovacuum) > 60 * 60 * 24 * 10'
+      expr: '((pg_stat_user_tables_n_tup_del + pg_stat_user_tables_n_tup_upd + pg_stat_user_tables_n_tup_hot_upd) > pg_settings_autovacuum_vacuum_threshold) and (time() - pg_stat_user_tables_last_autovacuum) > 60 * 60 * 24 * 10'
       for: 0m
       labels:
         severity: warning
@@ -41,7 +41,7 @@ groups:
         description: "Table {{ $labels.relname }} has not been auto vacuumed for 10 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTableNotAutoAnalyzed
-      expr: '(pg_stat_user_tables_last_autoanalyze > 0) and (time() - pg_stat_user_tables_last_autoanalyze) > 24 * 60 * 60 * 10'
+      expr: '((pg_stat_user_tables_n_tup_del + pg_stat_user_tables_n_tup_upd + pg_stat_user_tables_n_tup_hot_upd) > pg_settings_autovacuum_analyze_threshold) and (time() - pg_stat_user_tables_last_autoanalyze) > 24 * 60 * 60 * 10'
       for: 0m
       labels:
         severity: warning
@@ -50,7 +50,7 @@ groups:
         description: "Table {{ $labels.relname }} has not been auto analyzed for 10 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTooManyConnections
-      expr: ''
+      expr: 'sum by (instance, job, server) (pg_stat_activity_count) > min by (instance, job, server) (pg_settings_max_connections * 0.8)'
       for: 2m
       labels:
         severity: warning
@@ -62,7 +62,7 @@ groups:
       expr: 'sum by (datname) (pg_stat_activity_count{datname!~"template.*|postgres"}) < 5'
       for: 2m
       labels:
-        severity: warning
+        severity: critical
       annotations:
         summary: Postgresql not enough connections (instance {{ $labels.instance }})
         description: "PostgreSQL instance should have more connections (> 5)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
@@ -86,7 +86,7 @@ groups:
         description: "Ratio of transactions being aborted compared to committed is > 2 %\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlCommitRateLow
-      expr: 'rate(pg_stat_database_xact_commit[1m]) < 10'
+      expr: 'increase(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[5m]) < 5'
       for: 2m
       labels:
         severity: critical
@@ -140,7 +140,7 @@ groups:
         description: "PostgreSQL dead tuples is too large\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlConfigurationChanged
-      expr: '{__name__=~"pg_settings_.*"} != ON(__name__) {__name__=~"pg_settings_([^t]|t[^r]|tr[^a]|tra[^n]|tran[^s]|trans[^a]|transa[^c]|transac[^t]|transact[^i]|transacti[^o]|transactio[^n]|transaction[^_]|transaction_[^r]|transaction_r[^e]|transaction_re[^a]|transaction_rea[^d]|transaction_read[^_]|transaction_read_[^o]|transaction_read_o[^n]|transaction_read_on[^l]|transaction_read_onl[^y]).*"} OFFSET 5m'
+      expr: '{__name__=~"pg_settings_.*"} != ON(__name__, instance) {__name__=~"pg_settings_([^t]|t[^r]|tr[^a]|tra[^n]|tran[^s]|trans[^a]|transa[^c]|transac[^t]|transact[^i]|transacti[^o]|transactio[^n]|transaction[^_]|transaction_[^r]|transaction_r[^e]|transaction_re[^a]|transaction_rea[^d]|transaction_read[^_]|transaction_read_[^o]|transaction_read_o[^n]|transaction_read_on[^l]|transaction_read_onl[^y]).*"} OFFSET 5m'
       for: 0m
       labels:
         severity: info
@@ -155,7 +155,7 @@ groups:
         severity: critical
       annotations:
         summary: Postgresql SSL compression active (instance {{ $labels.instance }})
-        description: "Database connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Database allows connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlTooManyLocksAcquired
       expr: '((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20'
@@ -183,3 +183,12 @@ groups:
       annotations:
         summary: Postgresql bloat table high (> 80%) (instance {{ $labels.instance }})
         description: "The table {{ $labels.relname }} is bloated. You should execute `VACUUM {{ $labels.relname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PostgresqlInvalidIndex
+      expr: 'pg_general_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
+      for: 6h
+      labels:
+        severity: warning
+      annotations:
+        summary: Postgresql invalid index (instance {{ $labels.instance }})
+        description: "The table {{ $labels.relname }} has an invalid index: {{ $labels.indexrelname }}. You should execute `DROP INDEX {{ $labels.indexrelname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

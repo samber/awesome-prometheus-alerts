@@ -115,3 +115,29 @@ h2 {
         max-width: 85rem;
     }
 }
+
+ul#sponsoring {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 50px;
+}
+
+ul#sponsoring li {
+    display: flex;
+    padding: 0px 15px;
+    font-size: 16px;
+}
+
+ul#sponsoring li a {
+    display: flex;
+}
+
+ul#sponsoring li a img {
+    max-width: 180px;
+    max-height: 80px;
+}
+
+.page-header {
+    padding-bottom: 30px;
+}

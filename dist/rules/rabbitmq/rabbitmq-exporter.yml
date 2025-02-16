@@ -10,7 +10,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Rabbitmq node down (instance {{ $labels.instance }})
+        summary: RabbitMQ node down (instance {{ $labels.instance }})
         description: "Less than 3 nodes running in RabbitMQ cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqNodeNotDistributed
@@ -19,7 +19,7 @@ groups:
       labels:
         severity: critical
       annotations:
-        summary: Rabbitmq node not distributed (instance {{ $labels.instance }})
+        summary: RabbitMQ node not distributed (instance {{ $labels.instance }})
         description: "Distribution link state is not 'up'\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqInstancesDifferentVersions
@@ -28,8 +28,8 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq instances different versions (instance {{ $labels.instance }})
-        description: "Running different version of Rabbitmq in the same cluster, can lead to failure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: RabbitMQ instances different versions (instance {{ $labels.instance }})
+        description: "Running different version of RabbitMQ in the same cluster, can lead to failure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqMemoryHigh
       expr: 'rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90'
@@ -37,7 +37,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq memory high (instance {{ $labels.instance }})
+        summary: RabbitMQ memory high (instance {{ $labels.instance }})
         description: "A node use more than 90% of allocated RAM\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqFileDescriptorsUsage
@@ -46,8 +46,17 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq file descriptors usage (instance {{ $labels.instance }})
+        summary: RabbitMQ file descriptors usage (instance {{ $labels.instance }})
         description: "A node use more than 90% of file descriptors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqTooManyReadyMessages
+      expr: 'sum(rabbitmq_queue_messages_ready) BY (queue) > 1000'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: RabbitMQ too many ready messages (instance {{ $labels.instance }})
+        description: "RabbitMQ too many ready messages on {{ $labels.instace }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyUnackMessages
       expr: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
@@ -55,7 +64,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq too many unack messages (instance {{ $labels.instance }})
+        summary: RabbitMQ too many unack messages (instance {{ $labels.instance }})
         description: "Too many unacknowledged messages\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqTooManyConnections
@@ -64,7 +73,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq too many connections (instance {{ $labels.instance }})
+        summary: RabbitMQ too many connections (instance {{ $labels.instance }})
         description: "The total connections of a node is too high\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqNoQueueConsumer
@@ -73,7 +82,7 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq no queue consumer (instance {{ $labels.instance }})
+        summary: RabbitMQ no queue consumer (instance {{ $labels.instance }})
         description: "A queue has less than 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqUnroutableMessages
@@ -82,5 +91,5 @@ groups:
       labels:
         severity: warning
       annotations:
-        summary: Rabbitmq unroutable messages (instance {{ $labels.instance }})
+        summary: RabbitMQ unroutable messages (instance {{ $labels.instance }})
         description: "A queue has unroutable messages\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

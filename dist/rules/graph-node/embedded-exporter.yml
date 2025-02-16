@@ -1,0 +1,59 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: ProviderFailedBecauseNet_versionFailed
+      expr: 'eth_rpc_status == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Provider failed because net_version failed (instance {{ $labels.instance }})
+        description: "Failed net_version for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ProviderFailedBecauseGetGenesisFailed
+      expr: 'eth_rpc_status == 2'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Provider failed because get genesis failed (instance {{ $labels.instance }})
+        description: "Failed to get genesis for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ProviderFailedBecauseNet_versionTimeout
+      expr: 'eth_rpc_status == 3'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Provider failed because net_version timeout (instance {{ $labels.instance }})
+        description: "net_version timeout for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ProviderFailedBecauseGetGenesisTimeout
+      expr: 'eth_rpc_status == 4'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Provider failed because get genesis timeout (instance {{ $labels.instance }})
+        description: "Timeout to get genesis for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: StoreConnectionIsTooSlow
+      expr: 'store_connection_wait_time_ms > 10'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Store connection is too slow (instance {{ $labels.instance }})
+        description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: StoreConnectionIsTooSlow
+      expr: 'store_connection_wait_time_ms > 20'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Store connection is too slow (instance {{ $labels.instance }})
+        description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

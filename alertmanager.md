@@ -80,7 +80,7 @@ route:
     - receiver: "pager"
       group_wait: 10s
       match_re:
-        severity: critial
+        severity: critical
       continue: true
 
 receivers:
@@ -135,4 +135,7 @@ If the notification takes too much time to be triggered, check the following del
 - `for: 5m` (alerts/example-mysql.yml)
 - `group_wait = 10s` (alertmanager.yml)
 
-Also read [https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html](https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html).
+Also read:
+- [https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html](https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html).
+- [https://hodovi.cc/blog/creating-awesome-alertmanager-templates-for-slack/](https://hodovi.cc/blog/creating-awesome-alertmanager-templates-for-slack/)
+- [https://grafana.com/blog/2024/10/03/how-to-use-prometheus-to-efficiently-detect-anomalies-at-scale/](https://grafana.com/blog/2024/10/03/how-to-use-prometheus-to-efficiently-detect-anomalies-at-scale/)

@@ -1,0 +1,95 @@
+groups:
+
+- name: Jmx_exporter
+
+  rules:
+
+    - alert: HadoopNameNodeDown
+      expr: 'up{job="hadoop-namenode"} == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Hadoop Name Node Down (instance {{ $labels.instance }})
+        description: "The Hadoop NameNode service is unavailable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopResourceManagerDown
+      expr: 'up{job="hadoop-resourcemanager"} == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Hadoop Resource Manager Down (instance {{ $labels.instance }})
+        description: "The Hadoop ResourceManager service is unavailable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopDataNodeOutOfService
+      expr: 'hadoop_datanode_last_heartbeat == 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop Data Node Out Of Service (instance {{ $labels.instance }})
+        description: "The Hadoop DataNode is not sending heartbeats.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopHdfsDiskSpaceLow
+      expr: '(hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop HDFS Disk Space Low (instance {{ $labels.instance }})
+        description: "Available HDFS disk space is running low.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopMapReduceTaskFailures
+      expr: 'hadoop_mapreduce_task_failures_total > 100'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Hadoop Map Reduce Task Failures (instance {{ $labels.instance }})
+        description: "There is an unusually high number of MapReduce task failures.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopResourceManagerMemoryHigh
+      expr: 'hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop Resource Manager Memory High (instance {{ $labels.instance }})
+        description: "The Hadoop ResourceManager is approaching its memory limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopYarnContainerAllocationFailures
+      expr: 'hadoop_yarn_container_allocation_failures_total > 10'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop YARN Container Allocation Failures (instance {{ $labels.instance }})
+        description: "There is a significant number of YARN container allocation failures.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopHbaseRegionCountHigh
+      expr: 'hadoop_hbase_region_count > 5000'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop HBase Region Count High (instance {{ $labels.instance }})
+        description: "The HBase cluster has an unusually high number of regions.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopHbaseRegionServerHeapLow
+      expr: 'hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes < 0.2'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Hadoop HBase Region Server Heap Low (instance {{ $labels.instance }})
+        description: "HBase Region Servers are running low on heap space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopHbaseWriteRequestsLatencyHigh
+      expr: 'hadoop_hbase_write_requests_latency_seconds > 0.5'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop HBase Write Requests Latency High (instance {{ $labels.instance }})
+        description: "HBase Write Requests are experiencing high latency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

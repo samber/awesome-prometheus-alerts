@@ -22,6 +22,15 @@ groups:
         summary: MySQL too many connections (> 80%) (instance {{ $labels.instance }})
         description: "More than 80% of MySQL connections are in use on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: MysqlHighPreparedStatementsUtilization(>80%)
+      expr: 'max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL high prepared statements utilization (> 80%) (instance {{ $labels.instance }})
+        description: "High utilization of prepared statements (>80%) on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: MysqlHighThreadsRunning
       expr: 'max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60'
       for: 2m
@@ -84,3 +93,39 @@ groups:
       annotations:
         summary: MySQL restarted (instance {{ $labels.instance }})
         description: "MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlHighQps
+      expr: 'irate(mysql_global_status_questions[1m]) > 10000'
+      for: 2m
+      labels:
+        severity: info
+      annotations:
+        summary: MySQL High QPS (instance {{ $labels.instance }})
+        description: "MySQL is being overload with unusual QPS (> 10k QPS).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlTooManyOpenFiles
+      expr: 'mysql_global_status_innodb_num_open_files / mysql_global_variables_open_files_limit * 100 > 75'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL too many open files (instance {{ $labels.instance }})
+        description: "MySQL has too many open files, consider increase variables open_files_limit on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlInnodbForceRecoveryIsEnabled
+      expr: 'mysql_global_variables_innodb_force_recovery != 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL InnoDB Force Recovery is enabled (instance {{ $labels.instance }})
+        description: "MySQL InnoDB force recovery is enabled on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlInnodbHistory_lenTooLong
+      expr: 'mysql_info_schema_innodb_metrics_transaction_trx_rseg_history_len > 50000'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL InnoDB history_len too long (instance {{ $labels.instance }})
+        description: "MySQL history_len (undo log) too long on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7
+          ruby-version: 3.4
 
       - name: Set up yq
         uses: mikefarah/yq@master
@@ -31,7 +31,7 @@ jobs:
             mkdir -p "${subdir}"
 
             # groupName=$(echo "{% assign groupName = name | split: ' ' %}{% capture groupNameCamelcase %}{% for word in groupName %}{{ word | capitalize }} {% endfor %}{% endcapture %} {{ groupNameCamelcase | remove: ' ' | remove: '-' }}" | liquid $(echo ${service} | base64 --decode | jq -r '.name | ascii_downcase | split(" ") | join("-")'))
-    
+
             for exporter in $(echo ${service} | base64 --decode | jq -r '.exporters[] | @base64'); do
               exporterName=$(echo ${exporter} | base64 --decode | jq -r '.slug')
               cat dist/template.yml | liquid "$(echo ${exporter} | base64 --decode)" > ${subdir}/${exporterName}.yml
