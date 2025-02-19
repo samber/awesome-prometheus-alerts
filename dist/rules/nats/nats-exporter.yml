@@ -13,15 +13,6 @@ groups:
         summary: Nats high connection count (instance {{ $labels.instance }})
         description: "High number of NATS connections ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: NatsHighPendingBytes
-      expr: 'gnatsd_connz_pending_bytes > 100000'
-      for: 3m
-      labels:
-        severity: warning
-      annotations:
-        summary: Nats high pending bytes (instance {{ $labels.instance }})
-        description: "High number of NATS pending bytes ({{ $value }}) for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: NatsHighSubscriptionsCount
       expr: 'gnatsd_connz_subscriptions > 50'
       for: 3m
