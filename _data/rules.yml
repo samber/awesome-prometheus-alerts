@@ -137,30 +137,30 @@ groups:
             rules:
               - name: Host out of memory
                 description: Node memory is filling up (< 10% left)
-                query: '(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < .10)'
+                query: "(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < .10)"
                 severity: warning
                 for: 2m
               - name: Host memory under memory pressure
                 description: The node is under heavy memory pressure. High rate of loading memory pages from disk.
-                query: '(rate(node_vmstat_pgmajfault[5m]) > 1000)'
+                query: "(rate(node_vmstat_pgmajfault[5m]) > 1000)"
                 severity: warning
               - name: Host Memory is underutilized
                 description: "Node memory usage is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})"
-                query: 'min_over_time(node_memory_MemFree_bytes[1w]) > node_memory_MemTotal_bytes * .8'
+                query: "min_over_time(node_memory_MemFree_bytes[1w]) > node_memory_MemTotal_bytes * .8"
                 severity: info
                 comments: |
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host unusual network throughput in
                 description: Host receive bandwidth is high (>80%).
-                query: '((rate(node_network_receive_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80)'
+                query: "((rate(node_network_receive_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80)"
                 severity: warning
               - name: Host unusual network throughput out
                 description: Host transmit bandwidth is high (>80%)
-                query: '((rate(node_network_transmit_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80)'
+                query: "((rate(node_network_transmit_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80)"
                 severity: warning
               - name: Host unusual disk read rate
                 description: Disk is too busy (IO wait > 80%)
-                query: '(rate(node_disk_io_time_seconds_total[5m]) > .80)'
+                query: "(rate(node_disk_io_time_seconds_total[5m]) > .80)"
                 severity: warning
               - name: Host out of disk space
                 description: Disk is almost full (< 10% left)
@@ -182,7 +182,7 @@ groups:
                 for: 2m
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
-                query: '(node_filesystem_files_free / node_filesystem_files < .10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0)'
+                query: "(node_filesystem_files_free / node_filesystem_files < .10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0)"
                 severity: critical
                 for: 2m
               - name: Host filesystem device error
@@ -197,12 +197,12 @@ groups:
                 for: 2m
               - name: Host unusual disk read latency
                 description: Disk latency is growing (read operations > 100ms)
-                query: '(rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0'
+                query: "(rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0"
                 severity: warning
                 for: 2m
               - name: Host unusual disk write latency
                 description: Disk latency is growing (write operations > 100ms)
-                query: '(rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0)'
+                query: "(rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0)"
                 severity: warning
                 for: 2m
               - name: Host high CPU load
@@ -227,7 +227,7 @@ groups:
                 severity: warning
               - name: Host unusual disk IO
                 description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities. Check storage for issues."
-                query: 'rate(node_disk_io_time_seconds_total[5m]) > 0.8'
+                query: "rate(node_disk_io_time_seconds_total[5m]) > 0.8"
                 severity: warning
                 for: 5m
               - name: Host context switching high
@@ -240,7 +240,7 @@ groups:
                   Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
               - name: Host swap is filling up
                 description: Swap is filling up (>80%)
-                query: '((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80)'
+                query: "((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80)"
                 severity: warning
                 for: 2m
               - name: Host systemd service crashed
@@ -249,12 +249,12 @@ groups:
                 severity: warning
               - name: Host physical component too hot
                 description: "Physical hardware component too hot"
-                query: 'node_hwmon_temp_celsius > node_hwmon_temp_max_celsius'
+                query: "node_hwmon_temp_celsius > node_hwmon_temp_max_celsius"
                 severity: warning
                 for: 5m
               - name: Host node overtemperature alarm
                 description: "Physical node temperature alarm triggered"
-                query: '((node_hwmon_temp_crit_alarm_celsius == 1) or (node_hwmon_temp_alarm == 1))'
+                query: "((node_hwmon_temp_crit_alarm_celsius == 1) or (node_hwmon_temp_alarm == 1))"
                 severity: critical
               - name: Host software RAID insufficient drives
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining."
@@ -267,53 +267,53 @@ groups:
                 for: 2m
               - name: Host kernel version deviations
                 description: Kernel version for {{ $labels.instance }} has changed.
-                query: 'changes(node_uname_info[1h]) > 0'
+                query: "changes(node_uname_info[1h]) > 0"
                 severity: info
               - name: Host OOM kill detected
                 description: OOM kill detected
-                query: '(increase(node_vmstat_oom_kill[1m]) > 0)'
+                query: "(increase(node_vmstat_oom_kill[1m]) > 0)"
                 severity: warning
               - name: Host EDAC Correctable Errors detected
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 5 minutes.'
-                query: '(increase(node_edac_correctable_errors_total[1m]) > 0)'
+                query: "(increase(node_edac_correctable_errors_total[1m]) > 0)"
                 severity: info
               - name: Host EDAC Uncorrectable Errors detected
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} uncorrectable memory errors reported by EDAC in the last 5 minutes.'
-                query: '(node_edac_uncorrectable_errors_total > 0)'
+                query: "(node_edac_uncorrectable_errors_total > 0)"
                 severity: warning
               - name: Host Network Receive Errors
                 description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} receive errors in the last two minutes.'
-                query: '(rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01)'
+                query: "(rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01)"
                 severity: warning
                 for: 2m
               - name: Host Network Transmit Errors
                 description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last two minutes.'
-                query: '(rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01)'
+                query: "(rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01)"
                 severity: warning
                 for: 2m
               - name: Host Network Bond Degraded
                 description: 'Bond "{{ $labels.device }}" degraded on "{{ $labels.instance }}".'
-                query: '((node_bonding_active - node_bonding_slaves) != 0)'
+                query: "((node_bonding_active - node_bonding_slaves) != 0)"
                 severity: warning
                 for: 2m
               - name: Host conntrack limit
                 description: "The number of conntrack is approaching limit"
-                query: '(node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8)'
+                query: "(node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8)"
                 severity: warning
                 for: 5m
               - name: Host clock skew
                 description: "Clock skew detected. Clock is out of sync. Ensure NTP is configured correctly on this host."
-                query: '((node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0))'
+                query: "((node_timex_offset_seconds > 0.05 and deriv(node_timex_offset_seconds[5m]) >= 0) or (node_timex_offset_seconds < -0.05 and deriv(node_timex_offset_seconds[5m]) <= 0))"
                 severity: warning
                 for: 10m
               - name: Host clock not synchronising
                 description: "Clock not synchronising. Ensure NTP is configured on this host."
-                query: '(min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16)'
+                query: "(min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16)"
                 severity: warning
                 for: 2m
               - name: Host requires reboot
                 description: "{{ $labels.instance }} requires a reboot."
-                query: '(node_reboot_required > 0)'
+                query: "(node_reboot_required > 0)"
                 severity: info
                 for: 4h
 
@@ -341,19 +341,19 @@ groups:
                 severity: warning
               - name: SMART status
                 description: Device has a SMART status failure on {{ $labels.instance }} drive {{ $labels.device }})
-                query: 'smartctl_device_smart_status != 1'
+                query: "smartctl_device_smart_status != 1"
                 severity: critical
               - name: SMART critical warning
                 description: Disk controller has critical warning on {{ $labels.instance }} drive {{ $labels.device }})
-                query: 'smartctl_device_critical_warning > 0'
+                query: "smartctl_device_critical_warning > 0"
                 severity: critical
               - name: SMART media errors
                 description: Disk controller detected media errors on {{ $labels.instance }} drive {{ $labels.device }})
-                query: 'smartctl_device_media_errors > 0'
+                query: "smartctl_device_media_errors > 0"
                 severity: critical
               - name: SMART Wearout Indicator
                 description: Device is wearing out on {{ $labels.instance }} drive {{ $labels.device }})
-                query: 'smartctl_device_available_spare < smartctl_device_available_spare_threshold'
+                query: "smartctl_device_available_spare < smartctl_device_available_spare_threshold"
                 severity: critical
 
       - name: Docker containers
@@ -1174,7 +1174,7 @@ groups:
             rules:
               - name: Meilisearch index is empty
                 description: Meilisearch instance is down
-                query: 'meilisearch_index_docs_count == 0'
+                query: "meilisearch_index_docs_count == 0"
                 severity: warning
               - name: Meilisearch http response time
                 description: Meilisearch http response time is too high
@@ -1413,7 +1413,6 @@ groups:
                 severity: info
                 for: 0m
 
-
       - name: Zookeeper
         exporters:
           - name: cloudflare/kafka_zookeeper_exporter
@@ -1539,11 +1538,6 @@ groups:
                 query: "gnatsd_varz_connections > 100"
                 severity: warning
                 for: 3m
-              - name: Nats high pending bytes
-                description: High number of NATS pending bytes ({{ $value }}) for {{ $labels.instance }}
-                query: "gnatsd_connz_pending_bytes > 100000"
-                severity: warning
-                for: 3m
               - name: Nats high subscriptions count
                 description: High number of NATS subscriptions ({{ $value }}) for {{ $labels.instance }}
                 query: "gnatsd_connz_subscriptions > 50"
@@ -1634,7 +1628,6 @@ groups:
                 query: "gnatsd_varz_write_deadline > 10"
                 severity: critical
                 for: 5m
-
 
       - name: Solr
         exporters:
@@ -2129,7 +2122,7 @@ groups:
                 severity: warning
               - name: Kubernetes HPA scale maximum
                 description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has hit maximum number of desired pods
-                query: '(kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas) and (kube_horizontalpodautoscaler_spec_max_replicas > 1) and (kube_horizontalpodautoscaler_spec_min_replicas != kube_horizontalpodautoscaler_spec_max_replicas)'
+                query: "(kube_horizontalpodautoscaler_status_desired_replicas >= kube_horizontalpodautoscaler_spec_max_replicas) and (kube_horizontalpodautoscaler_spec_max_replicas > 1) and (kube_horizontalpodautoscaler_spec_min_replicas != kube_horizontalpodautoscaler_spec_max_replicas)"
                 severity: info
                 for: 2m
               - name: Kubernetes HPA underutilized
@@ -3021,7 +3014,7 @@ groups:
             rules:
               - name: Grafana Alloy service down
                 description: Alloy on (instance {{ $labels.instance }}) is not responding or has stopped running.
-                query: 'count by (instance) (alloy_build_info) unless count by (instance) (alloy_build_info offset 2m)  '
+                query: "count by (instance) (alloy_build_info) unless count by (instance) (alloy_build_info offset 2m)  "
                 severity: critical
 
       - name: Jenkins
