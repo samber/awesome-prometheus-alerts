@@ -197,7 +197,7 @@ groups:
                 for: 2m
               - name: Host unusual disk read latency
                 description: Disk latency is growing (read operations > 100ms)
-                query: "(rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0"
+                query: "(rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0)"
                 severity: warning
                 for: 2m
               - name: Host unusual disk write latency
