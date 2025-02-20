@@ -1970,6 +1970,7 @@ groups:
       - name: Caddy
         exporters:
           - name: Embedded exporter
+            slug: embedded-exporter
             doc_url: https://caddyserver.com/docs/metrics
             rules:
               - name: Caddy Reverse Proxy Down
