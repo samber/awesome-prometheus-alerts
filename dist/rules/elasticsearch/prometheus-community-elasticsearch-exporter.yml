@@ -140,7 +140,7 @@ groups:
         description: "No new documents for 10 min!\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchHighIndexingLatency
-      expr: 'elasticsearch_indices_indexing_index_time_seconds_total / elasticsearch_indices_indexing_index_total > 0.0005'
+      expr: 'increase(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / increase(elasticsearch_indices_indexing_index_total[1m]) > 0.0005'
       for: 10m
       labels:
         severity: warning
@@ -167,7 +167,7 @@ groups:
         description: "The query rate on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchHighQueryLatency
-      expr: 'elasticsearch_indices_search_fetch_time_seconds / elasticsearch_indices_search_fetch_total > 1'
+      expr: 'increase(elasticsearch_indices_search_fetch_time_seconds[1m]) / increase(elasticsearch_indices_search_fetch_total[1m]) > 1'
       for: 5m
       labels:
         severity: warning
