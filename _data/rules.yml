@@ -1147,7 +1147,7 @@ groups:
                 severity: warning
               - name: Elasticsearch High Indexing Latency
                 description: "The indexing latency on Elasticsearch cluster is higher than the threshold."
-                query: "elasticsearch_indices_indexing_index_time_seconds_total / elasticsearch_indices_indexing_index_total > 0.0005"
+                query: "increase(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / increase(elasticsearch_indices_indexing_index_total[1m]) > 0.0005"
                 severity: warning
                 for: 10m
               - name: Elasticsearch High Indexing Rate
@@ -1162,7 +1162,7 @@ groups:
                 for: 5m
               - name: Elasticsearch High Query Latency
                 description: "The query latency on Elasticsearch cluster is higher than the threshold."
-                query: "elasticsearch_indices_search_fetch_time_seconds / elasticsearch_indices_search_fetch_total > 1"
+                query: "increase(elasticsearch_indices_search_fetch_time_seconds[1m]) / increase(elasticsearch_indices_search_fetch_total[1m]) > 1"
                 severity: warning
                 for: 5m
 
