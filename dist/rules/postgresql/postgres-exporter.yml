@@ -194,10 +194,10 @@ groups:
         description: "The table {{ $labels.relname }} has an invalid index: {{ $labels.indexrelname }}. You should execute `DROP INDEX {{ $labels.indexrelname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlReplicationLagHigh
-      expr: 'pg_replication_lag_seconds > 60'
-      for: 2m
+      expr: 'pg_replication_lag_seconds > 5'
+      for: 30s
       labels:
         severity: warning
       annotations:
-        summary: Postgresql replication lag high (> 60s) (instance {{ $labels.instance }})
-        description: "The PostgreSQL replication lag is high\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Postgresql replication lag high (instance {{ $labels.instance }})
+        description: "The PostgreSQL replication lag is high (> 60s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
