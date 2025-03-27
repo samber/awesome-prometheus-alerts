@@ -747,6 +747,11 @@ groups:
                 for: 6h
                 comments: |
                   See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
+              - name: Postgresql replication lag high (> 60s)
+                description: The PostgreSQL replication lag is high
+                query: "pg_replication_lag_seconds > 60"
+                severity: warning
+                for: 2m
 
       - name: SQL Server
         exporters:
