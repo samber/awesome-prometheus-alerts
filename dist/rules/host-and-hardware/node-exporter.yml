@@ -318,12 +318,3 @@ groups:
       annotations:
         summary: Host clock not synchronising (instance {{ $labels.instance }})
         description: "Clock not synchronising. Ensure NTP is configured on this host.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: HostRequiresReboot
-      expr: '(node_reboot_required > 0)'
-      for: 4h
-      labels:
-        severity: info
-      annotations:
-        summary: Host requires reboot (instance {{ $labels.instance }})
-        description: "{{ $labels.instance }} requires a reboot.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
