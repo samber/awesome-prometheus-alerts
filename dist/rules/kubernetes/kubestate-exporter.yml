@@ -22,6 +22,15 @@ groups:
         summary: Kubernetes memory pressure (node {{ $labels.node }})
         description: "Node {{ $labels.node }} has MemoryPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: KubernetesNodeSchedulingDisabled
+      expr: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{verb!~"(?:CONNECT|WATCHLIST|WATCH|PROXY)"} [10m])) WITHOUT (subresource)) > 1'
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Kubernetes Node Scheduling Disabled (node: {{ $labels.node }})"
+        description: "Node {{ $labels.node }} has been marked as unschedulable for more than 30 minutes."
+
     - alert: KubernetesNodeDiskPressure
       expr: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
       for: 2m
