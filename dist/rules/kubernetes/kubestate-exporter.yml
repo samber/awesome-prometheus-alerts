@@ -22,6 +22,8 @@ groups:
         summary: Kubernetes memory pressure (node {{ $labels.node }})
         description: "Node {{ $labels.node }} has MemoryPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Kubernetes Node with disabled schedules are fine. 
+    # This alarm can be useful to get warned if there are nodes which are longer unscheduled 
     - alert: KubernetesNodeSchedulingDisabled
       expr: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{verb!~"(?:CONNECT|WATCHLIST|WATCH|PROXY)"} [10m])) WITHOUT (subresource)) > 1'
       for: 30m
