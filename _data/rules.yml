@@ -2047,7 +2047,7 @@ groups:
               - name: Kubernetes Node scheduling disabled
                 summary: "Kubernetes node scheduling disabled (node: {{ $labels.node }})"
                 description: "Node {{ $labels.node }} has been marked as unschedulable for more than 30 minutes."
-                query: kube_node_spec_taint{key="node.kubernetes.io/unschedulable"} == 1
+                query: 'kube_node_spec_taint{key="node.kubernetes.io/unschedulable"} == 1'
                 severity: warning
                 for: 30m
                 comments: |
