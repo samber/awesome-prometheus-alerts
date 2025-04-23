@@ -2044,6 +2044,15 @@ groups:
                 query: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
                 severity: critical
                 for: 10m
+              - name: Kubernetes Node scheduling disabled
+                summary: "Kubernetes node scheduling disabled (node: {{ $labels.node }})"
+                description: "Node {{ $labels.node }} has been marked as unschedulable for more than 30 minutes."
+                query: kube_node_spec_taint{key="node.kubernetes.io/unschedulable"} == 1
+                severity: warning
+                for: 30m
+                comments: |
+                  Kubernetes Node with disabled schedules are fine. 
+                  This alarm can be useful to get warned if there are nodes which are longer unscheduled.
               - name: Kubernetes Node memory pressure
                 summary: Kubernetes memory pressure (node {{ $labels.node }})
                 description: "Node {{ $labels.node }} has MemoryPressure condition"
