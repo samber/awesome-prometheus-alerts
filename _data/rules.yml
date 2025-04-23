@@ -26,7 +26,7 @@ groups:
                 query: "sum by (job) (up) == 0"
                 severity: critical
               - name: Prometheus target missing with warmup time
-                description: Allow a job time to start up (10 minutes) before alerting that it's down.
+                description: "Allow a job time to start up (10 minutes) before alerting that it's down."
                 query: "sum by (instance, job) ((up == 0) * on (instance) group_left(__name__) (node_time_seconds - node_boot_time_seconds > 600))"
                 severity: critical
               - name: Prometheus configuration reload failure
@@ -50,7 +50,7 @@ groups:
                 query: 'count(count_values("config_hash", alertmanager_config_hash)) > 1'
                 severity: warning
               - name: Prometheus AlertManager E2E dead man switch
-                description: Prometheus DeadManSwitch is an always-firing alert. It's used as an end-to-end test of Prometheus through the Alertmanager.
+                description: "Prometheus DeadManSwitch is an always-firing alert. It's used as an end-to-end test of Prometheus through the Alertmanager."
                 query: "vector(1)"
                 severity: critical
               - name: Prometheus not connected to alertmanager
@@ -2044,15 +2044,6 @@ groups:
                 query: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
                 severity: critical
                 for: 10m
-              - name: Kubernetes Node scheduling disabled
-                summary: "Kubernetes node scheduling disabled (node: {{ $labels.node }})"
-                description: "Node {{ $labels.node }} has been marked as unschedulable for more than 30 minutes."
-                query: 'kube_node_spec_taint{key="node.kubernetes.io/unschedulable"} == 1'
-                severity: warning
-                for: 30m
-                comments: |
-                  Kubernetes Node with disabled schedules are fine. 
-                  This alarm can be useful to get warned if there are nodes which are longer unscheduled.
               - name: Kubernetes Node memory pressure
                 summary: Kubernetes memory pressure (node {{ $labels.node }})
                 description: "Node {{ $labels.node }} has MemoryPressure condition"
