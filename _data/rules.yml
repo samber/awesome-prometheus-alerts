@@ -2431,6 +2431,33 @@ groups:
                 severity: warning
                 for: 15m
 
+      - name: FluxCD
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://fluxcd.io/flux/monitoring/metrics/
+            rules:
+              - name: Flux Kustomization Failure
+                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.
+                query: 'gotk_resource_info{ready="False", customresource_kind="Kustomization"} > 0'
+                severity: warning
+                for: 15m
+              - name: Flux HelmRelease Failure
+                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.
+                query: 'gotk_resource_info{ready="False", customresource_kind="HelmRelease"} > 0'
+                severity: warning
+                for: 15m
+              - name: Flux Source Issue
+                description: Flux source {{ $labels.customresource_kind }} '{{ $labels.name }}' has issue(s).
+                query: 'gotk_resource_info{ready="False", customresource_kind=~"GitRepository|HelmRepository|Bucket|OCIRepository"} > 0'
+                severity: warning
+                for: 15m
+              - name: Flux Image Issue
+                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' is marked as not ready.
+                query: 'gotk_resource_info{ready="False", customresource_kind=~"ImagePolicy|ImageRepository|ImageUpdateAutomation"} > 0'
+                severity: warning
+                for: 15m
+
   - name: Network, security and storage
     services:
       - name: Ceph
