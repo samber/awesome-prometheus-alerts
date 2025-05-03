@@ -83,6 +83,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Linkerd](https://samber.github.io/awesome-prometheus-alerts/rules#linkerd)
 - [Istio](https://samber.github.io/awesome-prometheus-alerts/rules#istio)
 - [ArgoCD](https://samber.github.io/awesome-prometheus-alerts/rules#argocd)
+- [FluxCD](https://samber.github.io/awesome-prometheus-alerts/rules#fluxcd)
 
 #### Network, security and storage
 
