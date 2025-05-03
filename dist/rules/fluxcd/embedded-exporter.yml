@@ -1,0 +1,41 @@
+groups:
+
+- name: EmbeddedExporter
+
+  rules:
+
+    - alert: FluxKustomizationFailure
+      expr: 'gotk_resource_info{ready="False", customresource_kind="Kustomization"} > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Flux Kustomization Failure (instance {{ $labels.instance }})
+        description: "The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: FluxHelmreleaseFailure
+      expr: 'gotk_resource_info{ready="False", customresource_kind="HelmRelease"} > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Flux HelmRelease Failure (instance {{ $labels.instance }})
+        description: "The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: FluxSourceIssue
+      expr: 'gotk_resource_info{ready="False", customresource_kind=~"GitRepository|HelmRepository|Bucket|OCIRepository"} > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Flux Source Issue (instance {{ $labels.instance }})
+        description: "Flux source {{ $labels.customresource_kind }} '{{ $labels.name }}' has issue(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: FluxImageIssue
+      expr: 'gotk_resource_info{ready="False", customresource_kind=~"ImagePolicy|ImageRepository|ImageUpdateAutomation"} > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Flux Image Issue (instance {{ $labels.instance }})
+        description: "The {{ $labels.customresource_kind }} '{{ $labels.name }}' is marked as not ready.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
