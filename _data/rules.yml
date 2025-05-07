@@ -2390,7 +2390,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: Istio high 4xx error rate
-                description: High percentage of HTTP 5xx responses in Istio (> 5%).
+                description: High percentage of HTTP 4xx responses in Istio (> 5%).
                 query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
                 severity: warning
                 for: 1m
