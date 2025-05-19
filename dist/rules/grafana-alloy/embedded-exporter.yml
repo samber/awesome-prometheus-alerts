@@ -5,7 +5,7 @@ groups:
   rules:
 
     - alert: GrafanaAlloyServiceDown
-      expr: 'count by (instance) (alloy_build_info) unless count by (instance) (alloy_build_info offset 2m)  '
+      expr: 'count by (instance) (alloy_build_info offset 2m) unless count by (instance) (alloy_build_info)'
       for: 0m
       labels:
         severity: critical
