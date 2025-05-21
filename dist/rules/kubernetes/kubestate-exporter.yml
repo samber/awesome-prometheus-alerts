@@ -266,7 +266,7 @@ groups:
         description: "Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are running where they are not supposed to run\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesCronjobTooLong
-      expr: 'time() - kube_cronjob_next_schedule_time > 3600'
+      expr: 'kube_job_status_start_time > 0 and absent(kube_job_status_completion_time) and (time() - kube_job_status_start_time) > 3600'
       for: 0m
       labels:
         severity: warning
