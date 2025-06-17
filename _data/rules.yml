@@ -207,7 +207,7 @@ groups:
                 for: 2m
               - name: Host high CPU load
                 description: CPU load is > 80%
-                query: '100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > .80'
+                query: '1 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > .80'
                 severity: warning
                 for: 10m
               - name: Host CPU is underutilized
