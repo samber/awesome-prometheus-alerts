@@ -68,7 +68,7 @@ groups:
         description: "Disk is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostDiskMayFillIn24Hours
-      expr: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[1h], 86400) <= 0 and node_filesystem_avail_bytes > 0'
+      expr: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[3h], 86400) <= 0 and node_filesystem_avail_bytes > 0'
       for: 2m
       labels:
         severity: warning
