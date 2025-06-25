@@ -173,7 +173,7 @@ groups:
                 for: 2m
               - name: Host disk may fill in 24 hours
                 description: Filesystem will likely run out of space within the next 24 hours.
-                query: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[1h], 86400) <= 0 and node_filesystem_avail_bytes > 0'
+                query: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[3h], 86400) <= 0 and node_filesystem_avail_bytes > 0'
                 severity: warning
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
