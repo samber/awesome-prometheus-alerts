@@ -129,3 +129,57 @@ groups:
       annotations:
         summary: ClickHouse Access Denied Errors (instance {{ $labels.instance }})
         description: "Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClickHouseExporterDown
+      expr: up{job="clickhouse"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "ClickHouse exporter is down (instance {{ $labels.instance }})"
+        description: "No metrics received from ClickHouse exporter for over 1 minute."
+
+    - alert: ClickHouseRejectedInserts
+      expr: increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Rejected INSERT queries (instance {{ $labels.instance }})"
+        description: "INSERTs rejected due to too many active data parts. Reduce insert frequency."
+
+    - alert: ClickHouseDelayedInserts
+      expr: increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 0
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Delayed INSERTs detected (instance {{ $labels.instance }})"
+        description: "INSERTs delayed due to high number of active parts."
+
+    - alert: ClickHouseZooKeeperHardwareExceptions
+      expr: increase(ClickHouseProfileEvents_ZooKeeperHardwareExceptions[1m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "ZooKeeper hardware exceptions (instance {{ $labels.instance }})"
+        description: "Network issues communicating with ZooKeeper."
+
+    - alert: ClickHouseHighNetworkUsage
+      expr: rate(ClickHouseProfileEvents_NetworkSendBytes[1m]) > 50000000 or rate(ClickHouseProfileEvents_NetworkReceiveBytes[1m]) > 50000000
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High network usage (instance {{ $labels.instance }})"
+        description: "ClickHouse network usage exceeds 50MB/s."
+
+    - alert: ClickHouseDistributedRejectedInserts
+      expr: increase(ClickHouseProfileEvents_DistributedRejectedInserts[5m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Distributed rejected inserts (instance {{ $labels.instance }})"
+        description: "INSERTs into Distributed tables rejected due to pending bytes limit."
