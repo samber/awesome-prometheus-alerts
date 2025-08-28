@@ -1339,96 +1339,96 @@ groups:
             doc_url: https://clickhouse.com/docs/en/operations/system-tables/metrics
             rules:
               - name: ClickHouse node down
-                description: No metrics received from ClickHouse exporter for over 2 minutes.
-                query: "up{job="clickhouse"} == 0"
+                description: "No metrics received from ClickHouse exporter for over 2 minutes."
+                query: 'up{job="clickhouse"} == 0'
                 severity: critical
                 for: 2m
               - name: ClickHouse Memory Usage Critical
-                description: Memory usage is critically high, over 90%.
+                description: "Memory usage is critically high, over 90%."
                 query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90"
                 severity: critical
                 for: 5m
               - name: ClickHouse Memory Usage Warning
-                description: Memory usage is over 80%.
+                description: "Memory usage is over 80%."
                 query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80"
                 severity: warning
                 for: 5m
               - name: ClickHouse Disk Space Low on Default
-                description: Disk space on default is below 20%.
+                description: "Disk space on default is below 20%."
                 query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 20"
                 severity: warning
                 for: 2m
               - name: ClickHouse Disk Space Critical on Default
-                description: Disk space on default disk is critically low, below 10%.
+                description: "Disk space on default disk is critically low, below 10%."
                 query: "ClickHouseAsyncMetrics_DiskAvailable_default / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default) * 100 < 10"
                 severity: critical
                 for: 2m
               - name: ClickHouse Disk Space Low on Backups
-                description: Disk space on backups is below 20%.
+                description: "Disk space on backups is below 20%."
                 query: "ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20"
                 severity: warning
                 for: 2m
               - name: ClickHouse Replica Errors
-                description: Critical replica errors detected, either all replicas are stale or lost.
+                description: "Critical replica errors detected, either all replicas are stale or lost."
                 query: "ClickHouseErrorMetric_ALL_REPLICAS_ARE_STALE == 1 or ClickHouseErrorMetric_ALL_REPLICAS_LOST == 1"
                 severity: critical
                 for: 0m
               - name: ClickHouse No Available Replicas
-                description: No available replicas in ClickHouse.
+                description: "No available replicas in ClickHouse."
                 query: "ClickHouseErrorMetric_NO_AVAILABLE_REPLICA == 1"
                 severity: critical
                 for: 0m
               - name: ClickHouse No Live Replicas
-                description: There are too few live replicas available, risking data loss and service disruption.
+                description: "There are too few live replicas available, risking data loss and service disruption."
                 query: "ClickHouseErrorMetric_TOO_FEW_LIVE_REPLICAS == 1"
                 severity: critical
                 for: 0m
               - name: ClickHouse High Network Traffic
-                description: Network traffic is unusually high, may affect cluster performance.
+                description: "Network traffic is unusually high, may affect cluster performance."
                 query: "ClickHouseMetrics_NetworkSend > 250 or ClickHouseMetrics_NetworkReceive > 250"
                 severity: warning
                 for: 5m
                 comments: |
                   Please replace the threshold with an appropriate value
               - name: ClickHouse High TCP Connections
-                description: High number of TCP connections, indicating heavy client or inter-cluster communication.
+                description: "High number of TCP connections, indicating heavy client or inter-cluster communication."
                 query: "ClickHouseMetrics_TCPConnection > 400"
                 severity: warning
                 for: 5m
                 comments: |
                   Please replace the threshold with an appropriate value
               - name: ClickHouse Interserver Connection Issues
-                description: An increase in interserver connections may indicate replication or distributed query handling issues.
+                description: "An increase in interserver connections may indicate replication or distributed query handling issues."
                 query: "increase(ClickHouseMetrics_InterserverConnection[5m]) > 0"
                 severity: warning
                 for: 1m
               - name: ClickHouse ZooKeeper Connection Issues
-                description: ClickHouse is experiencing issues with ZooKeeper connections, which may affect cluster state and coordination.
+                description: "ClickHouse is experiencing issues with ZooKeeper connections, which may affect cluster state and coordination."
                 query: "avg(ClickHouseMetrics_ZooKeeperSession) != 1"
                 severity: warning
                 for: 3m
               - name: ClickHouse Authentication Failures
-                description: Authentication failures detected, indicating potential security issues or misconfiguration.
+                description: "Authentication failures detected, indicating potential security issues or misconfiguration."
                 query: "increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 0"
                 severity: info
                 for: 0m
               - name: ClickHouse Access Denied Errors
-                description: Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts.
+                description: "Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts."
                 query: "increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0"
                 severity: info
                 for: 0m
               - name: ClickHouse rejected insert queries
-                description: INSERTs rejected due to too many active data parts. Reduce insert frequency.
+                description: "INSERTs rejected due to too many active data parts. Reduce insert frequency."
                 query: "increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 0"
                 severity: warning
                 for: 1m
               - name: ClickHouse delayed insert queries
-                description: INSERTs delayed due to high number of active parts.
+                description: "INSERTs delayed due to high number of active parts."
                 query: "increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 0"
                 severity: warning
                 for: 2m
               - name: ClickHouse zookeeper hardware exception
-                description: Zookeeper hardware exception: network issues communicating with ZooKeeper
+                description: "Zookeeper hardware exception: network issues communicating with ZooKeeper"
                 query: "increase(ClickHouseProfileEvents_ZooKeeperHardwareExceptions[1m]) > 0"
                 severity: critical
                 for: 1m
@@ -1440,11 +1440,10 @@ groups:
                 comments: |
                   Please replace the threshold with an appropriate value
               - name: ClickHouse distributed rejected inserts
-                description: INSERTs into Distributed tables rejected due to pending bytes limit.
+                description: "INSERTs into Distributed tables rejected due to pending bytes limit."
                 query: "increase(ClickHouseProfileEvents_DistributedRejectedInserts[5m]) > 0"
                 severity: critical
                 for: 2m
-                
 
       - name: Zookeeper
         exporters:
