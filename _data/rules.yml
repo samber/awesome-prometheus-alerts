@@ -1338,6 +1338,11 @@ groups:
             slug: embedded-exporter
             doc_url: https://clickhouse.com/docs/en/operations/system-tables/metrics
             rules:
+              - name: ClickHouse node down
+                description: No metrics received from ClickHouse exporter for over 2 minutes.
+                query: "up{job="clickhouse"} == 0"
+                severity: critical
+                for: 2m
               - name: ClickHouse Memory Usage Critical
                 description: Memory usage is critically high, over 90%.
                 query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90"
@@ -1412,6 +1417,34 @@ groups:
                 query: "increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0"
                 severity: info
                 for: 0m
+              - name: ClickHouse rejected insert queries
+                description: INSERTs rejected due to too many active data parts. Reduce insert frequency.
+                query: "increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 0"
+                severity: warning
+                for: 1m
+              - name: ClickHouse delayed insert queries
+                description: INSERTs delayed due to high number of active parts.
+                query: "increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 0"
+                severity: warning
+                for: 2m
+              - name: ClickHouse zookeeper hardware exception
+                description: Zookeeper hardware exception: network issues communicating with ZooKeeper
+                query: "increase(ClickHouseProfileEvents_ZooKeeperHardwareExceptions[1m]) > 0"
+                severity: critical
+                for: 1m
+              - name: ClickHouse high network usage
+                description: High network usage. ClickHouse network usage exceeds 100MB/s.
+                query: "rate(ClickHouseProfileEvents_NetworkSendBytes[1m]) > 100*1024*1024 or rate(ClickHouseProfileEvents_NetworkReceiveBytes[1m]) > 100*1024*1024"
+                severity: warning
+                for: 2m
+                comments: |
+                  Please replace the threshold with an appropriate value
+              - name: ClickHouse distributed rejected inserts
+                description: INSERTs into Distributed tables rejected due to pending bytes limit.
+                query: "increase(ClickHouseProfileEvents_DistributedRejectedInserts[5m]) > 0"
+                severity: critical
+                for: 2m
+                
 
       - name: Zookeeper
         exporters:
