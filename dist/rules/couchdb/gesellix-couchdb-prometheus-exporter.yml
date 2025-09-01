@@ -1,164 +1,167 @@
 groups:
-  - name: couchdb-alerts
-    rules:
-      - alert: CouchDBNodeDown
-        expr: expr: couchdb_httpd_node_up == 0 or couchdb_httpd_up == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB node down"
-          description: "CouchDB node is not responding (node_up metric is 0) for more than 2 minutes."
 
-      - alert: CouchDBAtomMemoryHigh
-        expr: couchdb_erlang_memory_atom_used > 0.9 * couchdb_erlang_memory_atom
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB atom memory usage critical"
-          description: "Atom memory usage is above 90% of limit."
+- name: GesellixCouchdbPrometheusExporter
 
-      - alert: CouchDBOpenDatabasesCritical
-        expr: couchdb_httpd_open_databases > 0.9 * 1000
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB open databases critical"
-          description: "Number of open databases exceeds 90% of node capacity."
+  rules:
 
-      - alert: CouchDBOpenOSFilesCritical
-        expr: couchdb_httpd_open_os_files > 0.9 * 65535
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB open OS files critical"
-          description: "CouchDB is using more than 90% of allowed OS file descriptors, may fail to open new files."
+    - alert: CouchdbNodeDown
+      expr: 'couchdb_httpd_node_up == 0 or couchdb_httpd_up == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB node down (instance {{ $labels.instance }})
+        description: "CouchDB node is not responding (node_up metric is 0) for more than 2 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDB5xxErrorsHigh
-        expr: rate(couchdb_httpd_status_codes{code=~"5.."}[5m]) / rate(couchdb_httpd_requests[5m]) > 0.05
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB 5xx error ratio high"
-          description: "More than 5% of HTTP requests are returning 5xx errors."
+    - alert: CouchdbAtomMemoryUsageCritical
+      expr: 'couchdb_erlang_memory_atom_used > 0.9 * couchdb_erlang_memory_atom'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB atom memory usage critical (instance {{ $labels.instance }})
+        description: "Atom memory usage is above 90% of limit\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBTemporaryViewReadsCritical
-        expr: rate(couchdb_httpd_temporary_view_reads[5m]) > 100
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB temporary view read rate critical"
-          description: "Temporary view read rate exceeds 100 reads/sec, high risk of performance degradation."
+    - alert: CouchdbOpenDatabasesCritical
+      expr: 'couchdb_httpd_open_databases > 0.9 * 1000'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB open databases critical (instance {{ $labels.instance }})
+        description: "Number of open databases exceeds 90% of node capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBMangoTooManyDocsScanned
-        expr: rate(couchdb_mango_too_many_docs_scanned[5m]) > 50
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "CouchDB Mango queries scanning too many docs"
-          description: "Some Mango queries are scanning too many documents, consider adding indexes."
+    - alert: CouchdbOpenOsFilesCritical
+      expr: 'couchdb_httpd_open_os_files > 0.9 * 65535'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB open OS files critical (instance {{ $labels.instance }})
+        description: "CouchDB is using more than 90% of allowed OS file descriptors, may fail to open new files\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBMangoInvalidIndexQueries
-        expr: rate(couchdb_mango_query_invalid_index[5m]) > 5
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "CouchDB Mango queries failed due to invalid index"
-          description: "Some Mango queries failed to execute because the index was missing or invalid."
+    - alert: Couchdb5xxErrorRatioHigh
+      expr: 'rate(couchdb_httpd_status_codes{code=~"5.."}[5m]) / rate(couchdb_httpd_requests[5m]) > 0.05'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB 5xx error ratio high (instance {{ $labels.instance }})
+        description: "More than 5% of HTTP requests are returning 5xx errors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBMangoDocsExaminedHigh
-        expr: rate(couchdb_mango_docs_examined[5m]) > 1000
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "CouchDB Mango docs examined high"
-          description: "High number of documents examined per Mango queries, consider indexing."
+    - alert: CouchdbTemporaryViewReadRateCritical
+      expr: 'rate(couchdb_httpd_temporary_view_reads[5m]) > 100'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB temporary view read rate critical (instance {{ $labels.instance }})
+        description: "Temporary view read rate exceeds 100 reads/sec, high risk of performance degradation\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBReplicatorManagerDeaths
-        expr: increase(couchdb_replicator_changes_manager_deaths[5m]) > 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB Replicator manager died"
-          description: "Replication manager process has crashed."
+    - alert: CouchdbMangoQueriesScanningTooManyDocs
+      expr: 'rate(couchdb_mango_too_many_docs_scanned[5m]) > 50'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: CouchDB Mango queries scanning too many docs (instance {{ $labels.instance }})
+        description: "Some Mango queries are scanning too many documents, consider adding indexes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBReplicatorQueueDeaths
-        expr: increase(couchdb_replicator_changes_queue_deaths[5m]) > 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB Replicator queue process died"
-          description: "Replication queue process has crashed."
+    - alert: CouchdbMangoQueriesFailedDueToInvalidIndex
+      expr: 'rate(couchdb_mango_query_invalid_index[5m]) > 5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: CouchDB Mango queries failed due to invalid index (instance {{ $labels.instance }})
+        description: "Some Mango queries failed to execute because the index was missing or invalid\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBReplicatorReaderDeaths
-        expr: increase(couchdb_replicator_changes_reader_deaths[5m]) > 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB Replicator reader process died"
-          description: "Replication reader process has crashed."
+    - alert: CouchdbMangoDocsExaminedHigh
+      expr: 'rate(couchdb_mango_docs_examined[5m]) > 1000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: CouchDB Mango docs examined high (instance {{ $labels.instance }})
+        description: "High number of documents examined per Mango queries, consider indexing\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBReplicatorFailedStarts
-        expr: increase(couchdb_replicator_failed_starts[5m]) > 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB Replicator failed to start"
-          description: "One or more replication tasks failed to start."
+    - alert: CouchdbReplicatorManagerDied
+      expr: 'increase(couchdb_replicator_changes_manager_deaths[5m]) > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB Replicator manager died (instance {{ $labels.instance }})
+        description: "Replication manager process has crashed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBReplicatorClusterUnstable
-        expr: couchdb_replicator_cluster_is_stable == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB replication cluster unstable"
-          description: "The replication cluster is unstable, replication may be interrupted."
+    - alert: CouchdbReplicatorQueueProcessDied
+      expr: 'increase(couchdb_replicator_changes_queue_deaths[5m]) > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB Replicator queue process died (instance {{ $labels.instance }})
+        description: "Replication queue process has crashed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBReplicatorChangesReadFailures
-        expr: increase(couchdb_replicator_changes_read_failures[5m]) > 5
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "CouchDB replication read failures"
-          description: "Replication changes feed has failed reads more than 5 times in 5 minutes."
+    - alert: CouchdbReplicatorReaderProcessDied
+      expr: 'increase(couchdb_replicator_changes_reader_deaths[5m]) > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB Replicator reader process died (instance {{ $labels.instance }})
+        description: "Replication reader process has crashed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBOpenFDsHigh
-        expr: process_open_fds / process_max_fds > 0.85
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "CouchDB file descriptors high"
-          description: "Process is using more than 85% of allowed file descriptors."
+    - alert: CouchdbReplicatorFailedToStart
+      expr: 'increase(couchdb_replicator_failed_starts[5m]) > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB Replicator failed to start (instance {{ $labels.instance }})
+        description: "One or more replication tasks failed to start\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBProcessRestarted
-        expr: changes(process_start_time_seconds[1h]) > 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB process restarted"
-          description: "CouchDB process has restarted recently."
+    - alert: CouchdbReplicationClusterUnstable
+      expr: 'couchdb_replicator_cluster_is_stable == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB replication cluster unstable (instance {{ $labels.instance }})
+        description: "The replication cluster is unstable, replication may be interrupted\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      - alert: CouchDBCriticalLogs
-        expr: increase(couchdb_server_couch_log{level=~"error|critical"}[5m]) > 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "CouchDB critical log entries"
-          description: "Critical or error log entries detected in the last 5 minutes."
+    - alert: CouchdbReplicationReadFailures
+      expr: 'increase(couchdb_replicator_changes_read_failures[5m]) > 5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: CouchDB replication read failures (instance {{ $labels.instance }})
+        description: "Replication changes feed has failed reads more than 5 times in 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CouchdbFileDescriptorsHigh
+      expr: 'process_open_fds / process_max_fds > 0.85'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: CouchDB file descriptors high (instance {{ $labels.instance }})
+        description: "Process is using more than 85% of allowed file descriptors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CouchdbProcessRestarted
+      expr: 'changes(process_start_time_seconds[1h]) > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB process restarted (instance {{ $labels.instance }})
+        description: "CouchDB process has restarted recently\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CouchdbCriticalLogEntries
+      expr: 'increase(couchdb_server_couch_log{level=~"error|critical"}[5m]) > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: CouchDB critical log entries (instance {{ $labels.instance }})
+        description: "Critical or error log entries detected in the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
