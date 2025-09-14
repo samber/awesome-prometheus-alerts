@@ -700,7 +700,7 @@ groups:
                 severity: critical
               - name: Postgresql unused replication slot
                 description: Unused Replication Slots
-                query: "pg_replication_slots_active == 0"
+                query: "(pg_replication_slots_active == 0) and (pg_replication_is_replica == 0)"
                 severity: warning
                 for: 1m
               - name: Postgresql too many dead tuples
