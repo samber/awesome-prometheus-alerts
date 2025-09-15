@@ -1944,7 +1944,7 @@ groups:
                 severity: critical
               - name: HAProxy backend max active session > 80%
                 description: Session limit from backend {{ $labels.proxy }} to server {{ $labels.server }} reached 80% of limit - {{ $value | printf "%.2f"}}%
-                query: ((haproxy_server_max_sessions >0) * 100) / (haproxy_server_limit_sessions > 0) > 80
+                query: ((haproxy_backend_current_sessions >0) * 100) / (haproxy_backend_limit_sessions > 0) > 80
                 severity: warning
                 for: 2m
               - name: HAProxy pending requests
