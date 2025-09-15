@@ -68,13 +68,13 @@ groups:
         description: "Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be too high.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyBackendMaxActiveSession>80%
-      expr: '((haproxy_server_max_sessions >0) * 100) / (haproxy_server_limit_sessions > 0) > 80'
+      expr: '((haproxy_backend_current_sessions >0) * 100) / (haproxy_backend_limit_sessions > 0) > 80'
       for: 2m
       labels:
         severity: warning
       annotations:
         summary: HAProxy backend max active session > 80% (instance {{ $labels.instance }})
-        description: "Session limit from backend {{ $labels.proxy }} to server {{ $labels.server }} reached 80% of limit - {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Session limit from backend {{ $labels.proxy }} reached 80% of limit - {{ $value | printf \"%.2f\"}}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyPendingRequests
       expr: 'sum by (proxy) (rate(haproxy_backend_current_queue[2m])) > 0'
