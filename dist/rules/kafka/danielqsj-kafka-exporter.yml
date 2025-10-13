@@ -5,7 +5,7 @@ groups:
   rules:
 
     - alert: KafkaTopicsReplicas
-      expr: 'sum(kafka_topic_partition_in_sync_replica) by (topic) < 3'
+      expr: 'min(kafka_topic_partition_in_sync_replica) by (topic) < 3'
       for: 0m
       labels:
         severity: critical
