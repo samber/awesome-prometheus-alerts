@@ -1578,7 +1578,7 @@ groups:
             rules:
               - name: Kafka topics replicas
                 description: Kafka topic in-sync partition
-                query: "sum(kafka_topic_partition_in_sync_replica) by (topic) < 3"
+                query: "min(kafka_topic_partition_in_sync_replica) by (topic) < 3"
                 severity: critical
               - name: Kafka consumers group
                 description: Kafka consumers group
