@@ -1,0 +1,117 @@
+groups:
+
+- name: EmbeddedExporter
+
+  # OpenTelemetry Collector self-monitoring metrics are exposed on port 8888 by default at the /metrics endpoint.
+  # These alerts monitor the collector's health when metrics are ingested via the Prometheus OTLP endpoint or scraped directly.
+  # All collector internal metrics are prefixed with 'otelcol_'.
+  
+  rules:
+
+    - alert: OpentelemetryCollectorDown
+      expr: 'up{job=~".*otel.*collector.*"} == 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenTelemetry Collector down (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector instance has disappeared or is not being scraped\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorReceiverRefusedSpans
+      expr: 'rate(otelcol_receiver_refused_spans[5m]) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenTelemetry Collector receiver refused spans (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector is refusing spans on {{ $labels.receiver }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorReceiverRefusedMetricPoints
+      expr: 'rate(otelcol_receiver_refused_metric_points[5m]) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenTelemetry Collector receiver refused metric points (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector is refusing metric points on {{ $labels.receiver }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorReceiverRefusedLogRecords
+      expr: 'rate(otelcol_receiver_refused_log_records[5m]) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenTelemetry Collector receiver refused log records (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector is refusing log records on {{ $labels.receiver }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorExporterFailedSpans
+      expr: 'rate(otelcol_exporter_send_failed_spans[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenTelemetry Collector exporter failed spans (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector failing to send spans via {{ $labels.exporter }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorExporterFailedMetricPoints
+      expr: 'rate(otelcol_exporter_send_failed_metric_points[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenTelemetry Collector exporter failed metric points (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector failing to send metric points via {{ $labels.exporter }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorExporterFailedLogRecords
+      expr: 'rate(otelcol_exporter_send_failed_log_records[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenTelemetry Collector exporter failed log records (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector failing to send log records via {{ $labels.exporter }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorExporterQueueNearlyFull
+      expr: '(otelcol_exporter_queue_size / on(instance, job, exporter) otelcol_exporter_queue_capacity) > 0.8 and otelcol_exporter_queue_capacity > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenTelemetry Collector exporter queue nearly full (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector exporter {{ $labels.exporter }} queue is over 80% full\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorProcessorRefusedSpans
+      expr: 'rate(otelcol_processor_refused_spans[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenTelemetry Collector processor refused spans (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing spans, likely due to backpressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorProcessorRefusedMetricPoints
+      expr: 'rate(otelcol_processor_refused_metric_points[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenTelemetry Collector processor refused metric points (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing metric points, likely due to backpressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorHighMemoryUsage
+      expr: '(otelcol_process_runtime_heap_alloc_bytes{job=~".*otel.*collector.*"} / on(instance, job) otelcol_process_runtime_total_sys_memory_bytes{job=~".*otel.*collector.*"}) > 0.9'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenTelemetry Collector high memory usage (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector memory usage is above 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpentelemetryCollectorOtlpReceiverErrors
+      expr: 'rate(otelcol_receiver_accepted_spans{receiver=~"otlp"}[5m]) == 0 and rate(otelcol_receiver_refused_spans{receiver=~"otlp"}[5m]) > 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenTelemetry Collector OTLP receiver errors (instance {{ $labels.instance }})
+        description: "OpenTelemetry Collector OTLP receiver is completely failing - all spans are being refused\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
