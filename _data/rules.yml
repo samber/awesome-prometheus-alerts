@@ -3183,6 +3183,76 @@ groups:
                 query: "count by (instance) (alloy_build_info) unless count by (instance) (alloy_build_info offset 2m)  "
                 severity: critical
 
+      - name: OpenTelemetry Collector
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://opentelemetry.io/docs/collector/internal-telemetry/
+            comments: |
+              OpenTelemetry Collector self-monitoring metrics are exposed on port 8888 by default at the /metrics endpoint.
+              These alerts monitor the collector's health when metrics are ingested via the Prometheus OTLP endpoint or scraped directly.
+              All collector internal metrics are prefixed with 'otelcol_'.
+            rules:
+              - name: OpenTelemetry Collector down
+                description: OpenTelemetry Collector instance has disappeared or is not being scraped
+                query: 'up{job=~".*otel.*collector.*"} == 0'
+                severity: critical
+                for: 1m
+              - name: OpenTelemetry Collector receiver refused spans
+                description: "OpenTelemetry Collector is refusing spans on {{ $labels.receiver }}"
+                query: 'rate(otelcol_receiver_refused_spans[5m]) > 0'
+                severity: critical
+                for: 5m
+              - name: OpenTelemetry Collector receiver refused metric points
+                description: "OpenTelemetry Collector is refusing metric points on {{ $labels.receiver }}"
+                query: 'rate(otelcol_receiver_refused_metric_points[5m]) > 0'
+                severity: critical
+                for: 5m
+              - name: OpenTelemetry Collector receiver refused log records
+                description: "OpenTelemetry Collector is refusing log records on {{ $labels.receiver }}"
+                query: 'rate(otelcol_receiver_refused_log_records[5m]) > 0'
+                severity: critical
+                for: 5m
+              - name: OpenTelemetry Collector exporter failed spans
+                description: "OpenTelemetry Collector failing to send spans via {{ $labels.exporter }}"
+                query: 'rate(otelcol_exporter_send_failed_spans[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: OpenTelemetry Collector exporter failed metric points
+                description: "OpenTelemetry Collector failing to send metric points via {{ $labels.exporter }}"
+                query: 'rate(otelcol_exporter_send_failed_metric_points[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: OpenTelemetry Collector exporter failed log records
+                description: "OpenTelemetry Collector failing to send log records via {{ $labels.exporter }}"
+                query: 'rate(otelcol_exporter_send_failed_log_records[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: OpenTelemetry Collector exporter queue nearly full
+                description: "OpenTelemetry Collector exporter {{ $labels.exporter }} queue is over 80% full"
+                query: '(otelcol_exporter_queue_size / on(instance, job, exporter) otelcol_exporter_queue_capacity) > 0.8 and otelcol_exporter_queue_capacity > 0'
+                severity: warning
+              - name: OpenTelemetry Collector processor refused spans
+                description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing spans, likely due to backpressure"
+                query: 'rate(otelcol_processor_refused_spans[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: OpenTelemetry Collector processor refused metric points
+                description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing metric points, likely due to backpressure"
+                query: 'rate(otelcol_processor_refused_metric_points[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: OpenTelemetry Collector high memory usage
+                description: "OpenTelemetry Collector memory usage is above 90%"
+                query: '(otelcol_process_runtime_heap_alloc_bytes{job=~".*otel.*collector.*"} / on(instance, job) otelcol_process_runtime_total_sys_memory_bytes{job=~".*otel.*collector.*"}) > 0.9'
+                severity: warning
+                for: 5m
+              - name: OpenTelemetry Collector OTLP receiver errors
+                description: "OpenTelemetry Collector OTLP receiver is completely failing - all spans are being refused"
+                query: 'rate(otelcol_receiver_accepted_spans{receiver=~"otlp"}[5m]) == 0 and rate(otelcol_receiver_refused_spans{receiver=~"otlp"}[5m]) > 0'
+                severity: critical
+                for: 2m
+
       - name: Jenkins
         exporters:
           - name: Metric plugin
