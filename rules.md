@@ -62,6 +62,7 @@
 // @TODO: Please contribute => https://github.com/samber/awesome-prometheus-alerts 👋
 {% endhighlight %}
         {% else %}
+{{ exporter.comments | strip | newline_to_br }}
 {% highlight bash %}
 $ wget https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/{{ service.name | replace: " ", "-" | downcase }}/{{ exporter.slug }}.yml
 {% endhighlight %}
