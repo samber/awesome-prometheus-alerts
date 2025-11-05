@@ -2,6 +2,7 @@ groups:
 
 - name: KubestateExporter
 
+  
   rules:
 
     - alert: KubernetesNodeNotReady
@@ -13,6 +14,8 @@ groups:
         summary: Kubernetes Node ready (node {{ $labels.node }})
         description: "Node {{ $labels.node }} has been unready for a long time\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Kubernetes Node with disabled schedules are fine.
+    # This alarm can be useful to get warned if there are nodes which are longer unscheduled.
     - alert: KubernetesNodeSchedulingDisabled
       expr: 'kube_node_spec_taint{key="node.kubernetes.io/unschedulable"} == 1'
       for: 30m
@@ -265,6 +268,7 @@ groups:
         summary: Kubernetes DaemonSet misscheduled ({{ $labels.namespace }}/{{ $labels.daemonset }})
         description: "Some Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are running where they are not supposed to run\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold should be customized for each cronjob name.
     - alert: KubernetesCronjobTooLong
       expr: 'kube_job_status_start_time > 0 and absent(kube_job_status_completion_time) and (time() - kube_job_status_start_time) > 3600'
       for: 0m

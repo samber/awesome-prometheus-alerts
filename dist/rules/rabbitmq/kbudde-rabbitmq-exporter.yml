@@ -2,6 +2,7 @@ groups:
 
 - name: KbuddeRabbitmqExporter
 
+  
   rules:
 
     - alert: RabbitmqDown
@@ -49,6 +50,7 @@ groups:
         summary: RabbitMQ too many connections (instance {{ $labels.instance }})
         description: "RabbitMQ instance has too many connections (> 1000)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Indicate the queue name in dedicated label.
     - alert: RabbitmqDeadLetterQueueFillingUp
       expr: 'rabbitmq_queue_messages{queue="my-dead-letter-queue"} > 10'
       for: 1m
@@ -58,6 +60,7 @@ groups:
         summary: RabbitMQ dead letter queue filling up (instance {{ $labels.instance }})
         description: "Dead letter queue is filling up (> 10 msgs)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Indicate the queue name in dedicated label.
     - alert: RabbitmqTooManyMessagesInQueue
       expr: 'rabbitmq_queue_messages_ready{queue="my-queue"} > 1000'
       for: 2m
@@ -67,6 +70,7 @@ groups:
         summary: RabbitMQ too many messages in queue (instance {{ $labels.instance }})
         description: "Queue is filling up (> 1000 msgs)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Indicate the queue name in dedicated label.
     - alert: RabbitmqSlowQueueConsuming
       expr: 'time() - rabbitmq_queue_head_message_timestamp{queue="my-queue"} > 60'
       for: 2m
@@ -85,6 +89,7 @@ groups:
         summary: RabbitMQ no consumer (instance {{ $labels.instance }})
         description: "Queue has no consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Indicate the queue name in dedicated label.
     - alert: RabbitmqTooManyConsumers
       expr: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
       for: 0m
@@ -94,6 +99,7 @@ groups:
         summary: RabbitMQ too many consumers (instance {{ $labels.instance }})
         description: "Queue should have only 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Indicate the exchange name in dedicated label.
     - alert: RabbitmqUnactiveExchange
       expr: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
       for: 2m

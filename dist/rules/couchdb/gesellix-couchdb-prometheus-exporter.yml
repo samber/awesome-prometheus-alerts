@@ -2,6 +2,7 @@ groups:
 
 - name: GesellixCouchdbPrometheusExporter
 
+  
   rules:
 
     - alert: CouchdbNodeDown

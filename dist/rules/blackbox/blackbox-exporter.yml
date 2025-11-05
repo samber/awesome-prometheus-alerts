@@ -2,6 +2,7 @@ groups:
 
 - name: BlackboxExporter
 
+  
   rules:
 
     - alert: BlackboxProbeFailed
@@ -58,6 +59,10 @@ groups:
         summary: Blackbox SSL certificate will expire soon (instance {{ $labels.instance }})
         description: "SSL certificate expires in less than 3 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # For probe_ssl_earliest_cert_expiry to be exposed after expiration, you
+    # need to enable insecure_skip_verify. Note that this will disable
+    # certificate validation.
+    # See https://github.com/prometheus/blackbox_exporter/blob/master/CONFIGURATION.md#tls_config
     - alert: BlackboxSslCertificateExpired
       expr: 'round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 0'
       for: 0m

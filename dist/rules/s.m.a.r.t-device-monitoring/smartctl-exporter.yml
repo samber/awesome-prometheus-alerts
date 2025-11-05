@@ -2,6 +2,7 @@ groups:
 
 - name: SmartctlExporter
 
+  
   rules:
 
     - alert: SmartDeviceTemperatureWarning

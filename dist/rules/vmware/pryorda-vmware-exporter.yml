@@ -2,6 +2,7 @@ groups:
 
 - name: PryordaVmwareExporter
 
+  
   rules:
 
     - alert: VirtualMachineMemoryWarning

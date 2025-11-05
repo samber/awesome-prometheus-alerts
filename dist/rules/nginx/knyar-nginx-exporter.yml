@@ -2,6 +2,7 @@ groups:
 
 - name: KnyarNginxExporter
 
+  
   rules:
 
     - alert: NginxHighHttp4xxErrorRate

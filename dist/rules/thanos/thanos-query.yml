@@ -2,6 +2,7 @@ groups:
 
 - name: ThanosQuery
 
+  
   rules:
 
     - alert: ThanosQueryHttpRequestQueryErrorRateHigh

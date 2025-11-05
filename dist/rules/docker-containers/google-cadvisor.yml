@@ -2,8 +2,10 @@ groups:
 
 - name: GoogleCadvisor
 
+  
   rules:
 
+    # This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
     - alert: ContainerKilled
       expr: 'time() - container_last_seen > 60'
       for: 0m
@@ -13,6 +15,7 @@ groups:
         summary: Container killed (instance {{ $labels.instance }})
         description: "A container has disappeared\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
     - alert: ContainerAbsent
       expr: 'absent(container_last_seen)'
       for: 5m
@@ -31,6 +34,7 @@ groups:
         summary: Container High CPU utilization (instance {{ $labels.instance }})
         description: "Container CPU utilization is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
     - alert: ContainerHighMemoryUsage
       expr: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
       for: 2m

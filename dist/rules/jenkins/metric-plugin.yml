@@ -2,6 +2,7 @@ groups:
 
 - name: MetricPlugin
 
+  
   rules:
 
     - alert: JenkinsOffline
@@ -58,6 +59,12 @@ groups:
         summary: Jenkins build tests failing (instance {{ $labels.instance }})
         description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # * RUNNING  -1 true  - The build had no errors.
+    # * SUCCESS   0 true  - The build had no errors.
+    # * UNSTABLE  1 true  - The build had some errors but they were not fatal. For example, some tests failed.
+    # * FAILURE   2 false - The build had a fatal error.
+    # * NOT_BUILT 3 false - The module was not built.
+    # * ABORTED   4 false - The build was manually aborted.
     - alert: JenkinsLastBuildFailed
       expr: 'default_jenkins_builds_last_build_result_ordinal == 2'
       for: 0m

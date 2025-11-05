@@ -2,6 +2,7 @@ groups:
 
 - name: RabbitmqExporter
 
+  
   rules:
 
     - alert: RabbitmqNodeDown
