@@ -15,7 +15,7 @@ groups:
 
     - alert: PrometheusTargetMissing
       expr: 'up == 0'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:

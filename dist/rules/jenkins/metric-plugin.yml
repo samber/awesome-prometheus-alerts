@@ -4,14 +4,14 @@ groups:
 
   rules:
 
-    - alert: JenkinsOffline
+    - alert: JenkinsNodeOffline
       expr: 'jenkins_node_offline_value > 1'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
-        summary: Jenkins offline (instance {{ $labels.instance }})
-        description: "Jenkins offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Jenkins node offline (instance {{ $labels.instance }})
+        description: "Jenkins node offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: JenkinsHealthcheck
       expr: 'jenkins_health_check_score < 1'
