@@ -4,14 +4,23 @@ groups:
 
   rules:
 
-    - alert: JenkinsOffline
-      expr: 'jenkins_node_offline_value > 1'
+    - alert: JenkinsNodeOffline
+      expr: 'jenkins_node_offline_value > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Jenkins node offline (instance {{ $labels.instance }})
+        description: "At least one Jenkins node offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JenkinsNoNodeOnline
+      expr: 'jenkins_node_online_value == 0'
       for: 0m
       labels:
         severity: critical
       annotations:
-        summary: Jenkins offline (instance {{ $labels.instance }})
-        description: "Jenkins offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Jenkins no node online (instance {{ $labels.instance }})
+        description: "No Jenkins nodes are online: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: JenkinsHealthcheck
       expr: 'jenkins_health_check_score < 1'

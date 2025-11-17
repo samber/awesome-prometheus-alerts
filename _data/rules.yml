@@ -3189,9 +3189,14 @@ groups:
             slug: metric-plugin
             doc_url: https://plugins.jenkins.io/prometheus/
             rules:
-              - name: Jenkins offline
-                description: "Jenkins offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                query: "jenkins_node_offline_value > 1"
+              - name: Jenkins node offline
+                description: "At least one Jenkins node offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: "jenkins_node_offline_value > 0"
+                severity: critical
+                for: 5m
+              - name: Jenkins no node online
+                description: "No Jenkins nodes are online: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: "jenkins_node_online_value == 0"
                 severity: critical
               - name: Jenkins healthcheck
                 description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
