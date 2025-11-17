@@ -2,6 +2,7 @@ groups:
 
 - name: Zfs_exporter
 
+  
   rules:
 
     - alert: ZfsPoolOutOfSpace
@@ -13,6 +14,13 @@ groups:
         summary: ZFS pool out of space (instance {{ $labels.instance }})
         description: "Disk is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 0: ONLINE
+    # 1: DEGRADED
+    # 2: FAULTED
+    # 3: OFFLINE
+    # 4: UNAVAIL
+    # 5: REMOVED
+    # 6: SUSPENDED
     - alert: ZfsPoolUnhealthy
       expr: 'zfs_pool_health > 0'
       for: 0m

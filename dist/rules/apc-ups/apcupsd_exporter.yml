@@ -2,6 +2,7 @@ groups:
 
 - name: Apcupsd_exporter
 
+  
   rules:
 
     - alert: ApcUpsBatteryNearlyEmpty

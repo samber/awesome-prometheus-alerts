@@ -18,7 +18,7 @@ Please ensure your pull request adheres to the following guidelines:
 
 ## Improving Github page
 
-### Run localy
+### Run locally
 
 ```
 gem install bundler

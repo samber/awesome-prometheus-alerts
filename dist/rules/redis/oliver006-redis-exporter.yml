@@ -2,6 +2,7 @@ groups:
 
 - name: Oliver006RedisExporter
 
+  
   rules:
 
     - alert: RedisDown
@@ -67,6 +68,7 @@ groups:
         summary: Redis missing backup (instance {{ $labels.instance }})
         description: "Redis has not been backuped for 24 hours\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # The exporter must be started with --include-system-metrics flag or REDIS_EXPORTER_INCL_SYSTEM_METRICS=true environment variable.
     - alert: RedisOutOfSystemMemory
       expr: 'redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90'
       for: 2m

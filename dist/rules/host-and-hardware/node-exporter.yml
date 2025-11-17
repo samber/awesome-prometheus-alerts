@@ -2,6 +2,7 @@ groups:
 
 - name: NodeExporter
 
+  
   rules:
 
     - alert: HostOutOfMemory
@@ -22,6 +23,7 @@ groups:
         summary: Host memory under memory pressure (instance {{ $labels.instance }})
         description: "The node is under heavy memory pressure. High rate of loading memory pages from disk.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
     - alert: HostMemoryIsUnderutilized
       expr: 'min_over_time(node_memory_MemFree_bytes[1w]) > node_memory_MemTotal_bytes * .8'
       for: 0m
@@ -58,6 +60,9 @@ groups:
         summary: Host unusual disk read rate (instance {{ $labels.instance }})
         description: "Disk is too busy (IO wait > 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Please add ignored mountpoints in node_exporter parameters like
+    # "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+    # Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
     - alert: HostOutOfDiskSpace
       expr: '(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} / node_filesystem_size_bytes < .10 and on (instance, device, mountpoint) node_filesystem_readonly == 0)'
       for: 2m
@@ -67,6 +72,9 @@ groups:
         summary: Host out of disk space (instance {{ $labels.instance }})
         description: "Disk is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Please add ignored mountpoints in node_exporter parameters like
+    # "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+    # Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
     - alert: HostDiskMayFillIn24Hours
       expr: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[3h], 86400) <= 0 and node_filesystem_avail_bytes > 0'
       for: 2m
@@ -130,6 +138,7 @@ groups:
         summary: Host high CPU load (instance {{ $labels.instance }})
         description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
     - alert: HostCpuIsUnderutilized
       expr: '(min by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > 0.8'
       for: 1w
@@ -166,6 +175,9 @@ groups:
         summary: Host unusual disk IO (instance {{ $labels.instance }})
         description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities. Check storage for issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # x2 context switches is an arbitrary number.
+    # The alert threshold depends on the nature of the application.
+    # Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
     - alert: HostContextSwitchingHigh
       expr: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) / (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2'
       for: 0m

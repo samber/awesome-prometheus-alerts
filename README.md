@@ -106,6 +106,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules#promtail)
 - [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules#cortex)
 - [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
+- [OpenTelemetry Collector](https://samber.github.io/awesome-prometheus-alerts/rules#opentelemetry-collector)
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
 

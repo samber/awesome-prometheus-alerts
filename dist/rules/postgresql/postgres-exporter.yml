@@ -2,6 +2,7 @@ groups:
 
 - name: PostgresExporter
 
+  
   rules:
 
     - alert: PostgresqlDown
@@ -166,6 +167,7 @@ groups:
         summary: Postgresql too many locks acquired (instance {{ $labels.instance }})
         description: "Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
     - alert: PostgresqlBloatIndexHigh(>80%)
       expr: 'pg_bloat_btree_bloat_pct > 80 and on (idxname) (pg_bloat_btree_real_size > 100000000)'
       for: 1h
@@ -175,6 +177,7 @@ groups:
         summary: Postgresql bloat index high (> 80%) (instance {{ $labels.instance }})
         description: "The index {{ $labels.idxname }} is bloated. You should execute `REINDEX INDEX CONCURRENTLY {{ $labels.idxname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
     - alert: PostgresqlBloatTableHigh(>80%)
       expr: 'pg_bloat_table_bloat_pct > 80 and on (relname) (pg_bloat_table_real_size > 200000000)'
       for: 1h
@@ -184,6 +187,7 @@ groups:
         summary: Postgresql bloat table high (> 80%) (instance {{ $labels.instance }})
         description: "The table {{ $labels.relname }} is bloated. You should execute `VACUUM {{ $labels.relname }};`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
     - alert: PostgresqlInvalidIndex
       expr: 'pg_general_index_info_pg_relation_size{indexrelname=~".*ccnew.*"}'
       for: 6h

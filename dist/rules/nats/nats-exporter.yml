@@ -2,6 +2,7 @@ groups:
 
 - name: NatsExporter
 
+  
   rules:
 
     - alert: NatsHighConnectionCount

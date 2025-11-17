@@ -2,6 +2,7 @@ groups:
 
 - name: EmbeddedExporter
 
+  
   rules:
 
     - alert: LokiProcessTooManyRestarts
