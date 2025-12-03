@@ -3179,11 +3179,7 @@ groups:
           - slug: embedded-exporter
             rules:
               - name: Grafana Alloy service down
-                description: |-
-              Grafana Alloy service on {{ $labels.instance }} is not responding or has stopped running.
-              This may indicate the Alloy agent has crashed or the VM is down.
-              VALUE = {{ $value }}
-              LABELS = {{ $labels }}
+                description: "Grafana Alloy service on {{ $labels.instance }} is not responding or has stopped running. This may indicate the Alloy agent has crashed or the VM is down."
                 query: "max_over_time(up{job="alloy"}[5m]) unless up"
                 severity: critical
 
