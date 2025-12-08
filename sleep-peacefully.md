@@ -55,9 +55,9 @@ groups:
       expr: absent(europe_paris_weekday)
 
     - record: europe_london_business_hours
-      expr: 9 < europe_london_hour < 18
+      expr: 9 <= europe_london_hour < 18
     - record: europe_paris_business_hours
-      expr: 9 < europe_paris_hour < 18
+      expr: 9 <= europe_paris_hour < 18
     # opposite
     - record: not_europe_london_business_hours
       expr: absent(europe_london_business_hours)
