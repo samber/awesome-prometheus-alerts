@@ -130,7 +130,7 @@ groups:
         description: "Disk latency is growing (write operations > 100ms)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostHighCpuLoad
-      expr: '1 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > .80'
+      expr: '1 - (avg without (cpu) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > .80'
       for: 10m
       labels:
         severity: warning
@@ -140,7 +140,7 @@ groups:
 
     # You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
     - alert: HostCpuIsUnderutilized
-      expr: '(min by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > 0.8'
+      expr: '(min without (cpu) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > 0.8'
       for: 1w
       labels:
         severity: info
@@ -149,7 +149,7 @@ groups:
         description: "CPU load has been < 20% for 1 week. Consider reducing the number of CPUs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostCpuStealNoisyNeighbor
-      expr: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
+      expr: 'avg without (cpu) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
       for: 0m
       labels:
         severity: warning
@@ -158,7 +158,7 @@ groups:
         description: "CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HostCpuHighIowait
-      expr: 'avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) > .10'
+      expr: 'avg without (cpu) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) > .10'
       for: 0m
       labels:
         severity: warning

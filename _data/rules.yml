@@ -207,23 +207,23 @@ groups:
                 for: 2m
               - name: Host high CPU load
                 description: CPU load is > 80%
-                query: '1 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > .80'
+                query: '1 - (avg without (cpu) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > .80'
                 severity: warning
                 for: 10m
               - name: Host CPU is underutilized
                 description: "CPU load has been < 20% for 1 week. Consider reducing the number of CPUs."
-                query: '(min by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > 0.8'
+                query: '(min without (cpu) (rate(node_cpu_seconds_total{mode="idle"}[1h]))) > 0.8'
                 severity: info
                 for: 1w
                 comments: |
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host CPU steal noisy neighbor
                 description: CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
-                query: 'avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
+                query: 'avg without (cpu) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10'
                 severity: warning
               - name: Host CPU high iowait
                 description: CPU iowait > 10%. Your CPU is idling waiting for storage to respond.
-                query: 'avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) > .10'
+                query: 'avg without (cpu) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) > .10'
                 severity: warning
               - name: Host unusual disk IO
                 description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities. Check storage for issues."
