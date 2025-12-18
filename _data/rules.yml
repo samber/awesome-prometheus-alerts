@@ -152,11 +152,11 @@ groups:
                   You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
               - name: Host unusual network throughput in
                 description: Host receive bandwidth is high (>80%).
-                query: "((rate(node_network_receive_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80)"
+                query: "((rate(node_network_receive_bytes_total[5m]) / node_network_speed_bytes) > .80)"
                 severity: warning
               - name: Host unusual network throughput out
                 description: Host transmit bandwidth is high (>80%)
-                query: "((rate(node_network_transmit_bytes_total[5m]) / on(instance, device) node_network_speed_bytes) > .80)"
+                query: "((rate(node_network_transmit_bytes_total[5m]) / node_network_speed_bytes) > .80)"
                 severity: warning
               - name: Host unusual disk read rate
                 description: Disk is too busy (IO wait > 80%)
