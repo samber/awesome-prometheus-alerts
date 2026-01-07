@@ -2219,6 +2219,11 @@ groups:
                 description: "Job {{ $labels.namespace }}/{{ $labels.job_name }} did not start for 10 minutes"
                 query: "kube_job_status_active == 0 and kube_job_status_failed == 0 and kube_job_status_succeeded == 0 and (time() - kube_job_status_start_time) > 600"
                 severity: warning
+              - name: Kubernetes CronJob failing
+                summary: Kubernetes CronJob failing ({{ $labels.namespace }}/{{ $labels.cronjob }})
+                description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is failing"
+                query: "(kube_cronjob_status_last_schedule_time > kube_cronjob_status_last_successful_time) AND (kube_cronjob_status_active == 0) AND (kube_cronjob_spec_suspend == 0)"
+                severity: critical
               - name: Kubernetes CronJob suspended
                 summary: Kubernetes CronJob suspended ({{ $labels.namespace }}/{{ $labels.cronjob }})
                 description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is suspended"
