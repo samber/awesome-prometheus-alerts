@@ -1372,17 +1372,17 @@ groups:
                 description: "Critical replica errors detected, either all replicas are stale or lost."
                 query: "ClickHouseErrorMetric_ALL_REPLICAS_ARE_STALE == 1 or ClickHouseErrorMetric_ALL_REPLICAS_LOST == 1"
                 severity: critical
-                for: 0m
+                for: 1m
               - name: ClickHouse No Available Replicas
                 description: "No available replicas in ClickHouse."
                 query: "ClickHouseErrorMetric_NO_AVAILABLE_REPLICA == 1"
                 severity: critical
-                for: 0m
+                for: 1m
               - name: ClickHouse No Live Replicas
                 description: "There are too few live replicas available, risking data loss and service disruption."
                 query: "ClickHouseErrorMetric_TOO_FEW_LIVE_REPLICAS == 1"
                 severity: critical
-                for: 0m
+                for: 1m
               - name: ClickHouse High Network Traffic
                 description: "Network traffic is unusually high, may affect cluster performance."
                 query: "ClickHouseMetrics_NetworkSend > 250 or ClickHouseMetrics_NetworkReceive > 250"
@@ -1411,12 +1411,12 @@ groups:
                 description: "Authentication failures detected, indicating potential security issues or misconfiguration."
                 query: "increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 0"
                 severity: info
-                for: 0m
+                for: 1m
               - name: ClickHouse Access Denied Errors
                 description: "Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts."
                 query: "increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0"
                 severity: info
-                for: 0m
+                for: 1m
               - name: ClickHouse rejected insert queries
                 description: "INSERTs rejected due to too many active data parts. Reduce insert frequency."
                 query: "increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 0"
@@ -2106,7 +2106,7 @@ groups:
                 description: "All Caddy reverse proxies are down"
                 query: "count(caddy_reverse_proxy_upstreams_healthy) by (upstream) == 0"
                 severity: critical
-                for: 0m
+                for: 1m
               - name: Caddy high HTTP 4xx error rate service
                 description: "Caddy service 4xx error rate is above 5%"
                 query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"4.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
@@ -2886,7 +2886,7 @@ groups:
                 description: "Thanos Compact {{$labels.job}} has not uploaded anything for 24 hours."
                 query: '(time() - max by (job) (max_over_time(thanos_objstore_bucket_last_successful_upload_time{job=~".*thanos-compact.*"}[24h]))) / 60 / 60 > 24'
                 severity: warning
-                for: 0m
+                for: 1m
           - name: Thanos Query
             slug: thanos-query
             rules:
