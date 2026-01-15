@@ -13,7 +13,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
       <img src="https://samber.github.io/awesome-prometheus-alerts/assets/sponsor-cast-ai.png" width="200" alt="Cast AI">
     </div>
     <div>
-      Run Kubernetes on autopilot – faster, smarter, cost-optimized.
+      Cut Kubernetes & AI costs, boost application stability.
     </div>
   </a>
   <br>
