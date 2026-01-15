@@ -8,6 +8,15 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
   <hr>
   <sup><b>Sponsored by:</b></sup>
   <br>
+  <a href="https://cast.ai/samuel">
+    <div>
+      <img src="https://github.com/user-attachments/assets/70e24e74-a90c-4488-8efb-4ae75f47a60d" width="200" alt="Cast AI">
+    </div>
+    <div>
+      Run Kubernetes on autopilot – faster, smarter, cost-optimized.
+    </div>
+  </a>
+  <br>
   <a href="https://betterstack.com">
     <div>
       <img src="https://samber.github.io/awesome-prometheus-alerts/assets/sponsor-betterstack.png" width="200" alt="Better Stack">
