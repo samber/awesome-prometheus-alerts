@@ -10,7 +10,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
   <br>
   <a href="https://cast.ai/samuel">
     <div>
-      <img src="https://github.com/user-attachments/assets/70e24e74-a90c-4488-8efb-4ae75f47a60d" width="200" alt="Cast AI">
+      <img src="https://samber.github.io/awesome-prometheus-alerts/assets/sponsor-cast-ai.png" width="200" alt="Cast AI">
     </div>
     <div>
       Run Kubernetes on autopilot – faster, smarter, cost-optimized.
