@@ -271,7 +271,7 @@ groups:
                 severity: info
               - name: Host OOM kill detected
                 description: OOM kill detected
-                query: "(increase(node_vmstat_oom_kill[1m]) > 0)"
+                query: "(increase(node_vmstat_oom_kill[30m]) > 0)"
                 severity: warning
               - name: Host EDAC Correctable Errors detected
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 5 minutes.'
