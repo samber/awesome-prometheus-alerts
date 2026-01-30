@@ -250,8 +250,9 @@ groups:
         summary: Host kernel version deviations (instance {{ $labels.instance }})
         description: "Kernel version for {{ $labels.instance }} has changed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # When a machine runs out of memory, the node exporter can become unresponsive for several minutes. Even if the system takes 15–20 minutes to recover, the alert should still trigger.
     - alert: HostOomKillDetected
-      expr: '(increase(node_vmstat_oom_kill[1m]) > 0)'
+      expr: '(increase(node_vmstat_oom_kill[30m]) > 0)'
       for: 0m
       labels:
         severity: warning
