@@ -15,7 +15,7 @@ groups:
         description: "A Prometheus job has disappeared\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PrometheusTargetMissing
-      expr: 'up == 0 unless sum by (job) (up) == count by (job) (up)'
+      expr: 'up == 0 unless on(job) (sum by (job) (up) == 0)'
       for: 0m
       labels:
         severity: critical
@@ -24,7 +24,7 @@ groups:
         description: "A Prometheus target has disappeared. An exporter might be crashed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PrometheusAllTargetsMissing
-      expr: 'sum by (job) (up) == 0 and count by (job) (up) > 1'
+      expr: 'sum by (job) (up) == 0'
       for: 0m
       labels:
         severity: critical
