@@ -19,8 +19,11 @@ groups:
                 severity: warning
               - name: Prometheus target missing
                 description: A Prometheus target has disappeared. An exporter might be crashed.
-                query: "up == 0"
+                query: "up == 0 unless on(job) (sum by (job) (up) == 0)"
                 severity: critical
+                comments: |
+                  Only fire if at least one target in the job is still up.
+                  If all targets are down, PrometheusJobMissing or PrometheusAllTargetsMissing will fire instead.
               - name: Prometheus all targets missing
                 description: A Prometheus job does not have living target anymore.
                 query: "sum by (job) (up) == 0"
