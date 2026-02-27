@@ -247,6 +247,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: Host systemd service crashed
+                summary: Host systemd service {{ $labels.name }} crashed (instance {{ $labels.instance }})
                 description: "systemd service crashed"
                 query: '(node_systemd_unit_state{state="failed"} == 1)'
                 severity: warning
