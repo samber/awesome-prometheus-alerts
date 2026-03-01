@@ -141,3 +141,116 @@ ul#sponsoring li a img {
 .page-header {
     padding-bottom: 30px;
 }
+
+@media (prefers-color-scheme: dark) {
+
+    #rules-navbar.affix {
+        background-color: #2b2b2b;
+    }
+
+    /*********************** style.css overrides ******************************/
+    /* This should *probably* be its own theme instead. */
+
+    body {
+	color: #a3b0b6;
+        background-color: #242424;
+    }
+    .page-header {
+	color: #fff;
+	text-align: center;
+	background-color: #006128;
+	background-image: linear-gradient(120deg, #002968, #003c04);
+    }
+    .site-footer {
+	border-top: solid 1px #525354;
+    }
+    hr {
+        background-color: #525354!important;
+    }
+    a {
+        color: #3d86d6;
+    }
+    .main-content h1 ,
+    .main-content h2 ,
+    .main-content h3 ,
+    .main-content h4 ,
+    .main-content h5 ,
+    .main-content h6 {
+	color: #55c883;
+    }
+
+    /* Syntax Highlighting from dark-plus of pygments-styles */
+    /* See: https://github.com/lepture/pygments-styles */
+    .main-content pre {
+        background: #1E1E1E;
+	border: solid 1px #272f36;
+    }
+    code, .highlight {
+        background: #1E1E1E;
+        color: #D4D4D4
+    }
+    .highlight .hll {
+        background-color: #ADD6FF26
+    }
+    .highlight .c   { color: #6A9955 }
+    .highlight .err { color: #F44747 }
+    .highlight .k   { color: #C586C0 }
+    .highlight .l   { color: #CE9178 }
+    .highlight .ch  { color: #6A9955 }
+    .highlight .cm  { color: #6A9955 }
+    .highlight .cp  { color: #C586C0 }
+    .highlight .cpf { color: #CE9178 }
+    .highlight .c1  { color: #6A9955 }
+    .highlight .cs  { color: #6A9955 }
+    .highlight .gd  { color: #CE9178 }
+    .highlight .ge  { font-style: italic }
+    .highlight .gr  { color: #F44747 }
+    .highlight .gh  { color: #569CD6 }
+    .highlight .gi  { color: #B5CEA8 }
+    .highlight .go  { color: #CE9178 }
+    .highlight .gp  { color: #C8C8C8 }
+    .highlight .gs  { color: #569CD6; font-weight: bold }
+    .highlight .gu  { color: #569CD6 }
+    .highlight .gt  { color: #F44747 }
+    .highlight .kc  { color: #CE9178 }
+    .highlight .kd  { color: #C586C0 }
+    .highlight .kn  { color: #C586C0 }
+    .highlight .kp  { color: #D7BA7D }
+    .highlight .kr  { color: #C586C0 }
+    .highlight .kt  { color: #569CD6 }
+    .highlight .ld  { color: #CE9178 }
+    .highlight .m   { color: #B5CEA8 }
+    .highlight .s   { color: #CE9178 }
+    .highlight .na  { color: #9CDCFE }
+    .highlight .nb  { color: #DCDCAA }
+    .highlight .nc  { color: #4EC9B0 }
+    .highlight .no  { color: #B5CEA8 }
+    .highlight .nd  { color: #DCDCAA }
+    .highlight .ne  { color: #4EC9B0 }
+    .highlight .nf  { color: #DCDCAA }
+    .highlight .nl  { color: #C8C8C8 }
+    .highlight .nx  { color: #D4D4D4 }
+    .highlight .nt  { color: #569CD6 }
+    .highlight .w   { color: #D4D4D4 }
+    .highlight .mb  { color: #B5CEA8 }
+    .highlight .mf  { color: #B5CEA8 }
+    .highlight .mh  { color: #B5CEA8 }
+    .highlight .mi  { color: #B5CEA8 }
+    .highlight .mo  { color: #B5CEA8 }
+    .highlight .sa  { color: #CE9178 }
+    .highlight .sb  { color: #CE9178 }
+    .highlight .sc  { color: #CE9178 }
+    .highlight .dl  { color: #CE9178 }
+    .highlight .sd  { color: #CE9178 }
+    .highlight .s2  { color: #CE9178 }
+    .highlight .se  { color: #CE9178 }
+    .highlight .sh  { color: #CE9178 }
+    .highlight .si  { color: #569CD6 }
+    .highlight .sx  { color: #CE9178 }
+    .highlight .sr  { color: #D16969 }
+    .highlight .s1  { color: #CE9178 }
+    .highlight .ss  { color: #CE9178 }
+    .highlight .bp  { color: #D7BA7D }
+    .highlight .fm  { color: #DCDCAA }
+    .highlight .il  { color: #B5CEA8 }
+}
