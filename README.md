@@ -141,10 +141,6 @@ Give a ⭐️ if this project helped you!
 
 [![support us](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/samber)
 
-## 👏 Thanks
-
-Gratitude for the Gitlab operation team that provided 50+ rules. \o/
-
 ## 📝 License
 
 [![CC4](https://mirrors.creativecommons.org/presskit/cc.srr.primary.svg)](https://creativecommons.org/licenses/by/4.0/legalcode)
