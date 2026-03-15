@@ -74,6 +74,9 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 
 - [PHP-FPM](https://samber.github.io/awesome-prometheus-alerts/rules#php-fpm)
 - [JVM](https://samber.github.io/awesome-prometheus-alerts/rules#jvm)
+- [Golang](https://samber.github.io/awesome-prometheus-alerts/rules#golang)
+- [Ruby](https://samber.github.io/awesome-prometheus-alerts/rules#ruby)
+- [Python](https://samber.github.io/awesome-prometheus-alerts/rules#python)
 - [Sidekiq](https://samber.github.io/awesome-prometheus-alerts/rules#sidekiq)
 
 #### Orchestrators
