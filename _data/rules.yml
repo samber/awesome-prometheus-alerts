@@ -2144,9 +2144,12 @@ groups:
                 for: 2m
               - name: JVM non-heap memory filling up
                 description: JVM non-heap memory (metaspace/code cache) is filling up (> 80%)
-                query: '(sum by (instance)(jvm_memory_used_bytes{area="nonheap"}) / sum by (instance)(jvm_memory_max_bytes{area="nonheap"})) * 100 > 80'
+                query: '(sum by (instance)(jvm_memory_used_bytes{area="nonheap"}) / (sum by (instance)(jvm_memory_max_bytes{area="nonheap"}) > 0)) * 100 > 80'
                 severity: warning
                 for: 2m
+                comments: |
+                  Many JVM configurations leave metaspace unbounded, in which case jvm_memory_max_bytes{area="nonheap"} is -1 and this alert will not fire.
+                  The query filters out max_bytes <= 0 to avoid false negatives.
               - name: JVM GC time too high
                 description: JVM is spending too much time in garbage collection (> 5% of wall clock time)
                 query: 'sum by (instance)(rate(jvm_gc_collection_seconds_sum[5m])) > 0.05'
@@ -2172,6 +2175,9 @@ groups:
                 query: 'rate(jvm_gc_collection_seconds_count{gc=~".*old.*|.*major.*"}[5m]) > 0.3'
                 severity: warning
                 for: 5m
+                comments: |
+                  This regex matches CMS, G1, and Parallel collector names. It will not match ZGC or Shenandoah cycle names.
+                  Adjust the gc label filter if you use a different collector.
               - name: JVM direct buffer pool filling up
                 description: JVM direct buffer pool is filling up (> 90%)
                 query: '(jvm_buffer_pool_used_bytes / jvm_buffer_pool_capacity_bytes) * 100 > 90'
@@ -2187,6 +2193,9 @@ groups:
                 query: '(process_open_fds / process_max_fds) * 100 > 90'
                 severity: warning
                 for: 5m
+                comments: |
+                  process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not JVM-specific.
+                  This alert will also fire for Go, Python, or any process exposing these metrics.
               - name: JVM class loading anomaly
                 description: Rapid class loading detected, potential classloader leak
                 query: 'rate(jvm_classes_loaded_total[5m]) > 100'
@@ -2209,34 +2218,49 @@ groups:
                 query: 'go_goroutines > 1000'
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold is a rough default. High-concurrency servers may legitimately run thousands of goroutines. Adjust to match your baseline.
               - name: Go GC duration high
                 description: Go GC pause duration is too high (max > 1s)
                 query: 'go_gc_duration_seconds{quantile="1"} > 1'
                 severity: warning
                 for: 5m
+                comments: |
+                  quantile="1" is the maximum observed GC pause in the current summary window, not p99.
+                  A single outlier pause can push this above 1s. The for: 5m ensures the max stays elevated.
               - name: Go memory usage high
-                description: Go heap memory usage is high (> 90% of system memory)
+                description: Go heap allocation is using most of the runtime's reserved memory (> 90%), indicating the process may need more memory or has a leak
                 query: '(go_memstats_heap_alloc_bytes / go_memstats_sys_bytes) * 100 > 90'
                 severity: warning
                 for: 5m
+                comments: |
+                  go_memstats_sys_bytes is the total memory obtained from the OS by the Go runtime, not total host memory.
+                  This ratio measures Go-internal memory utilization, not system-level memory pressure.
               - name: Go thread count high
                 description: Go OS thread count is high (> 50), potential blocking syscall or CGo leak
                 query: 'go_threads > 50'
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold is workload-dependent. Applications with heavy CGo or blocking I/O may legitimately use more OS threads. Adjust to match your baseline.
               - name: Go heap objects count high
                 description: Go heap has too many live objects (> 10M), high GC pressure
                 query: 'go_memstats_heap_objects > 10000000'
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold is a rough default. Adjust based on your application's normal object count.
               - name: Go GC CPU fraction high
                 description: Go GC is consuming too much CPU (> 5%)
                 query: 'go_memstats_gc_cpu_fraction > 0.05'
                 severity: warning
                 for: 5m
+                comments: |
+                  go_memstats_gc_cpu_fraction is deprecated since Go 1.20 and may return 0 in newer versions.
+                  Consider using runtime/metrics-based alternatives if running Go >= 1.20.
               - name: Go goroutine spike
                 description: Go goroutine count is growing rapidly
-                query: 'rate(go_goroutines[5m]) > 100'
+                query: 'deriv(go_goroutines[5m]) > 100'
                 severity: warning
                 for: 5m
               - name: Go heap fragmentation
@@ -2266,6 +2290,8 @@ groups:
                 query: 'ruby_heap_live_slots > 500000'
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold is a rough default. Adjust based on your application's normal heap size.
               - name: Ruby heap free slots high
                 description: Ruby heap has too many free slots (> 500k), memory fragmentation after large allocations
                 query: 'ruby_heap_free_slots > 500000'
@@ -2295,7 +2321,7 @@ groups:
             rules:
               - name: Python GC objects uncollectable
                 description: Python has uncollectable objects, potential memory leak via reference cycles
-                query: 'python_gc_objects_uncollectable_total > 0'
+                query: 'increase(python_gc_objects_uncollectable_total[5m]) > 0'
                 severity: warning
                 for: 5m
               - name: Python GC collections high
@@ -2308,6 +2334,8 @@ groups:
                 query: '(process_open_fds / process_max_fds) * 100 > 90'
                 severity: warning
                 for: 5m
+                comments: |
+                  process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
               - name: Python GC generation 2 collections high
                 description: Python full GC (generation 2) is running too frequently, indicating memory pressure
                 query: 'rate(python_gc_collections_total{generation="2"}[5m]) > 1'
@@ -2318,6 +2346,8 @@ groups:
                 query: 'process_virtual_memory_bytes > 4e9'
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold is a rough default. Adjust based on your application's expected memory footprint.
 
       - name: Sidekiq
         exporters:
