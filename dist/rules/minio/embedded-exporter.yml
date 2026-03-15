@@ -24,7 +24,7 @@ groups:
         description: "Minio cluster node disk is offline\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MinioDiskSpaceUsage
-      expr: 'disk_storage_available / disk_storage_total * 100 < 10'
+      expr: 'minio_cluster_capacity_raw_free_bytes / minio_cluster_capacity_raw_total_bytes * 100 < 10'
       for: 0m
       labels:
         severity: warning

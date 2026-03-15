@@ -51,14 +51,14 @@ groups:
         summary: Host unusual network throughput out (instance {{ $labels.instance }})
         description: "Host transmit bandwidth is high (>80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: HostUnusualDiskReadRate
+    - alert: HostDiskIoUtilizationHigh
       expr: '(rate(node_disk_io_time_seconds_total[5m]) > .80)'
       for: 0m
       labels:
         severity: warning
       annotations:
-        summary: Host unusual disk read rate (instance {{ $labels.instance }})
-        description: "Disk is too busy (IO wait > 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Host disk IO utilization high (instance {{ $labels.instance }})
+        description: "Disk utilization is high (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Please add ignored mountpoints in node_exporter parameters like
     # "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".

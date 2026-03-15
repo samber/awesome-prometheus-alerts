@@ -141,7 +141,7 @@ groups:
         description: "PostgreSQL dead tuples is too large\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PostgresqlConfigurationChanged
-      expr: '{__name__=~"pg_settings_.*"} != ON(__name__, instance) {__name__=~"pg_settings_([^t]|t[^r]|tr[^a]|tra[^n]|tran[^s]|trans[^a]|transa[^c]|transac[^t]|transact[^i]|transacti[^o]|transactio[^n]|transaction[^_]|transaction_[^r]|transaction_r[^e]|transaction_re[^a]|transaction_rea[^d]|transaction_read[^_]|transaction_read_[^o]|transaction_read_o[^n]|transaction_read_on[^l]|transaction_read_onl[^y]).*"} OFFSET 5m'
+      expr: '{__name__=~"pg_settings_.*",__name__!="pg_settings_transaction_read_only"} != ON(__name__, instance) {__name__=~"pg_settings_.*",__name__!="pg_settings_transaction_read_only"} OFFSET 5m'
       for: 0m
       labels:
         severity: info
@@ -153,7 +153,7 @@ groups:
       expr: 'sum(pg_stat_ssl_compression) > 0'
       for: 0m
       labels:
-        severity: critical
+        severity: warning
       annotations:
         summary: Postgresql SSL compression active (instance {{ $labels.instance }})
         description: "Database allows connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
