@@ -579,6 +579,9 @@ groups:
                 description: MySQL instance is down on {{ $labels.instance }}
                 query: "mysql_up == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: MySQL too many connections (> 80%)
                 description: "More than 80% of MySQL connections are in use on {{ $labels.instance }}"
                 query: "max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80"
@@ -598,10 +601,16 @@ groups:
                 description: "MySQL Slave IO thread not running on {{ $labels.instance }}"
                 query: "( mysql_slave_status_slave_io_running and ON (instance) mysql_slave_status_master_server_id > 0 ) == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: MySQL Slave SQL thread not running
                 description: "MySQL Slave SQL thread not running on {{ $labels.instance }}"
                 query: "( mysql_slave_status_slave_sql_running and ON (instance) mysql_slave_status_master_server_id > 0) == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: MySQL Slave replication lag
                 description: "MySQL replication lag on {{ $labels.instance }}"
                 query: "( (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) and ON (instance) mysql_slave_status_master_server_id > 0 ) > 30"
@@ -651,6 +660,9 @@ groups:
                 description: Postgresql instance is down
                 query: "pg_up == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Postgresql restarted
                 description: Postgresql restarted
                 query: "time() - pg_postmaster_start_time_seconds < 60"
@@ -695,14 +707,6 @@ groups:
                 query: "rate(pg_txid_current[1m]) < 5"
                 severity: warning
                 for: 2m
-              - name: Postgresql high rate statement timeout
-                description: Postgres transactions showing high rate of statement timeouts
-                query: 'rate(postgresql_errors_total{type="statement_timeout"}[1m]) > 3'
-                severity: critical
-              - name: Postgresql high rate deadlock
-                description: Postgres detected deadlocks
-                query: 'increase(postgresql_errors_total{type="deadlock_detected"}[1m]) > 1'
-                severity: critical
               - name: Postgresql unused replication slot
                 description: Unused Replication Slots
                 query: "(pg_replication_slots_active == 0) and (pg_replication_is_replica == 0)"
@@ -719,11 +723,11 @@ groups:
                 severity: info
               - name: Postgresql SSL compression active
                 description: Database allows connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.
-                query: "sum(pg_stat_ssl_compression) > 0"
+                query: "sum by (instance) (pg_stat_ssl_compression) > 0"
                 severity: warning
               - name: Postgresql too many locks acquired
                 description: Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.
-                query: "((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20"
+                query: "((sum by (instance) (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20"
                 severity: critical
                 for: 2m
               - name: Postgresql bloat index high (> 80%)
@@ -763,10 +767,14 @@ groups:
                 description: SQL server instance is down
                 query: mssql_up == 0
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: SQL Server deadlock
-                description: SQL Server is having some deadlock.
-                query: increase(mssql_deadlocks[1m]) > 5
+                description: SQL Server {{ $labels.instance }} is experiencing deadlocks ({{ $value }}/s)
+                query: mssql_deadlocks > 5
                 severity: warning
+                for: 1m
 
       - name: Patroni
         exporters:
@@ -776,8 +784,11 @@ groups:
             rules:
               - name: Patroni has no Leader
                 description: A leader node (neither primary nor standby) cannot be found inside the cluster {{ $labels.scope }}
-                query: (max by (scope) (patroni_master) < 1) and (max by (scope) (patroni_standby_leader) < 1)
+                query: (max by (scope) (patroni_primary) < 1) and (max by (scope) (patroni_standby_leader) < 1)
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
 
       - name: PGBouncer
         exporters:
@@ -791,12 +802,12 @@ groups:
                 severity: warning
                 for: 2m
               - name: PGBouncer errors
-                description: PGBouncer is logging errors. This may be due to a a server restart or an admin typing commands at the pgbouncer console.
+                description: PGBouncer is logging errors. This may be due to a server restart or an admin typing commands at the pgbouncer console.
                 query: 'increase(pgbouncer_errors_count{errmsg!="server conn crashed?"}[1m]) > 10'
                 severity: warning
               - name: PGBouncer max connections
                 description: The number of PGBouncer client connections has reached max_client_conn.
-                query: 'increase(pgbouncer_errors_count{errmsg="no more connections allowed (max_client_conn)"}[30s]) > 0'
+                query: 'increase(pgbouncer_errors_count{errmsg="no more connections allowed (max_client_conn)"}[2m]) > 0'
                 severity: critical
 
       - name: Redis
@@ -809,6 +820,9 @@ groups:
                 description: Redis instance is down
                 query: "redis_up == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Redis missing master
                 description: Redis cluster has no node marked as master.
                 query: '(count(redis_instance_info{role="master"}) or vector(0)) < 1'
@@ -817,6 +831,9 @@ groups:
                 description: Redis cluster has too many nodes marked as master.
                 query: 'count(redis_instance_info{role="master"}) > 1'
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Redis disconnected slaves
                 description: Redis not replicating for all slaves. Consider reviewing the redis replication status.
                 query: "count without (instance, job) (redis_connected_slaves) - sum without (instance, job) (redis_connected_slaves) - 1 > 0"
@@ -831,8 +848,8 @@ groups:
                 severity: critical
                 for: 2m
               - name: Redis missing backup
-                description: Redis has not been backuped for 24 hours
-                query: "time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 24"
+                description: Redis has not been backuped for 48 hours
+                query: "time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 48"
                 severity: critical
               - name: Redis out of system memory
                 description: Redis is running out of system memory (> 90%)
@@ -858,8 +875,8 @@ groups:
                 for: 2m
               - name: Redis rejected connections
                 description: Some connections to Redis has been rejected
-                query: "increase(redis_rejected_connections_total[1m]) > 0"
-                severity: critical
+                query: "increase(redis_rejected_connections_total[1m]) > 5"
+                severity: warning
 
       - name: MongoDB
         exporters:
@@ -871,10 +888,16 @@ groups:
                 description: MongoDB instance is down
                 query: "mongodb_up == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Mongodb replica member unhealthy
                 description: MongoDB replica member is not healthy
                 query: "mongodb_rs_members_health == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: MongoDB replication lag
                 description: Mongodb replication lag is more than 10s
                 query: '(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"}) / 1000 > 10'
@@ -883,6 +906,8 @@ groups:
                 description: MongoDB replication headroom is <= 0
                 query: 'sum(avg(mongodb_mongod_replset_oplog_head_timestamp - mongodb_mongod_replset_oplog_tail_timestamp)) - sum(avg(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"})) <= 0'
                 severity: critical
+                comments: |
+                  This query mixes old (mongodb_mongod_*) and new (mongodb_rs_*) metric names. It requires the Percona exporter to run with --compatible-mode to expose both.
               - name: MongoDB number cursors open
                 description: Too many cursors opened by MongoDB for clients (> 10k)
                 query: 'mongodb_ss_metrics_cursor_open{csr_type="total"} > 10 * 1000'
@@ -895,7 +920,7 @@ groups:
                 for: 2m
               - name: MongoDB too many connections
                 description: Too many connections (> 80%)
-                query: 'avg by(instance) (rate(mongodb_ss_connections{conn_type="current"}[1m])) / avg by(instance) (sum (mongodb_ss_connections) by (instance)) * 100 > 80'
+                query: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80'
                 severity: warning
                 for: 2m
 
@@ -939,15 +964,9 @@ groups:
                 for: 2m
               - name: MongoDB too many connections
                 description: Too many connections (> 80%)
-                query: 'avg by(instance) (rate(mongodb_connections{state="current"}[1m])) / avg by(instance) (sum (mongodb_connections) by (instance)) * 100 > 80'
+                query: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80'
                 severity: warning
                 for: 2m
-              - name: MongoDB virtual memory usage
-                description: High memory usage
-                query: '(sum(mongodb_memory{type="virtual"}) BY (instance) / sum(mongodb_memory{type="mapped"}) BY (instance)) > 3'
-                severity: warning
-                for: 2m
-
           - name: stefanprodan/mgob
             slug: stefanprodan-mgob-exporter
             doc_url: https://github.com/stefanprodan/mgob
@@ -967,10 +986,16 @@ groups:
                 description: Less than 3 nodes running in RabbitMQ cluster
                 query: "sum(rabbitmq_build_info) < 3"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: RabbitMQ node not distributed
                 description: Distribution link state is not 'up'
                 query: "erlang_vm_dist_node_state < 3"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: RabbitMQ instances different versions
                 description: Running different version of RabbitMQ in the same cluster, can lead to failure.
                 query: "count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1"
@@ -978,16 +1003,16 @@ groups:
                 for: 1h
               - name: RabbitMQ memory high
                 description: A node use more than 90% of allocated RAM
-                query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90"
+                query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90 and rabbitmq_resident_memory_limit_bytes > 0"
                 severity: warning
                 for: 2m
               - name: RabbitMQ file descriptors usage
                 description: A node use more than 90% of file descriptors
-                query: "rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90"
+                query: "rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90 and rabbitmq_process_max_fds > 0"
                 severity: warning
                 for: 2m
               - name: RabbitMQ too many ready messages
-                description: RabbitMQ too many ready messages on {{ $labels.instace }}
+                description: RabbitMQ too many ready messages on {{ $labels.instance }}
                 query: "sum(rabbitmq_queue_messages_ready) BY (queue) > 1000"
                 severity: warning
                 for: 1m
@@ -1020,17 +1045,23 @@ groups:
                 description: RabbitMQ node down
                 query: "rabbitmq_up == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: RabbitMQ cluster down
                 description: Less than 3 nodes running in RabbitMQ cluster
                 query: "sum(rabbitmq_running) < 3"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: RabbitMQ cluster partition
                 description: Cluster partition
                 query: "rabbitmq_partitions > 0"
                 severity: critical
               - name: RabbitMQ out of memory
-                description: Memory available for RabbmitMQ is low (< 10%)
-                query: "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90"
+                description: Memory available for RabbitMQ is low (< 10%)
+                query: "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90 and rabbitmq_node_mem_limit > 0"
                 severity: warning
                 for: 2m
               - name: RabbitMQ too many connections
@@ -1063,14 +1094,16 @@ groups:
                 description: Queue has no consumer
                 query: "rabbitmq_queue_consumers == 0"
                 severity: critical
-                for: 1m # allows a short service restart
+                for: 5m
+                comments: |
+                  Allows a short service restart.
               - name: RabbitMQ too many consumers
                 description: Queue should have only 1 consumer
                 query: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
                 severity: critical
                 comments: |
                   Indicate the queue name in dedicated label.
-              - name: RabbitMQ unactive exchange
+              - name: RabbitMQ inactive exchange
                 description: Exchange receive less than 5 msgs per second
                 query: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
                 severity: warning
@@ -1115,10 +1148,16 @@ groups:
                 description: "Missing node in Elasticsearch cluster"
                 query: "elasticsearch_cluster_health_number_of_nodes < 3"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Elasticsearch Healthy Data Nodes
                 description: "Missing data node in Elasticsearch cluster"
                 query: "elasticsearch_cluster_health_number_of_data_nodes < 3"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Elasticsearch relocating shards
                 description: "Elasticsearch is relocating shards"
                 query: "elasticsearch_cluster_health_relocating_shards > 0"
@@ -1141,6 +1180,7 @@ groups:
                 description: "Elasticsearch has unassigned shards"
                 query: "elasticsearch_cluster_health_unassigned_shards > 0"
                 severity: critical
+                for: 2m
               - name: Elasticsearch pending tasks
                 description: "Elasticsearch has pending tasks. Cluster works slowly."
                 query: "elasticsearch_cluster_health_number_of_pending_tasks > 0"
@@ -1152,7 +1192,7 @@ groups:
                 severity: warning
               - name: Elasticsearch High Indexing Latency
                 description: "The indexing latency on Elasticsearch cluster is higher than the threshold."
-                query: "increase(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / increase(elasticsearch_indices_indexing_index_total[1m]) > 0.0005"
+                query: "increase(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / increase(elasticsearch_indices_indexing_index_total[1m]) > 0.0005 and increase(elasticsearch_indices_indexing_index_total[1m]) > 0"
                 severity: warning
                 for: 10m
               - name: Elasticsearch High Indexing Rate
@@ -1167,7 +1207,7 @@ groups:
                 for: 5m
               - name: Elasticsearch High Query Latency
                 description: "The query latency on Elasticsearch cluster is higher than the threshold."
-                query: "increase(elasticsearch_indices_search_fetch_time_seconds[1m]) / increase(elasticsearch_indices_search_fetch_total[1m]) > 1"
+                query: "increase(elasticsearch_indices_search_query_time_seconds[1m]) / increase(elasticsearch_indices_search_query_total[1m]) > 1"
                 severity: warning
                 for: 5m
 
@@ -1178,7 +1218,7 @@ groups:
             doc_url: https://github.com/orgs/meilisearch/discussions/625
             rules:
               - name: Meilisearch index is empty
-                description: Meilisearch instance is down
+                description: Meilisearch index {{ $labels.index }} has zero documents
                 query: "meilisearch_index_docs_count == 0"
                 severity: warning
               - name: Meilisearch http response time
@@ -1194,8 +1234,11 @@ groups:
             rules:
               - name: "Cassandra Node is unavailable"
                 description: "Cassandra Node is unavailable - {{ $labels.cassandra_cluster }} {{ $labels.exported_endpoint }}"
-                query: "sum(cassandra_endpoint_active) by (cassandra_cluster,instance,exported_endpoint) < 1"
+                query: "cassandra_endpoint_active < 1"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: "Cassandra many compaction tasks are pending"
                 description: "Many Cassandra compaction tasks are pending - {{ $labels.cassandra_cluster }}"
                 query: "cassandra_table_estimated_pending_compactions > 100"
@@ -1217,7 +1260,7 @@ groups:
                 severity: warning
               - name: "Cassandra connection timeouts total"
                 description: "Some connection between nodes are ending in timeout - {{ $labels.cassandra_cluster }}"
-                query: "avg(cassandra_client_request_timeouts_total) by (cassandra_cluster,instance) > 5"
+                query: "rate(cassandra_client_request_timeouts_total[5m]) by (cassandra_cluster,instance) > 5"
                 for: 2m
                 severity: critical
               - name: "Cassandra storage exceptions"
@@ -1240,7 +1283,7 @@ groups:
                 for: 2m
                 severity: critical
               - name: "Cassandra client request write failure"
-                description: "Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
+                description: "Write failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
                 query: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 0'
                 for: 2m
                 severity: critical
@@ -1260,15 +1303,15 @@ groups:
                 severity: critical
               - name: Cassandra compaction task pending
                 description: Many Cassandra compaction tasks are pending. You might need to increase I/O capacity by adding nodes to the cluster.
-                query: 'avg_over_time(cassandra_stats{name="org:apache:cassandra:metrics:compaction:pendingtasks:value"}[1m]) > 100'
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:compaction:pendingtasks:value"} > 100'
                 severity: warning
                 for: 2m
               - name: Cassandra viewwrite latency
                 description: High viewwrite latency on {{ $labels.instance }} cassandra node
-                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:viewwrite:viewwritelatency:99thpercentile",service="cas"} > 100000'
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:viewwrite:viewwritelatency:99thpercentile"} > 100000'
                 severity: warning
                 for: 2m
-              - name: Cassandra bad hacker
+              - name: Cassandra authentication failures
                 description: Increase of Cassandra authentication failures
                 query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
                 severity: warning
@@ -1277,6 +1320,9 @@ groups:
                 description: Cassandra node down
                 query: 'sum(cassandra_stats{name="org:apache:cassandra:net:failuredetector:downendpointcount"}) by (service,group,cluster,env) > 0'
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Cassandra commitlog pending tasks
                 description: Unexpected number of Cassandra commitlog pending tasks
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:commitlog:pendingtasks:value"} > 15'
@@ -1325,11 +1371,11 @@ groups:
                 severity: critical
               - name: Cassandra client request write failure
                 description: A lot of write failures encountered. A write failure is a non-timeout exception encountered during a write request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
-                query: 'increase(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"}[1m]) > 0'
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"} > 0'
                 severity: critical
               - name: Cassandra client request read failure
                 description: A lot of read failures encountered. A read failure is a non-timeout exception encountered during a read request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
-                query: 'increase(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"}[1m]) > 0'
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"} > 0'
                 severity: critical
               - name: Cassandra cache hit rate key cache
                 description: Key cache hit rate is below 85%
@@ -1348,14 +1394,16 @@ groups:
                 query: 'up{job="clickhouse"} == 0'
                 severity: critical
                 for: 2m
+                comments: |
+                  Adjust the job label to match your Prometheus configuration.
               - name: ClickHouse Memory Usage Critical
                 description: "Memory usage is critically high, over 90%."
-                query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90"
+                query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 90 and ClickHouseAsyncMetrics_CGroupMemoryTotal > 0"
                 severity: critical
                 for: 5m
               - name: ClickHouse Memory Usage Warning
                 description: "Memory usage is over 80%."
-                query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80"
+                query: "ClickHouseAsyncMetrics_CGroupMemoryUsed / ClickHouseAsyncMetrics_CGroupMemoryTotal * 100 > 80 and ClickHouseAsyncMetrics_CGroupMemoryTotal > 0"
                 severity: warning
                 for: 5m
               - name: ClickHouse Disk Space Low on Default
@@ -1388,13 +1436,6 @@ groups:
                 query: "ClickHouseErrorMetric_TOO_FEW_LIVE_REPLICAS == 1"
                 severity: critical
 
-              - name: ClickHouse High Network Traffic
-                description: "Network traffic is unusually high, may affect cluster performance."
-                query: "ClickHouseMetrics_NetworkSend > 250 or ClickHouseMetrics_NetworkReceive > 250"
-                severity: warning
-                for: 5m
-                comments: |
-                  Please replace the threshold with an appropriate value
               - name: ClickHouse High TCP Connections
                 description: "High number of TCP connections, indicating heavy client or inter-cluster communication."
                 query: "ClickHouseMetrics_TCPConnection > 400"
@@ -1403,13 +1444,15 @@ groups:
                 comments: |
                   Please replace the threshold with an appropriate value
               - name: ClickHouse Interserver Connection Issues
-                description: "An increase in interserver connections may indicate replication or distributed query handling issues."
-                query: "increase(ClickHouseMetrics_InterserverConnection[5m]) > 0"
+                description: "High number of interserver connections may indicate replication or distributed query handling issues."
+                query: "ClickHouseMetrics_InterserverConnection > 50"
                 severity: warning
-                for: 1m
+                for: 5m
+                comments: |
+                  Adjust the threshold based on your cluster size and expected replication traffic.
               - name: ClickHouse ZooKeeper Connection Issues
                 description: "ClickHouse is experiencing issues with ZooKeeper connections, which may affect cluster state and coordination."
-                query: "avg(ClickHouseMetrics_ZooKeeperSession) != 1"
+                query: "ClickHouseMetrics_ZooKeeperSession != 1"
                 severity: warning
                 for: 3m
               - name: ClickHouse Authentication Failures
@@ -1478,7 +1521,7 @@ groups:
                 for: 5m
               - name: CouchDB 5xx error ratio high
                 description: More than 5% of HTTP requests are returning 5xx errors
-                query: "rate(couchdb_httpd_status_codes{code=~\"5..\"}[5m]) / rate(couchdb_httpd_requests[5m]) > 0.05"
+                query: "rate(couchdb_httpd_status_codes{code=~\"5..\"}[5m]) / rate(couchdb_httpd_requests[5m]) > 0.05 and rate(couchdb_httpd_requests[5m]) > 0"
                 severity: critical
                 for: 5m
               - name: CouchDB temporary view read rate critical
@@ -1539,7 +1582,7 @@ groups:
               - name: CouchDB process restarted
                 description: CouchDB process has restarted recently
                 query: "changes(process_start_time_seconds[1h]) > 0"
-                severity: critical
+                severity: info
                 for: 1m
               - name: CouchDB critical log entries
                 description: Critical or error log entries detected in the last 5 minutes
@@ -1561,6 +1604,9 @@ groups:
                 description: "Zookeeper down on instance {{ $labels.instance }}"
                 query: "zk_up == 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
               - name: Zookeeper missing leader
                 description: "Zookeeper cluster has no node marked as leader"
                 query: "sum(zk_server_leader) == 0"
@@ -1585,10 +1631,10 @@ groups:
                 description: Kafka topic in-sync partition
                 query: "min(kafka_topic_partition_in_sync_replica) by (topic) < 3"
                 severity: critical
-              - name: Kafka consumers group
-                description: Kafka consumers group
-                query: "sum(kafka_consumergroup_lag) by (consumergroup) > 50"
-                severity: critical
+              - name: Kafka consumer group lag
+                description: Kafka consumer group {{ $labels.consumergroup }} is lagging behind ({{ $value }} messages)
+                query: "sum(kafka_consumergroup_lag) by (consumergroup) > 10000"
+                severity: warning
                 for: 1m
           - name: linkedin/Burrow
             slug: linkedin-kafka-exporter
@@ -1622,12 +1668,12 @@ groups:
                 severity: critical
               - name: Pulsar topic large backlog storage size
                 description: "The topic backlog storage size is over 5 GB"
-                query: sum(pulsar_storage_size > 5*1024*1024*1024) by (topic)
+                query: sum(pulsar_storage_size) by (topic) > 5*1024*1024*1024
                 for: 1h
                 severity: warning
               - name: Pulsar topic very large backlog storage size
                 description: "The topic backlog storage size is over 20 GB"
-                query: sum(pulsar_storage_size > 20*1024*1024*1024) by (topic)
+                query: sum(pulsar_storage_size) by (topic) > 20*1024*1024*1024
                 for: 1h
                 severity: critical
               - name: Pulsar high write latency
@@ -1652,12 +1698,12 @@ groups:
                 severity: critical
               - name: Pulsar high number of function errors
                 description: "Observing more than 10 Function errors per minute"
-                query: sum((rate(pulsar_function_user_exceptions_total{}[1m]) + rate(pulsar_function_system_exceptions_total{}[1m])) > 10) by (name)
+                query: sum(rate(pulsar_function_user_exceptions_total[1m]) + rate(pulsar_function_system_exceptions_total[1m])) by (name) > 10
                 for: 1m
                 severity: critical
               - name: Pulsar high number of sink errors
                 description: "Observing more than 10 Sink errors per minute"
-                query: sum(rate(pulsar_sink_sink_exceptions_total{}[1m]) > 10) by (name)
+                query: sum(rate(pulsar_sink_sink_exceptions_total[1m])) by (name) > 10
                 for: 1m
                 severity: critical
 
@@ -1667,16 +1713,6 @@ groups:
             slug: nats-exporter
             doc_url: https://github.com/nats-io/prometheus-nats-exporter
             rules:
-              - name: Nats high connection count
-                description: High number of NATS connections ({{ $value }}) for {{ $labels.instance }}
-                query: "gnatsd_varz_connections > 100"
-                severity: warning
-                for: 3m
-              - name: Nats high subscriptions count
-                description: High number of NATS subscriptions ({{ $value }}) for {{ $labels.instance }}
-                query: "gnatsd_connz_subscriptions > 50"
-                severity: warning
-                for: 3m
               - name: Nats high routes count
                 description: High number of NATS routes ({{ $value }}) for {{ $labels.instance }}
                 query: "gnatsd_varz_routes > 10"
@@ -1699,9 +1735,11 @@ groups:
                 for: 5m
               - name: Nats high CPU usage
                 description: NATS server is using more than 80% CPU for the last 5 minutes
-                query: "rate(gnatsd_varz_cpu[5m]) > 0.8"
+                query: "gnatsd_varz_cpu > 80"
                 severity: warning
                 for: 5m
+                comments: |
+                  gnatsd_varz_cpu is a gauge reporting CPU percentage (0-100 scale).
               - name: Nats high number of connections
                 description: NATS server has more than 1000 active connections
                 query: "gnatsd_connz_num_connections > 1000"
@@ -1709,12 +1747,12 @@ groups:
                 for: 5m
               - name: Nats high JetStream store usage
                 description: JetStream store usage is over 80%
-                query: "gnatsd_varz_jetstream_stats_storage / gnatsd_varz_jetstream_config_max_storage > 0.8"
+                query: "gnatsd_varz_jetstream_stats_storage / gnatsd_varz_jetstream_config_max_storage > 0.8 and gnatsd_varz_jetstream_config_max_storage > 0"
                 severity: warning
                 for: 5m
               - name: Nats high JetStream memory usage
                 description: JetStream memory usage is over 80%
-                query: "gnatsd_varz_jetstream_stats_memory / gnatsd_varz_jetstream_config_max_memory > 0.8"
+                query: "gnatsd_varz_jetstream_stats_memory / gnatsd_varz_jetstream_config_max_memory > 0.8 and gnatsd_varz_jetstream_config_max_memory > 0"
                 severity: warning
                 for: 5m
               - name: Nats high number of subscriptions
@@ -1732,35 +1770,15 @@ groups:
                 query: "increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 0"
                 severity: warning
                 for: 5m
-              - name: Nats JetStream consumers exceeded
-                description: JetStream has more than 100 active consumers
+              - name: Nats JetStream accounts exceeded
+                description: JetStream has more than 100 active accounts
                 query: "sum(gnatsd_varz_jetstream_stats_accounts) > 100"
                 severity: warning
                 for: 5m
-              - name: Nats frequent authentication timeouts
-                description: There have been more than 5 authentication timeouts in the last 5 minutes
-                query: "increase(gnatsd_varz_auth_timeout[5m]) > 5"
-                severity: warning
-                for: 5m
-              - name: Nats max payload size exceeded
-                description: The max payload size allowed by NATS has been exceeded (1MB)
-                query: "max(gnatsd_varz_max_payload) > 1024 * 1024"
-                severity: critical
-                for: 5m
               - name: Nats leaf node connection issue
-                description: No leaf node connections have been established in the last 5 minutes
-                query: "increase(gnatsd_varz_leafnodes[5m]) == 0"
-                severity: critical
-                for: 5m
-              - name: Nats max ping operations exceeded
-                description: The maximum number of ping operations in NATS has exceeded 50
-                query: "gnatsd_varz_ping_max > 50"
+                description: No leaf node connections on {{ $labels.instance }}
+                query: "gnatsd_varz_leafnodes == 0"
                 severity: warning
-                for: 5m
-              - name: Nats write deadline exceeded
-                description: The write deadline has been exceeded in NATS, indicating potential message delivery issues
-                query: "gnatsd_varz_write_deadline > 10"
-                severity: critical
                 for: 5m
 
       - name: Solr
@@ -1779,7 +1797,7 @@ groups:
                 severity: warning
                 for: 5m
               - name: Solr replication errors
-                description: Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                description: Solr collection {{ $labels.collection }} has replication errors for replica {{ $labels.replica }} on {{ $labels.base_url }}.
                 query: 'increase(solr_metrics_core_errors_total{category="REPLICATION"}[1m]) > 1'
                 severity: critical
               - name: Solr low live node count
@@ -1823,7 +1841,7 @@ groups:
 
               # Alert rule for excessive MapReduce task failures
               - name: Hadoop Map Reduce Task Failures
-                query: hadoop_mapreduce_task_failures_total > 100
+                query: increase(hadoop_mapreduce_task_failures_total[1h]) > 100
                 for: 10m
                 severity: critical
                 description: "There is an unusually high number of MapReduce task failures."
@@ -1837,7 +1855,7 @@ groups:
 
               # Alert rule for high YARN container allocation failures
               - name: Hadoop YARN Container Allocation Failures
-                query: hadoop_yarn_container_allocation_failures_total > 10
+                query: increase(hadoop_yarn_container_allocation_failures_total[1h]) > 10
                 for: 10m
                 severity: warning
                 description: "There is a significant number of YARN container allocation failures."
@@ -1851,9 +1869,9 @@ groups:
 
               # Alert rule for low HBase region server heap space
               - name: Hadoop HBase Region Server Heap Low
-                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes < 0.2
+                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8
                 for: 10m
-                severity: critical
+                severity: warning
                 description: "HBase Region Servers are running low on heap space."
 
               # Alert rule for high HBase Write Requests latency
