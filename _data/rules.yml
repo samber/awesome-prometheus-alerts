@@ -2147,6 +2147,212 @@ groups:
                 query: '(sum by (instance)(jvm_memory_used_bytes{area="heap"}) / sum by (instance)(jvm_memory_max_bytes{area="heap"})) * 100 > 80'
                 severity: warning
                 for: 2m
+              - name: JVM non-heap memory filling up
+                description: JVM non-heap memory (metaspace/code cache) is filling up (> 80%)
+                query: '(sum by (instance)(jvm_memory_used_bytes{area="nonheap"}) / (sum by (instance)(jvm_memory_max_bytes{area="nonheap"}) > 0)) * 100 > 80'
+                severity: warning
+                for: 2m
+                comments: |
+                  Many JVM configurations leave metaspace unbounded, in which case jvm_memory_max_bytes{area="nonheap"} is -1 and this alert will not fire.
+                  The query filters out max_bytes <= 0 to avoid false negatives.
+              - name: JVM GC time too high
+                description: JVM is spending too much time in garbage collection (> 5% of wall clock time)
+                query: 'sum by (instance)(rate(jvm_gc_collection_seconds_sum[5m])) > 0.05'
+                severity: warning
+                for: 5m
+              - name: JVM threads deadlocked
+                description: JVM has deadlocked threads
+                query: 'jvm_threads_deadlocked > 0'
+                severity: critical
+                for: 1m
+              - name: JVM thread count high
+                description: JVM thread count is high (> 300), potential thread leak
+                query: 'jvm_threads_current > 300'
+                severity: warning
+                for: 5m
+              - name: JVM threads BLOCKED
+                description: JVM has high number of BLOCKED threads, indicating lock contention
+                query: 'jvm_threads_state{state="BLOCKED"} > 50'
+                severity: warning
+                for: 5m
+              - name: JVM old gen GC frequency
+                description: Frequent old/major GC cycles, indicating memory pressure
+                query: 'rate(jvm_gc_collection_seconds_count{gc=~".*old.*|.*major.*"}[5m]) > 0.3'
+                severity: warning
+                for: 5m
+                comments: |
+                  This regex matches CMS, G1, and Parallel collector names. It will not match ZGC or Shenandoah cycle names.
+                  Adjust the gc label filter if you use a different collector.
+              - name: JVM direct buffer pool filling up
+                description: JVM direct buffer pool is filling up (> 90%)
+                query: '(jvm_buffer_pool_used_bytes / jvm_buffer_pool_capacity_bytes) * 100 > 90'
+                severity: warning
+                for: 5m
+              - name: JVM objects pending finalization
+                description: JVM has objects pending finalization, potential memory leak
+                query: 'jvm_memory_objects_pending_finalization > 1000'
+                severity: warning
+                for: 5m
+              - name: JVM file descriptors exhaustion
+                description: JVM process is running out of file descriptors (> 90% used)
+                query: '(process_open_fds / process_max_fds) * 100 > 90'
+                severity: warning
+                for: 5m
+                comments: |
+                  process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not JVM-specific.
+                  This alert will also fire for Go, Python, or any process exposing these metrics.
+              - name: JVM class loading anomaly
+                description: Rapid class loading detected, potential classloader leak
+                query: 'rate(jvm_classes_loaded_total[5m]) > 100'
+                severity: warning
+                for: 5m
+              - name: JVM compilation time spike
+                description: Excessive JIT compilation time consuming CPU
+                query: 'rate(jvm_compilation_time_seconds_total[5m]) > 0.1'
+                severity: warning
+                for: 5m
+
+      - name: Golang
+        exporters:
+          - name: client_golang
+            slug: golang-exporter
+            doc_url: https://github.com/prometheus/client_golang
+            rules:
+              - name: Go goroutine count high
+                description: Go application has too many goroutines (> 1000), potential goroutine leak
+                query: 'go_goroutines > 1000'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is a rough default. High-concurrency servers may legitimately run thousands of goroutines. Adjust to match your baseline.
+              - name: Go GC duration high
+                description: Go GC pause duration is too high (max > 1s)
+                query: 'go_gc_duration_seconds{quantile="1"} > 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  quantile="1" is the maximum observed GC pause in the current summary window, not p99.
+                  A single outlier pause can push this above 1s. The for: 5m ensures the max stays elevated.
+              - name: Go memory usage high
+                description: Go heap allocation is using most of the runtime's reserved memory (> 90%), indicating the process may need more memory or has a leak
+                query: '(go_memstats_heap_alloc_bytes / go_memstats_sys_bytes) * 100 > 90'
+                severity: warning
+                for: 5m
+                comments: |
+                  go_memstats_sys_bytes is the total memory obtained from the OS by the Go runtime, not total host memory.
+                  This ratio measures Go-internal memory utilization, not system-level memory pressure.
+              - name: Go thread count high
+                description: Go OS thread count is high (> 50), potential blocking syscall or CGo leak
+                query: 'go_threads > 50'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is workload-dependent. Applications with heavy CGo or blocking I/O may legitimately use more OS threads. Adjust to match your baseline.
+              - name: Go heap objects count high
+                description: Go heap has too many live objects (> 10M), high GC pressure
+                query: 'go_memstats_heap_objects > 10000000'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is a rough default. Adjust based on your application's normal object count.
+              - name: Go GC CPU fraction high
+                description: Go GC is consuming too much CPU (> 5%)
+                query: 'go_memstats_gc_cpu_fraction > 0.05'
+                severity: warning
+                for: 5m
+                comments: |
+                  go_memstats_gc_cpu_fraction is deprecated since Go 1.20 and may return 0 in newer versions.
+                  Consider using runtime/metrics-based alternatives if running Go >= 1.20.
+              - name: Go goroutine spike
+                description: Go goroutine count is growing rapidly
+                query: 'deriv(go_goroutines[5m]) > 100'
+                severity: warning
+                for: 5m
+              - name: Go heap fragmentation
+                description: Go heap has high idle ratio (> 90%), indicating memory fragmentation
+                query: 'go_memstats_heap_idle_bytes / go_memstats_heap_sys_bytes > 0.9'
+                severity: warning
+                for: 5m
+              - name: Go memory leak
+                description: Go application has sustained high allocation rate (> 1GB/s), potential memory leak
+                query: 'rate(go_memstats_alloc_bytes_total[5m]) > 1e9'
+                severity: warning
+                for: 5m
+              - name: Go stack memory high
+                description: Go stack memory usage is high (> 1GB), likely excessive goroutines or deep recursion
+                query: 'go_memstats_stack_inuse_bytes > 1e9'
+                severity: warning
+                for: 5m
+
+      - name: Ruby
+        exporters:
+          - name: prometheus_exporter
+            slug: ruby-exporter
+            doc_url: https://github.com/discourse/prometheus_exporter
+            rules:
+              - name: Ruby heap live slots high
+                description: Ruby heap has too many live slots (> 500k), heap bloat
+                query: 'ruby_heap_live_slots > 500000'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is a rough default. Adjust based on your application's normal heap size.
+              - name: Ruby heap free slots high
+                description: Ruby heap has too many free slots (> 500k), memory fragmentation after large allocations
+                query: 'ruby_heap_free_slots > 500000'
+                severity: warning
+                for: 5m
+              - name: Ruby major GC rate high
+                description: Ruby is performing too many major GC cycles, indicating memory pressure
+                query: 'rate(ruby_major_gc_ops_total[5m]) > 5'
+                severity: warning
+                for: 5m
+              - name: Ruby RSS high
+                description: Ruby process RSS is high (> 1GB)
+                query: 'ruby_rss > 1e9'
+                severity: warning
+                for: 5m
+              - name: Ruby allocated objects spike
+                description: Ruby is allocating objects at a high rate
+                query: 'rate(ruby_allocated_objects_total[5m]) > 100000'
+                severity: warning
+                for: 5m
+
+      - name: Python
+        exporters:
+          - name: client_python
+            slug: python-exporter
+            doc_url: https://github.com/prometheus/client_python
+            rules:
+              - name: Python GC objects uncollectable
+                description: Python has uncollectable objects, potential memory leak via reference cycles
+                query: 'increase(python_gc_objects_uncollectable_total[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: Python GC collections high
+                description: Python GC is collecting too many objects (> 10k/s), high allocation pressure
+                query: 'rate(python_gc_objects_collected_total[5m]) > 10000'
+                severity: warning
+                for: 5m
+              - name: Python file descriptors exhaustion
+                description: Python process is running out of file descriptors (> 90% used)
+                query: '(process_open_fds / process_max_fds) * 100 > 90'
+                severity: warning
+                for: 5m
+                comments: |
+                  process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
+              - name: Python GC generation 2 collections high
+                description: Python full GC (generation 2) is running too frequently, indicating memory pressure
+                query: 'rate(python_gc_collections_total{generation="2"}[5m]) > 1'
+                severity: warning
+                for: 5m
+              - name: Python virtual memory high
+                description: Python process virtual memory is high (> 4GB)
+                query: 'process_virtual_memory_bytes > 4e9'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is a rough default. Adjust based on your application's expected memory footprint.
 
       - name: Sidekiq
         exporters:
