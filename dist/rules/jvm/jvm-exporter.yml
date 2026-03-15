@@ -13,3 +13,108 @@ groups:
       annotations:
         summary: JVM memory filling up (instance {{ $labels.instance }})
         description: "JVM memory is filling up (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Many JVM configurations leave metaspace unbounded, in which case jvm_memory_max_bytes{area="nonheap"} is -1 and this alert will not fire.
+    # The query filters out max_bytes <= 0 to avoid false negatives.
+    - alert: JvmNon-heapMemoryFillingUp
+      expr: '(sum by (instance)(jvm_memory_used_bytes{area="nonheap"}) / (sum by (instance)(jvm_memory_max_bytes{area="nonheap"}) > 0)) * 100 > 80'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM non-heap memory filling up (instance {{ $labels.instance }})
+        description: "JVM non-heap memory (metaspace/code cache) is filling up (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmGcTimeTooHigh
+      expr: 'sum by (instance)(rate(jvm_gc_collection_seconds_sum[5m])) > 0.05'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM GC time too high (instance {{ $labels.instance }})
+        description: "JVM is spending too much time in garbage collection (> 5% of wall clock time)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmThreadsDeadlocked
+      expr: 'jvm_threads_deadlocked > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: JVM threads deadlocked (instance {{ $labels.instance }})
+        description: "JVM has deadlocked threads\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmThreadCountHigh
+      expr: 'jvm_threads_current > 300'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM thread count high (instance {{ $labels.instance }})
+        description: "JVM thread count is high (> 300), potential thread leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmThreadsBlocked
+      expr: 'jvm_threads_state{state="BLOCKED"} > 50'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM threads BLOCKED (instance {{ $labels.instance }})
+        description: "JVM has high number of BLOCKED threads, indicating lock contention\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # This regex matches CMS, G1, and Parallel collector names. It will not match ZGC or Shenandoah cycle names.
+    # Adjust the gc label filter if you use a different collector.
+    - alert: JvmOldGenGcFrequency
+      expr: 'rate(jvm_gc_collection_seconds_count{gc=~".*old.*|.*major.*"}[5m]) > 0.3'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM old gen GC frequency (instance {{ $labels.instance }})
+        description: "Frequent old/major GC cycles, indicating memory pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmDirectBufferPoolFillingUp
+      expr: '(jvm_buffer_pool_used_bytes / jvm_buffer_pool_capacity_bytes) * 100 > 90'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM direct buffer pool filling up (instance {{ $labels.instance }})
+        description: "JVM direct buffer pool is filling up (> 90%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmObjectsPendingFinalization
+      expr: 'jvm_memory_objects_pending_finalization > 1000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM objects pending finalization (instance {{ $labels.instance }})
+        description: "JVM has objects pending finalization, potential memory leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not JVM-specific.
+    # This alert will also fire for Go, Python, or any process exposing these metrics.
+    - alert: JvmFileDescriptorsExhaustion
+      expr: '(process_open_fds / process_max_fds) * 100 > 90'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM file descriptors exhaustion (instance {{ $labels.instance }})
+        description: "JVM process is running out of file descriptors (> 90% used)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmClassLoadingAnomaly
+      expr: 'rate(jvm_classes_loaded_total[5m]) > 100'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM class loading anomaly (instance {{ $labels.instance }})
+        description: "Rapid class loading detected, potential classloader leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JvmCompilationTimeSpike
+      expr: 'rate(jvm_compilation_time_seconds_total[5m]) > 0.1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: JVM compilation time spike (instance {{ $labels.instance }})
+        description: "Excessive JIT compilation time consuming CPU\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

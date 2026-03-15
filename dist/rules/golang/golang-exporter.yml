@@ -1,0 +1,105 @@
+groups:
+
+- name: GolangExporter
+
+  
+  rules:
+
+    # Threshold is a rough default. High-concurrency servers may legitimately run thousands of goroutines. Adjust to match your baseline.
+    - alert: GoGoroutineCountHigh
+      expr: 'go_goroutines > 1000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go goroutine count high (instance {{ $labels.instance }})
+        description: "Go application has too many goroutines (> 1000), potential goroutine leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # quantile="1" is the maximum observed GC pause in the current summary window, not p99.
+    # A single outlier pause can push this above 1s. The for: 5m ensures the max stays elevated.
+    - alert: GoGcDurationHigh
+      expr: 'go_gc_duration_seconds{quantile="1"} > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go GC duration high (instance {{ $labels.instance }})
+        description: "Go GC pause duration is too high (max > 1s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # go_memstats_sys_bytes is the total memory obtained from the OS by the Go runtime, not total host memory.
+    # This ratio measures Go-internal memory utilization, not system-level memory pressure.
+    - alert: GoMemoryUsageHigh
+      expr: '(go_memstats_heap_alloc_bytes / go_memstats_sys_bytes) * 100 > 90'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go memory usage high (instance {{ $labels.instance }})
+        description: "Go heap allocation is using most of the runtime's reserved memory (> 90%), indicating the process may need more memory or has a leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold is workload-dependent. Applications with heavy CGo or blocking I/O may legitimately use more OS threads. Adjust to match your baseline.
+    - alert: GoThreadCountHigh
+      expr: 'go_threads > 50'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go thread count high (instance {{ $labels.instance }})
+        description: "Go OS thread count is high (> 50), potential blocking syscall or CGo leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold is a rough default. Adjust based on your application's normal object count.
+    - alert: GoHeapObjectsCountHigh
+      expr: 'go_memstats_heap_objects > 10000000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go heap objects count high (instance {{ $labels.instance }})
+        description: "Go heap has too many live objects (> 10M), high GC pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # go_memstats_gc_cpu_fraction is deprecated since Go 1.20 and may return 0 in newer versions.
+    # Consider using runtime/metrics-based alternatives if running Go >= 1.20.
+    - alert: GoGcCpuFractionHigh
+      expr: 'go_memstats_gc_cpu_fraction > 0.05'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go GC CPU fraction high (instance {{ $labels.instance }})
+        description: "Go GC is consuming too much CPU (> 5%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GoGoroutineSpike
+      expr: 'deriv(go_goroutines[5m]) > 100'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go goroutine spike (instance {{ $labels.instance }})
+        description: "Go goroutine count is growing rapidly\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GoHeapFragmentation
+      expr: 'go_memstats_heap_idle_bytes / go_memstats_heap_sys_bytes > 0.9'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go heap fragmentation (instance {{ $labels.instance }})
+        description: "Go heap has high idle ratio (> 90%), indicating memory fragmentation\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GoMemoryLeak
+      expr: 'rate(go_memstats_alloc_bytes_total[5m]) > 1e9'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go memory leak (instance {{ $labels.instance }})
+        description: "Go application has sustained high allocation rate (> 1GB/s), potential memory leak\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GoStackMemoryHigh
+      expr: 'go_memstats_stack_inuse_bytes > 1e9'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Go stack memory high (instance {{ $labels.instance }})
+        description: "Go stack memory usage is high (> 1GB), likely excessive goroutines or deep recursion\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

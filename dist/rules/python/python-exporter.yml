@@ -1,0 +1,53 @@
+groups:
+
+- name: PythonExporter
+
+  
+  rules:
+
+    - alert: PythonGcObjectsUncollectable
+      expr: 'increase(python_gc_objects_uncollectable_total[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Python GC objects uncollectable (instance {{ $labels.instance }})
+        description: "Python has uncollectable objects, potential memory leak via reference cycles\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PythonGcCollectionsHigh
+      expr: 'rate(python_gc_objects_collected_total[5m]) > 10000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Python GC collections high (instance {{ $labels.instance }})
+        description: "Python GC is collecting too many objects (> 10k/s), high allocation pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
+    - alert: PythonFileDescriptorsExhaustion
+      expr: '(process_open_fds / process_max_fds) * 100 > 90'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Python file descriptors exhaustion (instance {{ $labels.instance }})
+        description: "Python process is running out of file descriptors (> 90% used)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PythonGcGeneration2CollectionsHigh
+      expr: 'rate(python_gc_collections_total{generation="2"}[5m]) > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Python GC generation 2 collections high (instance {{ $labels.instance }})
+        description: "Python full GC (generation 2) is running too frequently, indicating memory pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold is a rough default. Adjust based on your application's expected memory footprint.
+    - alert: PythonVirtualMemoryHigh
+      expr: 'process_virtual_memory_bytes > 4e9'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Python virtual memory high (instance {{ $labels.instance }})
+        description: "Python process virtual memory is high (> 4GB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

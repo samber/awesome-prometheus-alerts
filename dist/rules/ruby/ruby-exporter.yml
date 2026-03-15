@@ -1,0 +1,52 @@
+groups:
+
+- name: RubyExporter
+
+  
+  rules:
+
+    # Threshold is a rough default. Adjust based on your application's normal heap size.
+    - alert: RubyHeapLiveSlotsHigh
+      expr: 'ruby_heap_live_slots > 500000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Ruby heap live slots high (instance {{ $labels.instance }})
+        description: "Ruby heap has too many live slots (> 500k), heap bloat\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RubyHeapFreeSlotsHigh
+      expr: 'ruby_heap_free_slots > 500000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Ruby heap free slots high (instance {{ $labels.instance }})
+        description: "Ruby heap has too many free slots (> 500k), memory fragmentation after large allocations\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RubyMajorGcRateHigh
+      expr: 'rate(ruby_major_gc_ops_total[5m]) > 5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Ruby major GC rate high (instance {{ $labels.instance }})
+        description: "Ruby is performing too many major GC cycles, indicating memory pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RubyRssHigh
+      expr: 'ruby_rss > 1e9'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Ruby RSS high (instance {{ $labels.instance }})
+        description: "Ruby process RSS is high (> 1GB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RubyAllocatedObjectsSpike
+      expr: 'rate(ruby_allocated_objects_total[5m]) > 100000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Ruby allocated objects spike (instance {{ $labels.instance }})
+        description: "Ruby is allocating objects at a high rate\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
