@@ -161,8 +161,8 @@ groups:
                 description: Host transmit bandwidth is high (>80%)
                 query: "((rate(node_network_transmit_bytes_total[5m]) / node_network_speed_bytes) > .80)"
                 severity: warning
-              - name: Host unusual disk read rate
-                description: Disk is too busy (IO wait > 80%)
+              - name: Host disk IO utilization high
+                description: Disk utilization is high (> 80%)
                 query: "(rate(node_disk_io_time_seconds_total[5m]) > .80)"
                 severity: warning
               - name: Host out of disk space
@@ -438,7 +438,7 @@ groups:
                 description: SSL certificate expires in less than 20 days
                 query: "3 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 20"
                 severity: warning
-              - name: Blackbox SSL certificate will expire soon
+              - name: Blackbox SSL certificate will expire very soon
                 description: SSL certificate expires in less than 3 days
                 query: "0 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 3"
                 severity: critical
@@ -715,12 +715,12 @@ groups:
                 for: 2m
               - name: Postgresql configuration changed
                 description: Postgres Database configuration change has occurred
-                query: '{__name__=~"pg_settings_.*"} != ON(__name__, instance) {__name__=~"pg_settings_([^t]|t[^r]|tr[^a]|tra[^n]|tran[^s]|trans[^a]|transa[^c]|transac[^t]|transact[^i]|transacti[^o]|transactio[^n]|transaction[^_]|transaction_[^r]|transaction_r[^e]|transaction_re[^a]|transaction_rea[^d]|transaction_read[^_]|transaction_read_[^o]|transaction_read_o[^n]|transaction_read_on[^l]|transaction_read_onl[^y]).*"} OFFSET 5m'
+                query: '{__name__=~"pg_settings_.*",__name__!="pg_settings_transaction_read_only"} != ON(__name__, instance) {__name__=~"pg_settings_.*",__name__!="pg_settings_transaction_read_only"} OFFSET 5m'
                 severity: info
               - name: Postgresql SSL compression active
                 description: Database allows connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.
                 query: "sum(pg_stat_ssl_compression) > 0"
-                severity: critical
+                severity: warning
               - name: Postgresql too many locks acquired
                 description: Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.
                 query: "((sum (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20"
@@ -1377,17 +1377,17 @@ groups:
                 description: "Critical replica errors detected, either all replicas are stale or lost."
                 query: "ClickHouseErrorMetric_ALL_REPLICAS_ARE_STALE == 1 or ClickHouseErrorMetric_ALL_REPLICAS_LOST == 1"
                 severity: critical
-                for: 0m
+
               - name: ClickHouse No Available Replicas
                 description: "No available replicas in ClickHouse."
                 query: "ClickHouseErrorMetric_NO_AVAILABLE_REPLICA == 1"
                 severity: critical
-                for: 0m
+
               - name: ClickHouse No Live Replicas
                 description: "There are too few live replicas available, risking data loss and service disruption."
                 query: "ClickHouseErrorMetric_TOO_FEW_LIVE_REPLICAS == 1"
                 severity: critical
-                for: 0m
+
               - name: ClickHouse High Network Traffic
                 description: "Network traffic is unusually high, may affect cluster performance."
                 query: "ClickHouseMetrics_NetworkSend > 250 or ClickHouseMetrics_NetworkReceive > 250"
@@ -1416,12 +1416,12 @@ groups:
                 description: "Authentication failures detected, indicating potential security issues or misconfiguration."
                 query: "increase(ClickHouseErrorMetric_AUTHENTICATION_FAILED[5m]) > 0"
                 severity: info
-                for: 0m
+
               - name: ClickHouse Access Denied Errors
                 description: "Access denied errors have been logged, which could indicate permission issues or unauthorized access attempts."
                 query: "increase(ClickHouseErrorMetric_RESOURCE_ACCESS_DENIED[5m]) > 0"
                 severity: info
-                for: 0m
+
               - name: ClickHouse rejected insert queries
                 description: "INSERTs rejected due to too many active data parts. Reduce insert frequency."
                 query: "increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 0"
@@ -2111,7 +2111,7 @@ groups:
                 description: "All Caddy reverse proxies are down"
                 query: "count(caddy_reverse_proxy_upstreams_healthy) by (upstream) == 0"
                 severity: critical
-                for: 0m
+
               - name: Caddy high HTTP 4xx error rate service
                 description: "Caddy service 4xx error rate is above 5%"
                 query: 'sum(rate(caddy_http_request_duration_seconds_count{code=~"4.."}[3m])) by (instance) / sum(rate(caddy_http_request_duration_seconds_count[3m])) by (instance) * 100 > 5'
@@ -2742,7 +2742,7 @@ groups:
                 severity: critical
               - name: Minio disk space usage
                 description: "Minio available free space is low (< 10%)"
-                query: disk_storage_available / disk_storage_total * 100 < 10
+                query: minio_cluster_capacity_raw_free_bytes / minio_cluster_capacity_raw_total_bytes * 100 < 10
                 severity: warning
 
       - name: SSL/TLS
@@ -2891,7 +2891,7 @@ groups:
                 description: "Thanos Compact {{$labels.job}} has not uploaded anything for 24 hours."
                 query: '(time() - max by (job) (max_over_time(thanos_objstore_bucket_last_successful_upload_time{job=~".*thanos-compact.*"}[24h]))) / 60 / 60 > 24'
                 severity: warning
-                for: 0m
+
           - name: Thanos Query
             slug: thanos-query
             rules:
