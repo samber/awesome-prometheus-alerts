@@ -3922,10 +3922,6 @@ groups:
                 query: "sum(cilium_controllers_failing{}) by (pod) > 0"
                 severity: warning
                 for: 5m
-              - name: Cilium agent high restart rate
-                description: "Cilium agent has restarted more than twice in the last 15 minutes. It might be crashlooping."
-                query: 'changes(process_start_time_seconds{job=~".*cilium.*"}[15m]) > 2'
-                severity: warning
               # Endpoints
               - name: Cilium agent endpoint failures
                 description: "Cilium agent {{ $labels.pod }} has {{ $value }} endpoint(s) in invalid state."
