@@ -78,6 +78,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [HaProxy](https://samber.github.io/awesome-prometheus-alerts/rules#haproxy)
 - [Traefik](https://samber.github.io/awesome-prometheus-alerts/rules#traefik)
 - [Caddy](https://samber.github.io/awesome-prometheus-alerts/rules#caddy)
+- [Envoy](https://samber.github.io/awesome-prometheus-alerts/rules#envoy)
 
 #### Runtimes
 

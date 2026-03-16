@@ -2141,6 +2141,105 @@ groups:
                 severity: critical
                 for: 1m
 
+      - name: Envoy
+        exporters:
+          - name: Built-in metrics
+            slug: embedded-exporter
+            doc_url: https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/statistics
+            rules:
+              - name: Envoy server not live
+                description: "Envoy server is not live (draining or shutting down) on {{ $labels.instance }}"
+                query: "envoy_server_live != 1"
+                severity: critical
+                for: 1m
+              - name: Envoy high memory usage
+                description: "Envoy memory allocated is above 90% of heap size on {{ $labels.instance }}"
+                query: "envoy_server_memory_allocated / envoy_server_memory_heap_size * 100 > 90"
+                severity: warning
+                for: 5m
+              - name: Envoy high downstream HTTP 5xx error rate
+                description: "More than 5% of downstream HTTP responses are 5xx on {{ $labels.instance }} ({{ $value | printf \"%.1f\" }}%)"
+                query: 'sum by (instance) (rate(envoy_http_downstream_rq_xx{envoy_response_code_class="5"}[5m])) / sum by (instance) (rate(envoy_http_downstream_rq_completed[5m])) * 100 > 5'
+                severity: critical
+                for: 1m
+              - name: Envoy high downstream HTTP 4xx error rate
+                description: "More than 10% of downstream HTTP responses are 4xx on {{ $labels.instance }} ({{ $value | printf \"%.1f\" }}%)"
+                query: 'sum by (instance) (rate(envoy_http_downstream_rq_xx{envoy_response_code_class="4"}[5m])) / sum by (instance) (rate(envoy_http_downstream_rq_completed[5m])) * 100 > 10'
+                severity: warning
+                for: 5m
+              - name: Envoy downstream connections overflowing
+                description: "Downstream connections are being rejected due to listener overflow on {{ $labels.instance }}"
+                query: "increase(envoy_listener_downstream_cx_overflow[5m]) > 0"
+                severity: warning
+              - name: Envoy cluster membership empty
+                description: "Envoy cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} has no healthy members"
+                query: "envoy_cluster_membership_healthy == 0"
+                severity: critical
+                for: 1m
+              - name: Envoy cluster membership degraded
+                description: "More than 25% of members in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} are unhealthy"
+                query: "envoy_cluster_membership_healthy / envoy_cluster_membership_total * 100 < 75 and envoy_cluster_membership_total > 0"
+                severity: warning
+                for: 5m
+              - name: Envoy high cluster upstream connection failures
+                description: "High rate of upstream connection failures in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                query: "increase(envoy_cluster_upstream_cx_connect_fail[5m]) > 10"
+                severity: warning
+                for: 5m
+              - name: Envoy high cluster upstream request timeout rate
+                description: "More than 5% of upstream requests are timing out in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                query: "increase(envoy_cluster_upstream_rq_timeout[5m]) / (increase(envoy_cluster_upstream_rq_completed[5m]) + 1) * 100 > 5"
+                severity: warning
+                for: 5m
+                comments: |
+                  The +1 in the denominator guards against division by zero.
+              - name: Envoy high cluster upstream 5xx error rate
+                description: "More than 5% of upstream requests return 5xx in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                query: 'increase(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / (increase(envoy_cluster_upstream_rq_completed[5m]) + 1) * 100 > 5'
+                severity: critical
+                for: 1m
+                comments: |
+                  The +1 in the denominator guards against division by zero.
+              - name: Envoy cluster health check failures
+                description: "Health checks are consistently failing in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                query: "increase(envoy_cluster_health_check_failure[5m]) > 5"
+                severity: warning
+                for: 5m
+              - name: Envoy cluster outlier detection ejections active
+                description: "There are active outlier detection ejections in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                query: "envoy_cluster_outlier_detection_ejections_active > 0"
+                severity: info
+                for: 5m
+              - name: Envoy listener SSL connection errors
+                description: "Envoy listener is experiencing SSL/TLS connection errors on {{ $labels.instance }}"
+                query: "increase(envoy_listener_ssl_connection_error[5m]) > 0"
+                severity: warning
+              - name: Envoy global downstream connections overflowing
+                description: "Downstream connections are being rejected due to global connection limit on {{ $labels.instance }}"
+                query: "increase(envoy_listener_downstream_global_cx_overflow[5m]) > 0"
+                severity: critical
+              - name: Envoy SSL certificate expiring soon
+                description: "SSL certificate loaded by Envoy on {{ $labels.instance }} expires in less than 7 days"
+                query: "envoy_server_days_until_first_cert_expiring < 7"
+                severity: warning
+              - name: Envoy SSL certificate expired
+                description: "SSL certificate loaded by Envoy on {{ $labels.instance }} has expired"
+                query: "envoy_server_days_until_first_cert_expiring < 0"
+                severity: critical
+              - name: Envoy cluster circuit breaker tripped
+                description: "Circuit breaker is open for cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                query: "envoy_cluster_circuit_breakers_default_cx_open == 1 or envoy_cluster_circuit_breakers_default_rq_open == 1"
+                severity: critical
+              - name: Envoy no healthy upstream
+                description: "Upstream connection attempts failed because no healthy upstream was available in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
+                query: "increase(envoy_cluster_upstream_cx_none_healthy[5m]) > 0"
+                severity: critical
+              - name: Envoy high downstream request timeout rate
+                description: "Downstream requests are timing out on {{ $labels.instance }}"
+                query: "increase(envoy_http_downstream_rq_timeout[5m]) > 5"
+                severity: warning
+                for: 5m
+
   - name: Runtimes
     services:
       - name: PHP-FPM
