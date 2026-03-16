@@ -1,0 +1,53 @@
+groups:
+
+- name: StackdriverExporter
+
+  # Self-monitoring metrics use the stackdriver_monitoring_* prefix.
+  # All self-monitoring metrics include a project_id label.
+  
+  rules:
+
+    - alert: StackdriverExporterScrapeError
+      expr: 'stackdriver_monitoring_last_scrape_error > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Stackdriver exporter scrape error (instance {{ $labels.instance }})
+        description: "Stackdriver exporter failed to scrape metrics from Google Cloud Monitoring API for project {{ $labels.project_id }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: StackdriverExporterSlowScrape
+      expr: 'stackdriver_monitoring_last_scrape_duration_seconds > 300'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Stackdriver exporter slow scrape (instance {{ $labels.instance }})
+        description: "Stackdriver exporter scrape for project {{ $labels.project_id }} is taking more than 5 minutes ({{ $value }}s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: StackdriverExporterScrapeErrorsIncreasing
+      expr: 'increase(stackdriver_monitoring_scrape_errors_total[15m]) > 5'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Stackdriver exporter scrape errors increasing (instance {{ $labels.instance }})
+        description: "Stackdriver exporter has had {{ $value }} scrape errors in the last 15 minutes for project {{ $labels.project_id }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: StackdriverExporterHighApiCalls
+      expr: 'rate(stackdriver_monitoring_api_calls_total[5m]) * 60 > 100'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Stackdriver exporter high API calls (instance {{ $labels.instance }})
+        description: "Stackdriver exporter is making {{ $value }} API calls per minute for project {{ $labels.project_id }}. This may hit Google Cloud Monitoring API quotas.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: StackdriverExporterScrapeStale
+      expr: 'time() - stackdriver_monitoring_last_scrape_timestamp > 600'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Stackdriver exporter scrape stale (instance {{ $labels.instance }})
+        description: "Stackdriver exporter has not successfully scraped metrics for project {{ $labels.project_id }} in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

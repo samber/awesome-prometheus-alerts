@@ -1,0 +1,449 @@
+groups:
+
+- name: EmbeddedExporter
+
+  # Mimir uses the `cortex_` metric prefix for backward compatibility with Cortex. This is intentional and expected.
+  
+  rules:
+
+    - alert: MimirIngesterUnhealthy
+      expr: 'min by (job) (cortex_ring_members{state="Unhealthy", name="ingester"}) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester unhealthy (instance {{ $labels.instance }})
+        description: "Mimir has {{ $value }} unhealthy ingester(s) in the ring.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirRequestErrors
+      expr: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!~"ready|debug_pprof"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 1'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir request errors (instance {{ $labels.instance }})
+        description: "Mimir {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}% errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirInconsistentRuntimeConfig
+      expr: 'count(count by (job, sha256) (cortex_runtime_config_hash)) without(sha256) > 1'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir inconsistent runtime config (instance {{ $labels.instance }})
+        description: "An inconsistent runtime config file is used across Mimir instances.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirBadRuntimeConfig
+      expr: 'sum by (job) (cortex_runtime_config_last_reload_successful == 0) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir bad runtime config (instance {{ $labels.instance }})
+        description: "{{ $labels.job }} failed to reload runtime config.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirSchedulerQueriesStuck
+      expr: 'sum by (job) (min_over_time(cortex_query_scheduler_queue_length[1m])) > 0'
+      for: 7m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir scheduler queries stuck (instance {{ $labels.instance }})
+        description: "There are {{ $value }} queued up queries in {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirCacheRequestErrors
+      expr: '(sum by (name, operation, job) (rate(thanos_cache_operation_failures_total[5m])) / sum by (name, operation, job) (rate(thanos_cache_operations_total[5m]))) * 100 > 5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir cache request errors (instance {{ $labels.instance }})
+        description: "Mimir cache {{ $labels.name }} is experiencing {{ printf \"%.2f\" $value }}% errors for {{ $labels.operation }} operation.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirKvStoreFailure
+      expr: '(sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.."}[5m])) / sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir KV store failure (instance {{ $labels.instance }})
+        description: "Mimir {{ $labels.job }} KV store {{ $labels.kv_name }} is failing with 100% error rate.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirMemoryMapAreasTooHigh
+      expr: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} * 100 > 80'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir memory map areas too high (instance {{ $labels.instance }})
+        description: "Mimir {{ $labels.job }} is using {{ printf \"%.0f\" $value }}% of its memory map area limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterInstanceHasNoTenants
+      expr: '(cortex_ingester_memory_users == 0) and on (instance) (cortex_ingester_memory_users offset 1h > 0)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ingester instance has no tenants (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} has no tenants assigned.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirRulerInstanceHasNoRuleGroups
+      expr: '(cortex_ruler_managers_total == 0) and on (instance) (cortex_ruler_managers_total offset 1h > 0)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ruler instance has no rule groups (instance {{ $labels.instance }})
+        description: "Mimir ruler {{ $labels.instance }} has no rule groups assigned.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngestedDataTooFarInTheFuture
+      expr: 'max by (job) (cortex_ingester_tsdb_head_max_timestamp_seconds - time() and cortex_ingester_tsdb_head_max_timestamp_seconds > 0) > 3600'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ingested data too far in the future (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.job }} has ingested samples with timestamps more than 1 hour in the future.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirStoreGatewayTooManyFailedOperations
+      expr: 'sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir store gateway too many failed operations (instance {{ $labels.instance }})
+        description: "Mimir store-gateway {{ $labels.job }} bucket operations are failing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirRingMembersMismatch
+      expr: 'max by (name, job) (sum by (name, job, instance) (cortex_ring_members)) != min by (name, job) (sum by (name, job, instance) (cortex_ring_members))'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ring members mismatch (instance {{ $labels.instance }})
+        description: "Mimir {{ $labels.name }} ring has inconsistent member counts across instances.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterReachingSeriesLimitWarning
+      expr: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} * 100 > 80) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+      for: 3h
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ingester reaching series limit warning (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} has reached {{ printf \"%.0f\" $value }}% of its series limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterReachingSeriesLimitCritical
+      expr: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} * 100 > 90) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester reaching series limit critical (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} has reached {{ printf \"%.0f\" $value }}% of its series limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterReachingTenantsLimitWarning
+      expr: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} * 100 > 70) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ingester reaching tenants limit warning (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} has reached {{ printf \"%.0f\" $value }}% of its tenants limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterReachingTenantsLimitCritical
+      expr: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} * 100 > 80) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester reaching tenants limit critical (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} has reached {{ printf \"%.0f\" $value }}% of its tenants limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirReachingTcpConnectionsLimit
+      expr: 'cortex_tcp_connections / cortex_tcp_connections_limit * 100 > 80 and cortex_tcp_connections_limit > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir reaching TCP connections limit (instance {{ $labels.instance }})
+        description: "Mimir instance {{ $labels.instance }} is using {{ printf \"%.0f\" $value }}% of its TCP connections limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirDistributorInflightRequestsHigh
+      expr: '(cortex_distributor_inflight_push_requests / ignoring(limit) cortex_distributor_instance_limits{limit="max_inflight_push_requests"} * 100 > 80) and cortex_distributor_instance_limits{limit="max_inflight_push_requests"} > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir distributor inflight requests high (instance {{ $labels.instance }})
+        description: "Mimir distributor {{ $labels.instance }} is using {{ printf \"%.0f\" $value }}% of its inflight push requests limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterTsdbHeadCompactionFailed
+      expr: 'rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester TSDB head compaction failed (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} is failing to compact TSDB head.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterTsdbHeadTruncationFailed
+      expr: 'rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester TSDB head truncation failed (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterTsdbCheckpointCreationFailed
+      expr: 'rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester TSDB checkpoint creation failed (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterTsdbCheckpointDeletionFailed
+      expr: 'rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester TSDB checkpoint deletion failed (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterTsdbWalTruncationFailed
+      expr: 'rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ingester TSDB WAL truncation failed (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirIngesterTsdbWalWritesFailed
+      expr: 'rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0'
+      for: 3m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ingester TSDB WAL writes failed (instance {{ $labels.instance }})
+        description: "Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirStoreGatewayHasNotSyncedBucket
+      expr: '(time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 600) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir store gateway has not synced bucket (instance {{ $labels.instance }})
+        description: "Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirStoreGatewayNoSyncedTenants
+      expr: '(min by (instance, job) (cortex_bucket_stores_tenants_synced{component="store-gateway"}) == 0) and on (instance) (cortex_bucket_stores_tenants_synced{component="store-gateway"} offset 1h > 0)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir store gateway no synced tenants (instance {{ $labels.instance }})
+        description: "Mimir store-gateway {{ $labels.instance }} has no synced tenants.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirBucketIndexNotUpdated
+      expr: 'min by (user, job) (time() - cortex_bucket_index_last_successful_update_timestamp_seconds) > 2100'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir bucket index not updated (instance {{ $labels.instance }})
+        description: "Mimir bucket index for tenant {{ $labels.user }} has not been updated for more than 35 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirCompactorNotCleaningUpBlocks
+      expr: '(time() - cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 21600) and cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 0'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir compactor not cleaning up blocks (instance {{ $labels.instance }})
+        description: "Mimir compactor {{ $labels.instance }} has not cleaned up blocks in the last 6 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirCompactorNotRunningCompaction
+      expr: '(time() - cortex_compactor_last_successful_run_timestamp_seconds > 86400) and cortex_compactor_last_successful_run_timestamp_seconds > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir compactor not running compaction (instance {{ $labels.instance }})
+        description: "Mimir compactor {{ $labels.instance }} has not run compaction in the last 24 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirCompactorHasConsecutiveFailures
+      expr: 'increase(cortex_compactor_runs_failed_total[2h]) > 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir compactor has consecutive failures (instance {{ $labels.instance }})
+        description: "Mimir compactor {{ $labels.instance }} has had 2+ compaction failures in the last 2 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirCompactorHasRunOutOfDiskSpace
+      expr: 'increase(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir compactor has run out of disk space (instance {{ $labels.instance }})
+        description: "Mimir compactor {{ $labels.instance }} has run out of disk space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirCompactorHasNotUploadedBlocks
+      expr: '(time() - thanos_objstore_bucket_last_successful_upload_time{component="compactor"} > 86400) and thanos_objstore_bucket_last_successful_upload_time{component="compactor"} > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir compactor has not uploaded blocks (instance {{ $labels.instance }})
+        description: "Mimir compactor {{ $labels.instance }} has not uploaded any block in the last 24 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirCompactorSkippedBlocks
+      expr: 'increase(cortex_compactor_blocks_marked_for_no_compaction_total[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir compactor skipped blocks (instance {{ $labels.instance }})
+        description: "Mimir compactor has found blocks that cannot be compacted (reason {{ $labels.reason }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirRulerTooManyFailedPushes
+      expr: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ruler too many failed pushes (instance {{ $labels.instance }})
+        description: "Mimir ruler {{ $labels.instance }} is failing to push {{ printf \"%.2f\" $value }}% of write requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirRulerTooManyFailedQueries
+      expr: '100 * sum by (instance, job) (rate(cortex_ruler_queries_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ruler too many failed queries (instance {{ $labels.instance }})
+        description: "Mimir ruler {{ $labels.instance }} is failing {{ printf \"%.2f\" $value }}% of query evaluations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirRulerMissedEvaluations
+      expr: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir ruler missed evaluations (instance {{ $labels.instance }})
+        description: "Mimir ruler {{ $labels.instance }} is missing {{ printf \"%.2f\" $value }}% of rule group evaluations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirRulerFailedRingCheck
+      expr: 'sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir ruler failed ring check (instance {{ $labels.instance }})
+        description: "Mimir ruler {{ $labels.job }} is failing ring checks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirAlertmanagerSyncConfigsFailing
+      expr: 'rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0'
+      for: 30m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir alertmanager sync configs failing (instance {{ $labels.instance }})
+        description: "Mimir alertmanager {{ $labels.job }} is failing to sync configs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirAlertmanagerRingCheckFailing
+      expr: 'rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir alertmanager ring check failing (instance {{ $labels.instance }})
+        description: "Mimir alertmanager {{ $labels.job }} is failing ring checks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirAlertmanagerStateMergeFailing
+      expr: 'rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir alertmanager state merge failing (instance {{ $labels.instance }})
+        description: "Mimir alertmanager {{ $labels.job }} is failing to merge state updates.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirAlertmanagerReplicationFailing
+      expr: 'rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir alertmanager replication failing (instance {{ $labels.instance }})
+        description: "Mimir alertmanager {{ $labels.job }} is failing to replicate state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirAlertmanagerPersistStateFailing
+      expr: 'rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir alertmanager persist state failing (instance {{ $labels.instance }})
+        description: "Mimir alertmanager {{ $labels.job }} is failing to persist state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirAlertmanagerInitialSyncFailed
+      expr: 'increase(cortex_alertmanager_state_initial_sync_completed_total{outcome="failed"}[1m]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir alertmanager initial sync failed (instance {{ $labels.instance }})
+        description: "Mimir alertmanager {{ $labels.job }} failed initial state sync.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirAlertmanagerInstanceHasNoTenants
+      expr: '(cortex_alertmanager_tenants_owned == 0) and on (instance) (cortex_alertmanager_tenants_owned offset 1h > 0)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir alertmanager instance has no tenants (instance {{ $labels.instance }})
+        description: "Mimir alertmanager {{ $labels.instance }} has no tenants assigned.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirGossipMembersCountTooHigh
+      expr: 'avg(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job) * 1.15 + 10 < max(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job)'
+      for: 20m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir gossip members count too high (instance {{ $labels.instance }})
+        description: "Mimir gossip cluster has more members than expected.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirGossipMembersCountTooLow
+      expr: 'avg(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job) * 0.5 > min(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job)'
+      for: 20m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir gossip members count too low (instance {{ $labels.instance }})
+        description: "Mimir gossip cluster has fewer members than expected.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # A high number of Go threads may indicate a goroutine leak.
+    - alert: MimirGoThreadsTooHighWarning
+      expr: 'go_threads{job=~".*(mimir|cortex).*"} > 5000'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Mimir go threads too high warning (instance {{ $labels.instance }})
+        description: "Mimir {{ $labels.instance }} has {{ $value }} Go threads.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MimirGoThreadsTooHighCritical
+      expr: 'go_threads{job=~".*(mimir|cortex).*"} > 8000'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Mimir go threads too high critical (instance {{ $labels.instance }})
+        description: "Mimir {{ $labels.instance }} has {{ $value }} Go threads.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -1,0 +1,57 @@
+groups:
+
+- name: AzureMetricsExporter
+
+  # The exporter uses azurerm_resource_metric as the default metric name for forwarded Azure Monitor metrics.
+  # The metric name can be customized via the name parameter in probe configuration.
+  # Self-monitoring metrics use the azurerm_stats_* and azurerm_api_* prefixes.
+  
+  rules:
+
+    - alert: AzureExporterRequestErrors
+      expr: 'increase(azurerm_stats_metric_requests{result="error"}[15m]) > 5'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Azure exporter request errors (instance {{ $labels.instance }})
+        description: "Azure metrics exporter on {{ $labels.instance }} has {{ $value }} API request errors in the last 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: AzureExporterHighErrorRate
+      expr: 'sum by (instance) (rate(azurerm_stats_metric_requests{result="error"}[5m])) / sum by (instance) (rate(azurerm_stats_metric_requests[5m])) * 100 > 10'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Azure exporter high error rate (instance {{ $labels.instance }})
+        description: "Azure metrics exporter on {{ $labels.instance }} has an error rate above 10% ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Azure Resource Manager enforces rate limits per subscription.
+    # The threshold of 100 remaining calls is a rough default. Adjust based on your
+    # scrape interval and number of monitored resources.
+    - alert: AzureApiReadRateLimitApproaching
+      expr: 'azurerm_api_ratelimit{type="read"} < 100'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Azure API read rate limit approaching (instance {{ $labels.instance }})
+        description: "Azure API read rate limit for subscription {{ $labels.subscriptionID }} is running low ({{ $value }} remaining).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: AzureApiWriteRateLimitApproaching
+      expr: 'azurerm_api_ratelimit{type="write"} < 50'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Azure API write rate limit approaching (instance {{ $labels.instance }})
+        description: "Azure API write rate limit for subscription {{ $labels.subscriptionID }} is running low ({{ $value }} remaining).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: AzureExporterSlowCollection
+      expr: 'azurerm_stats_metric_collecttime > 300'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Azure exporter slow collection (instance {{ $labels.instance }})
+        description: "Azure metrics exporter on {{ $labels.instance }} metric collection is taking more than 5 minutes ({{ $value }}s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

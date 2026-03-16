@@ -1,0 +1,43 @@
+groups:
+
+- name: EmbeddedExporter
+
+  
+  rules:
+
+    - alert: Cert-managerAbsent
+      expr: 'absent(up{job="cert-manager"})'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cert-Manager absent (instance {{ $labels.instance }})
+        description: "Cert-Manager has disappeared from Prometheus service discovery. New certificates will not be able to be minted, and existing ones can't be renewed until cert-manager is back.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 21 days is a rough default. ACME certificates are typically renewed 30 days before expiry, so expiring within 21 days may indicate issuer misconfiguration.
+    - alert: Cert-managerCertificateExpiringSoon
+      expr: 'avg by (exported_namespace, namespace, name) (certmanager_certificate_expiration_timestamp_seconds - time()) < (21 * 24 * 3600)'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Cert-Manager certificate expiring soon (instance {{ $labels.instance }})
+        description: "The certificate {{ $labels.name }} is expiring in less than 21 days.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: Cert-managerCertificateNotReady
+      expr: 'max by (name, exported_namespace, namespace, condition) (certmanager_certificate_ready_status{condition!="True"} == 1)'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cert-Manager certificate not ready (instance {{ $labels.instance }})
+        description: "The certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} is not ready to serve traffic.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: Cert-managerHittingAcmeRateLimits
+      expr: 'sum by (host) (rate(certmanager_http_acme_client_request_count{status="429"}[5m])) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cert-Manager hitting ACME rate limits (instance {{ $labels.instance }})
+        description: "Cert-Manager is being rate-limited by the ACME provider. Certificate issuance and renewal may be blocked for up to a week.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

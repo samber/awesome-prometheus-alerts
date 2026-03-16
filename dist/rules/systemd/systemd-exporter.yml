@@ -1,0 +1,72 @@
+groups:
+
+- name: SystemdExporter
+
+  
+  rules:
+
+    - alert: SystemdUnitFailed
+      expr: 'systemd_unit_state{state="failed"} == 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd unit failed (instance {{ $labels.instance }})
+        description: "Systemd unit {{ $labels.name }} has entered failed state. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Many units are legitimately inactive. You must adjust the name=~ filter to match your critical services.
+    - alert: SystemdUnitInactive
+      expr: 'systemd_unit_state{state="inactive", type="service", name=~"your-critical-service.+"} == 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd unit inactive (instance {{ $labels.instance }})
+        description: "Systemd unit {{ $labels.name }} is inactive. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SystemdServiceCrashLooping
+      expr: 'increase(systemd_service_restart_total[1h]) > 5'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Systemd service crash looping (instance {{ $labels.instance }})
+        description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SystemdUnitTasksNearLimit
+      expr: 'systemd_unit_tasks_current / systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd unit tasks near limit (instance {{ $labels.instance }})
+        description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SystemdSocketRefusedConnections
+      expr: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd socket refused connections (instance {{ $labels.instance }})
+        description: "Systemd socket {{ $labels.name }} is refusing connections. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 100 connections is arbitrary. Adjust to your workload.
+    - alert: SystemdSocketHighConnections
+      expr: 'systemd_socket_current_connections > 100'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd socket high connections (instance {{ $labels.instance }})
+        description: "Systemd socket {{ $labels.name }} has {{ $value }} active connections. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Triggers if timer hasn't fired in 24 hours. Adjust threshold per timer schedule.
+    - alert: SystemdTimerMissedTrigger
+      expr: '(time() - systemd_timer_last_trigger_seconds) / 3600 > 24 and systemd_timer_last_trigger_seconds > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd timer missed trigger (instance {{ $labels.instance }})
+        description: "Systemd timer {{ $labels.name }} has not triggered for over 24 hours. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -810,6 +810,52 @@ groups:
                 comments: |
                   Detects restarts by watching for changes in the oldest process start time within the group.
 
+      - name: Systemd
+        exporters:
+          - name: prometheus-community/systemd_exporter
+            slug: systemd-exporter
+            doc_url: https://github.com/prometheus-community/systemd_exporter
+            rules:
+              - name: Systemd unit failed
+                description: "Systemd unit {{ $labels.name }} has entered failed state. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_state{state="failed"} == 1'
+                severity: warning
+                for: 5m
+              - name: Systemd unit inactive
+                description: "Systemd unit {{ $labels.name }} is inactive. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_state{state="inactive", type="service", name=~"your-critical-service.+"} == 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  Many units are legitimately inactive. You must adjust the name=~ filter to match your critical services.
+              - name: Systemd service crash looping
+                description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})"
+                query: 'increase(systemd_service_restart_total[1h]) > 5'
+                severity: critical
+                for: 5m
+              - name: Systemd unit tasks near limit
+                description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_tasks_current / systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
+                severity: warning
+                for: 5m
+              - name: Systemd socket refused connections
+                description: "Systemd socket {{ $labels.name }} is refusing connections. (instance {{ $labels.instance }})"
+                query: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
+                severity: warning
+              - name: Systemd socket high connections
+                description: "Systemd socket {{ $labels.name }} has {{ $value }} active connections. (instance {{ $labels.instance }})"
+                query: 'systemd_socket_current_connections > 100'
+                severity: warning
+                comments: |
+                  Threshold of 100 connections is arbitrary. Adjust to your workload.
+              - name: Systemd timer missed trigger
+                description: "Systemd timer {{ $labels.name }} has not triggered for over 24 hours. (instance {{ $labels.instance }})"
+                query: '(time() - systemd_timer_last_trigger_seconds) / 3600 > 24 and systemd_timer_last_trigger_seconds > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Triggers if timer hasn't fired in 24 hours. Adjust threshold per timer schedule.
+
   - name: Databases and brokers
     services:
       - name: MySQL
@@ -3638,6 +3684,35 @@ groups:
                 query: ssl_verified_cert_not_after{chain_no="0"} - time() < 86400 * 7
                 severity: warning
 
+      - name: cert-manager
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://cert-manager.io/docs/devops-tips/prometheus-metrics/
+            rules:
+              - name: Cert-Manager absent
+                description: Cert-Manager has disappeared from Prometheus service discovery. New certificates will not be able to be minted, and existing ones can't be renewed until cert-manager is back.
+                query: 'absent(up{job="cert-manager"})'
+                severity: critical
+                for: 10m
+              - name: Cert-Manager certificate expiring soon
+                description: The certificate {{ $labels.name }} is expiring in less than 21 days.
+                query: 'avg by (exported_namespace, namespace, name) (certmanager_certificate_expiration_timestamp_seconds - time()) < (21 * 24 * 3600)'
+                severity: warning
+                for: 1h
+                comments: |
+                  Threshold of 21 days is a rough default. ACME certificates are typically renewed 30 days before expiry, so expiring within 21 days may indicate issuer misconfiguration.
+              - name: Cert-Manager certificate not ready
+                description: "The certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} is not ready to serve traffic."
+                query: 'max by (name, exported_namespace, namespace, condition) (certmanager_certificate_ready_status{condition!="True"} == 1)'
+                severity: critical
+                for: 10m
+              - name: Cert-Manager hitting ACME rate limits
+                description: Cert-Manager is being rate-limited by the ACME provider. Certificate issuance and renewal may be blocked for up to a week.
+                query: 'sum by (host) (rate(certmanager_http_acme_client_request_count{status="429"}[5m])) > 0'
+                severity: critical
+                for: 5m
+
       - name: Juniper
         exporters:
           - name: czerwonk/junos_exporter
@@ -4008,6 +4083,253 @@ groups:
                 for: 5m
                 comments: Threshold of 10% is a rough default. Some DNS errors may be normal depending on your workload.
 
+      - name: WireGuard
+        exporters:
+          - name: MindFlavor/prometheus_wireguard_exporter
+            slug: mindflavor-prometheus-wireguard-exporter
+            doc_url: https://github.com/MindFlavor/prometheus_wireguard_exporter
+            rules:
+              - name: WireGuard peer handshake too old
+                description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has not had a handshake for over 5 minutes. The tunnel may be down."
+                query: 'time() - wireguard_latest_handshake_seconds > 300 and wireguard_latest_handshake_seconds > 0'
+                severity: warning
+                for: 2m
+                comments: |
+                  The threshold of 300 seconds (5 minutes) is a rough default. WireGuard peers that are idle but reachable
+                  typically re-handshake every 2 minutes. Adjust based on your keepalive interval.
+                  The `> 0` guard excludes peers that have never completed a handshake (covered by a separate rule).
+              - name: WireGuard peer handshake never established
+                description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has never completed a handshake. Check peer configuration and network connectivity."
+                query: 'wireguard_latest_handshake_seconds == 0'
+                severity: critical
+                for: 5m
+              - name: WireGuard no traffic on peer
+                description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has had no traffic for 15 minutes despite an active handshake."
+                query: '(rate(wireguard_sent_bytes_total[15m]) + rate(wireguard_received_bytes_total[15m])) == 0 and wireguard_latest_handshake_seconds > 0 and (time() - wireguard_latest_handshake_seconds) < 300'
+                severity: warning
+                for: 15m
+                comments: |
+                  This alert fires when a peer has a recent handshake but zero traffic flow.
+                  May indicate routing issues or a misconfigured allowed-ips.
+                  Only useful if you expect continuous traffic on all peers.
+
+  - name: Cloud providers
+    services:
+      - name: AWS CloudWatch
+        exporters:
+          - name: prometheus/cloudwatch_exporter
+            slug: prometheus-cloudwatch-exporter
+            doc_url: https://github.com/prometheus/cloudwatch_exporter
+            comments: |
+              CloudWatch metrics are exported as aws_{namespace}_{metric_name}_{statistic} gauges.
+              The rules below cover both exporter health and common AWS service alerts.
+              Adjust thresholds and label filters to match your CloudWatch exporter configuration.
+            rules:
+              - name: CloudWatch exporter scrape error
+                description: "CloudWatch exporter on {{ $labels.instance }} failed to scrape metrics from AWS CloudWatch API."
+                query: "cloudwatch_exporter_scrape_error > 0"
+                severity: warning
+                for: 5m
+              - name: CloudWatch exporter slow scrape
+                description: "CloudWatch exporter on {{ $labels.instance }} scrape is taking more than 5 minutes ({{ $value }}s). Consider reducing the number of metrics or splitting across multiple exporters."
+                query: "cloudwatch_exporter_scrape_duration_seconds > 300"
+                severity: warning
+                for: 5m
+              - name: CloudWatch API high request rate
+                description: "CloudWatch exporter on {{ $labels.instance }} is making {{ $value }} API calls per minute to namespace {{ $labels.namespace }}. This can lead to high AWS costs."
+                query: "sum by (instance, namespace) (rate(cloudwatch_requests_total[5m])) * 60 > 100"
+                severity: warning
+                comments: |
+                  CloudWatch API calls cost money (~$0.01 per 1000 GetMetricData requests).
+                  100 requests/minute ≈ $45/month. Adjust the threshold based on your budget.
+              - name: AWS EC2 high CPU utilization
+                description: "EC2 instance {{ $labels.instance_id }} CPU utilization is above 90% ({{ $value }}%)."
+                query: "aws_ec2_cpuutilization_average > 90"
+                severity: warning
+                for: 15m
+                comments: Requires EC2 CPUUtilization metric configured in the CloudWatch exporter.
+              - name: AWS RDS low free storage space
+                description: "RDS instance {{ $labels.dbinstance_identifier }} has less than 2GB free storage ({{ $value }} bytes remaining)."
+                query: "aws_rds_free_storage_space_average < 2000000000"
+                severity: warning
+                for: 5m
+                comments: |
+                  Requires RDS FreeStorageSpace metric. The threshold of 2GB is a rough default.
+                  Adjust based on your database size.
+              - name: AWS RDS high CPU utilization
+                description: "RDS instance {{ $labels.dbinstance_identifier }} CPU utilization is above 90% ({{ $value }}%)."
+                query: "aws_rds_cpuutilization_average > 90"
+                severity: warning
+                for: 15m
+                comments: Requires RDS CPUUtilization metric configured in the CloudWatch exporter.
+              - name: AWS RDS high database connections
+                description: "RDS instance {{ $labels.dbinstance_identifier }} has {{ $value }} active connections."
+                query: "aws_rds_database_connections_average > 100"
+                severity: warning
+                for: 5m
+                comments: |
+                  The threshold depends on the RDS instance class. Adjust based on your
+                  instance type's max_connections parameter.
+              - name: AWS SQS queue messages visible
+                description: "SQS queue {{ $labels.queue_name }} has {{ $value }} messages waiting to be processed."
+                query: "aws_sqs_approximate_number_of_messages_visible_average > 1000"
+                severity: warning
+                for: 10m
+                comments: |
+                  Requires SQS ApproximateNumberOfMessagesVisible metric. The threshold of 1000
+                  is a rough default. Adjust based on your expected queue depth.
+              - name: AWS SQS message age too old
+                description: "SQS queue {{ $labels.queue_name }} has messages older than 1 hour ({{ $value }}s)."
+                query: "aws_sqs_approximate_age_of_oldest_message_maximum > 3600"
+                severity: warning
+                comments: Requires SQS ApproximateAgeOfOldestMessage metric.
+              - name: AWS ALB unhealthy targets
+                description: "ALB {{ $labels.load_balancer }} has {{ $value }} unhealthy target(s) in target group {{ $labels.target_group }}."
+                query: "aws_applicationelb_unhealthy_host_count_average > 0"
+                severity: critical
+                for: 5m
+                comments: Requires ApplicationELB UnHealthyHostCount metric.
+              - name: AWS ALB high 5xx error rate
+                description: "ALB {{ $labels.load_balancer }} 5xx error rate is above 5% ({{ $value }}%)."
+                query: "(aws_applicationelb_httpcode_elb_5_xx_count_sum / aws_applicationelb_request_count_sum) * 100 > 5"
+                severity: critical
+                for: 5m
+                comments: Requires ApplicationELB HTTPCode_ELB_5XX_Count and RequestCount metrics.
+              - name: AWS ALB high target response time
+                description: "ALB {{ $labels.load_balancer }} average target response time is above 2 seconds ({{ $value }}s)."
+                query: "aws_applicationelb_target_response_time_average > 2"
+                severity: warning
+                for: 5m
+                comments: Requires ApplicationELB TargetResponseTime metric.
+              - name: AWS Lambda high error rate
+                description: "Lambda function {{ $labels.function_name }} error rate is above 5% ({{ $value }}%)."
+                query: "(aws_lambda_errors_sum / aws_lambda_invocations_sum) * 100 > 5"
+                severity: warning
+                for: 5m
+                comments: Requires Lambda Errors and Invocations metrics.
+
+      - name: Google Cloud Stackdriver
+        exporters:
+          - name: prometheus-community/stackdriver_exporter
+            slug: stackdriver-exporter
+            doc_url: https://github.com/prometheus-community/stackdriver_exporter
+            comments: |
+              Self-monitoring metrics use the stackdriver_monitoring_* prefix.
+              All self-monitoring metrics include a project_id label.
+            rules:
+              - name: Stackdriver exporter scrape error
+                description: "Stackdriver exporter failed to scrape metrics from Google Cloud Monitoring API for project {{ $labels.project_id }}."
+                query: "stackdriver_monitoring_last_scrape_error > 0"
+                severity: warning
+                for: 5m
+              - name: Stackdriver exporter slow scrape
+                description: "Stackdriver exporter scrape for project {{ $labels.project_id }} is taking more than 5 minutes ({{ $value }}s)."
+                query: "stackdriver_monitoring_last_scrape_duration_seconds > 300"
+                severity: warning
+                for: 5m
+              - name: Stackdriver exporter scrape errors increasing
+                description: "Stackdriver exporter has had {{ $value }} scrape errors in the last 15 minutes for project {{ $labels.project_id }}."
+                query: "increase(stackdriver_monitoring_scrape_errors_total[15m]) > 5"
+                severity: warning
+              - name: Stackdriver exporter high API calls
+                description: "Stackdriver exporter is making {{ $value }} API calls per minute for project {{ $labels.project_id }}. This may hit Google Cloud Monitoring API quotas."
+                query: "rate(stackdriver_monitoring_api_calls_total[5m]) * 60 > 100"
+                severity: warning
+              - name: Stackdriver exporter scrape stale
+                description: "Stackdriver exporter has not successfully scraped metrics for project {{ $labels.project_id }} in the last 10 minutes."
+                query: "time() - stackdriver_monitoring_last_scrape_timestamp > 600"
+                severity: warning
+
+      - name: DigitalOcean
+        exporters:
+          - name: metalmatze/digitalocean_exporter
+            slug: digitalocean-exporter
+            doc_url: https://github.com/metalmatze/digitalocean_exporter
+            rules:
+              - name: DigitalOcean droplet down
+                description: "DigitalOcean droplet {{ $labels.name }} ({{ $labels.id }}) in {{ $labels.region }} is not running."
+                query: "digitalocean_droplet_up == 0"
+                severity: critical
+                for: 5m
+              - name: DigitalOcean account not active
+                description: "DigitalOcean account is not active. It may be suspended or locked."
+                query: "digitalocean_account_active != 1"
+                severity: critical
+              - name: DigitalOcean database down
+                description: "DigitalOcean managed database {{ $labels.name }} ({{ $labels.engine }}) in {{ $labels.region }} is offline."
+                query: "digitalocean_database_status == 0"
+                severity: critical
+                for: 2m
+              - name: DigitalOcean Kubernetes cluster down
+                description: "DigitalOcean Kubernetes cluster {{ $labels.name }} ({{ $labels.version }}) in {{ $labels.region }} is not running."
+                query: "digitalocean_kubernetes_cluster_up == 0"
+                severity: critical
+                for: 5m
+              - name: DigitalOcean load balancer down
+                description: "DigitalOcean load balancer {{ $labels.name }} ({{ $labels.ip }}) is not active."
+                query: "digitalocean_loadbalancer_status == 0"
+                severity: critical
+                for: 2m
+              - name: DigitalOcean load balancer no backends
+                description: "DigitalOcean load balancer {{ $labels.name }} ({{ $labels.ip }}) has no droplets attached."
+                query: "digitalocean_loadbalancer_droplets == 0"
+                severity: warning
+              - name: DigitalOcean floating IP not assigned
+                description: "DigitalOcean floating IP {{ $labels.ipv4 }} in {{ $labels.region }} is not assigned to any droplet."
+                query: "digitalocean_floating_ipv4_active == 0"
+                severity: warning
+              - name: DigitalOcean active incidents
+                description: "DigitalOcean platform has {{ $value }} active incident(s)."
+                query: "digitalocean_incidents_total > 0"
+                severity: warning
+              - name: DigitalOcean exporter collection errors
+                description: "DigitalOcean exporter {{ $labels.collector }} collector has {{ $value }} errors."
+                query: "increase(digitalocean_errors_total[5m]) > 0"
+                severity: warning
+              - name: DigitalOcean droplet limit approaching
+                description: "DigitalOcean account is using {{ $value }}% of its droplet quota."
+                query: "(count(digitalocean_droplet_up) / digitalocean_account_droplet_limit) * 100 > 80"
+                severity: warning
+                comments: Fires when more than 80% of the account's droplet limit is in use.
+
+      - name: Azure
+        exporters:
+          - name: webdevops/azure-metrics-exporter
+            slug: azure-metrics-exporter
+            doc_url: https://github.com/webdevops/azure-metrics-exporter
+            comments: |
+              The exporter uses azurerm_resource_metric as the default metric name for forwarded Azure Monitor metrics.
+              The metric name can be customized via the name parameter in probe configuration.
+              Self-monitoring metrics use the azurerm_stats_* and azurerm_api_* prefixes.
+            rules:
+              - name: Azure exporter request errors
+                description: "Azure metrics exporter on {{ $labels.instance }} has {{ $value }} API request errors in the last 15 minutes."
+                query: 'increase(azurerm_stats_metric_requests{result="error"}[15m]) > 5'
+                severity: warning
+              - name: Azure exporter high error rate
+                description: "Azure metrics exporter on {{ $labels.instance }} has an error rate above 10% ({{ $value }}%)."
+                query: 'sum by (instance) (rate(azurerm_stats_metric_requests{result="error"}[5m])) / sum by (instance) (rate(azurerm_stats_metric_requests[5m])) * 100 > 10'
+                severity: warning
+                for: 5m
+              - name: Azure API read rate limit approaching
+                description: "Azure API read rate limit for subscription {{ $labels.subscriptionID }} is running low ({{ $value }} remaining)."
+                query: 'azurerm_api_ratelimit{type="read"} < 100'
+                severity: warning
+                comments: |
+                  Azure Resource Manager enforces rate limits per subscription.
+                  The threshold of 100 remaining calls is a rough default. Adjust based on your
+                  scrape interval and number of monitored resources.
+              - name: Azure API write rate limit approaching
+                description: "Azure API write rate limit for subscription {{ $labels.subscriptionID }} is running low ({{ $value }} remaining)."
+                query: 'azurerm_api_ratelimit{type="write"} < 50'
+                severity: warning
+              - name: Azure exporter slow collection
+                description: "Azure metrics exporter on {{ $labels.instance }} metric collection is taking more than 5 minutes ({{ $value }}s)."
+                query: "azurerm_stats_metric_collecttime > 300"
+                severity: warning
+                for: 5m
+
+
   - name: Other
     services:
       - name: Thanos
@@ -4331,6 +4653,366 @@ groups:
                 query: sum by (job) (cortex_query_frontend_queue_length) > 0
                 severity: critical
                 for: 5m
+
+      - name: Grafana Tempo
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://grafana.com/docs/tempo/latest/operations/monitor/
+            rules:
+              - name: Tempo distributor unhealthy
+                description: Tempo has {{ $value }} unhealthy distributor(s).
+                query: max by (job) (tempo_ring_members{state="Unhealthy", name="distributor"}) > 0
+                severity: warning
+                for: 15m
+              - name: Tempo live store unhealthy
+                description: Tempo has {{ $value }} unhealthy live store(s).
+                query: max by (job) (tempo_ring_members{state="Unhealthy", name="live-store"}) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo metrics generator unhealthy
+                description: Tempo has {{ $value }} unhealthy metrics generator(s).
+                query: max by (job) (tempo_ring_members{state="Unhealthy", name="metrics-generator"}) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo compactions failing
+                description: Greater than 2 compactions have failed in the past hour.
+                query: sum by (job) (increase(tempodb_compaction_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_compaction_errors_total[5m])) > 0
+                severity: critical
+                for: 1h
+                comments: |
+                  Uses a two-window approach: 1h for historical count and 5m to confirm the issue is ongoing.
+              - name: Tempo polls failing
+                description: Greater than 2 blocklist polls have failed in the past hour.
+                query: sum by (job) (increase(tempodb_blocklist_poll_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_poll_errors_total[5m])) > 0
+                severity: critical
+              - name: Tempo tenant index failures
+                description: Greater than 2 tenant index failures in the past hour.
+                query: sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[5m])) > 0
+                severity: critical
+              - name: Tempo no tenant index builders
+                description: No tenant index builders for tenant {{ $labels.tenant }}. Tenant index will quickly become stale.
+                query: sum by (tenant) (tempodb_blocklist_tenant_index_builder) == 0 and on() max(tempodb_blocklist_length) > 0
+                severity: critical
+                for: 5m
+              - name: Tempo tenant index too old
+                description: Tenant index for {{ $labels.tenant }} is {{ $value }}s old.
+                query: max by (tenant) (tempodb_blocklist_tenant_index_age_seconds) > 600
+                severity: critical
+                for: 5m
+                comments: |
+                  Threshold of 600s (10 minutes). Adjust based on your tenant index build interval.
+              - name: Tempo block list rising quickly
+                description: Tempo blocklist length is up {{ printf "%.0f" $value }}% over the last 7 days. Consider scaling compactors.
+                query: (avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) - 1) * 100 > 40
+                severity: critical
+                for: 15m
+                comments: |
+                  Fires when the blocklist grows more than 40% over 7 days.
+              - name: Tempo bad overrides
+                description: '{{ $labels.job }} failed to reload runtime overrides.'
+                query: sum by (job) (tempo_runtime_config_last_reload_successful == 0) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo user configurable overrides reload failing
+                description: Greater than 5 user-configurable overrides reloads have failed in the past hour.
+                query: sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[1h])) > 5 and sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[5m])) > 0
+                severity: critical
+              - name: Tempo compaction too many outstanding blocks warning
+                description: There are too many outstanding compaction blocks for {{ $labels.instance }}. Consider increasing compactor resources.
+                query: sum by (instance) (tempodb_compaction_outstanding_blocks) > 100
+                severity: warning
+                for: 6h
+                comments: |
+                  Threshold of 100 blocks per compactor instance. Adjust based on your environment.
+              - name: Tempo compaction too many outstanding blocks critical
+                description: There are too many outstanding compaction blocks for {{ $labels.instance }}. Increase compactor resources immediately.
+                query: sum by (instance) (tempodb_compaction_outstanding_blocks) > 250
+                severity: critical
+                for: 24h
+              - name: Tempo distributor usage tracker errors
+                description: Tempo distributor usage tracker errors for {{ $labels.job }} (reason {{ $labels.reason }}).
+                query: sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0
+                severity: critical
+                for: 30m
+              - name: Tempo metrics generator processor updates failing
+                description: Tempo metrics generator processor updates are failing for {{ $labels.job }}.
+                query: sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo metrics generator service graphs dropping spans
+                description: Tempo metrics generator is dropping {{ printf "%.2f" $value }}% of spans in service graphs for {{ $labels.job }}.
+                query: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5'
+                severity: warning
+                for: 15m
+              - name: Tempo metrics generator collections failing
+                description: Tempo metrics generator collections are failing for {{ $labels.job }}.
+                query: sum by (job) (increase(tempo_metrics_generator_registry_collections_failed_total[5m])) > 2
+                severity: critical
+                for: 5m
+              - name: Tempo memcached errors elevated
+                description: 'Tempo memcached error rate is {{ printf "%.2f" $value }}% for {{ $labels.name }} in {{ $labels.job }}.'
+                query: '100 * sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count{status_code="500"}[5m])) / sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 20'
+                severity: warning
+                for: 10m
+                comments: |
+                  Fires when the memcached error rate exceeds 20%. Only relevant if Tempo is configured with memcached caching.
+
+      - name: Grafana Mimir
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://grafana.com/docs/mimir/latest/manage/monitor-grafana-mimir/
+            comments: |
+              Mimir uses the `cortex_` metric prefix for backward compatibility with Cortex. This is intentional and expected.
+            rules:
+              # Core alerts
+              - name: Mimir ingester unhealthy
+                description: Mimir has {{ $value }} unhealthy ingester(s) in the ring.
+                query: min by (job) (cortex_ring_members{state="Unhealthy", name="ingester"}) > 0
+                severity: critical
+                for: 15m
+              - name: Mimir request errors
+                description: 'Mimir {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}% errors.'
+                query: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!~"ready|debug_pprof"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 1'
+                severity: critical
+                for: 15m
+              - name: Mimir inconsistent runtime config
+                description: An inconsistent runtime config file is used across Mimir instances.
+                query: count(count by (job, sha256) (cortex_runtime_config_hash)) without(sha256) > 1
+                severity: critical
+                for: 1h
+              - name: Mimir bad runtime config
+                description: '{{ $labels.job }} failed to reload runtime config.'
+                query: sum by (job) (cortex_runtime_config_last_reload_successful == 0) > 0
+                severity: critical
+                for: 5m
+              - name: Mimir scheduler queries stuck
+                description: There are {{ $value }} queued up queries in {{ $labels.job }}.
+                query: sum by (job) (min_over_time(cortex_query_scheduler_queue_length[1m])) > 0
+                severity: critical
+                for: 7m
+              - name: Mimir cache request errors
+                description: 'Mimir cache {{ $labels.name }} is experiencing {{ printf "%.2f" $value }}% errors for {{ $labels.operation }} operation.'
+                query: '(sum by (name, operation, job) (rate(thanos_cache_operation_failures_total[5m])) / sum by (name, operation, job) (rate(thanos_cache_operations_total[5m]))) * 100 > 5'
+                severity: warning
+                for: 5m
+              - name: Mimir KV store failure
+                description: 'Mimir {{ $labels.job }} KV store {{ $labels.kv_name }} is failing with 100% error rate.'
+                query: '(sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.."}[5m])) / sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1'
+                severity: critical
+                for: 5m
+              - name: Mimir memory map areas too high
+                description: 'Mimir {{ $labels.job }} is using {{ printf "%.0f" $value }}% of its memory map area limit.'
+                query: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} * 100 > 80'
+                severity: critical
+                for: 5m
+              - name: Mimir ingester instance has no tenants
+                description: Mimir ingester {{ $labels.instance }} has no tenants assigned.
+                query: (cortex_ingester_memory_users == 0) and on (instance) (cortex_ingester_memory_users offset 1h > 0)
+                severity: warning
+                for: 1h
+              - name: Mimir ruler instance has no rule groups
+                description: Mimir ruler {{ $labels.instance }} has no rule groups assigned.
+                query: (cortex_ruler_managers_total == 0) and on (instance) (cortex_ruler_managers_total offset 1h > 0)
+                severity: warning
+                for: 1h
+              - name: Mimir ingested data too far in the future
+                description: Mimir ingester {{ $labels.job }} has ingested samples with timestamps more than 1 hour in the future.
+                query: max by (job) (cortex_ingester_tsdb_head_max_timestamp_seconds - time() and cortex_ingester_tsdb_head_max_timestamp_seconds > 0) > 3600
+                severity: warning
+                for: 5m
+              - name: Mimir store gateway too many failed operations
+                description: Mimir store-gateway {{ $labels.job }} bucket operations are failing.
+                query: sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0
+                severity: warning
+                for: 5m
+              - name: Mimir ring members mismatch
+                description: Mimir {{ $labels.name }} ring has inconsistent member counts across instances.
+                query: max by (name, job) (sum by (name, job, instance) (cortex_ring_members)) != min by (name, job) (sum by (name, job, instance) (cortex_ring_members))
+                severity: warning
+                for: 15m
+              # Instance limits
+              - name: Mimir ingester reaching series limit warning
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its series limit.'
+                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} * 100 > 80) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+                severity: warning
+                for: 3h
+              - name: Mimir ingester reaching series limit critical
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its series limit.'
+                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} * 100 > 90) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+                severity: critical
+                for: 5m
+              - name: Mimir ingester reaching tenants limit warning
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its tenants limit.'
+                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} * 100 > 70) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+                severity: warning
+                for: 5m
+              - name: Mimir ingester reaching tenants limit critical
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its tenants limit.'
+                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} * 100 > 80) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+                severity: critical
+                for: 5m
+              - name: Mimir reaching TCP connections limit
+                description: 'Mimir instance {{ $labels.instance }} is using {{ printf "%.0f" $value }}% of its TCP connections limit.'
+                query: cortex_tcp_connections / cortex_tcp_connections_limit * 100 > 80 and cortex_tcp_connections_limit > 0
+                severity: critical
+                for: 5m
+              - name: Mimir distributor inflight requests high
+                description: 'Mimir distributor {{ $labels.instance }} is using {{ printf "%.0f" $value }}% of its inflight push requests limit.'
+                query: '(cortex_distributor_inflight_push_requests / ignoring(limit) cortex_distributor_instance_limits{limit="max_inflight_push_requests"} * 100 > 80) and cortex_distributor_instance_limits{limit="max_inflight_push_requests"} > 0'
+                severity: critical
+                for: 5m
+              # Blocks and TSDB
+              - name: Mimir ingester TSDB head compaction failed
+                description: Mimir ingester {{ $labels.instance }} is failing to compact TSDB head.
+                query: rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0
+                severity: critical
+                for: 15m
+              - name: Mimir ingester TSDB head truncation failed
+                description: Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head.
+                query: rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0
+                severity: critical
+              - name: Mimir ingester TSDB checkpoint creation failed
+                description: Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints.
+                query: rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0
+                severity: critical
+              - name: Mimir ingester TSDB checkpoint deletion failed
+                description: Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints.
+                query: rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0
+                severity: critical
+              - name: Mimir ingester TSDB WAL truncation failed
+                description: Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL.
+                query: rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0
+                severity: warning
+              - name: Mimir ingester TSDB WAL writes failed
+                description: Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL.
+                query: rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0
+                severity: critical
+                for: 3m
+              - name: Mimir store gateway has not synced bucket
+                description: Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 10 minutes.
+                query: (time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 600) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0
+                severity: critical
+                for: 5m
+              - name: Mimir store gateway no synced tenants
+                description: Mimir store-gateway {{ $labels.instance }} has no synced tenants.
+                query: (min by (instance, job) (cortex_bucket_stores_tenants_synced{component="store-gateway"}) == 0) and on (instance) (cortex_bucket_stores_tenants_synced{component="store-gateway"} offset 1h > 0)
+                severity: warning
+                for: 1h
+              - name: Mimir bucket index not updated
+                description: 'Mimir bucket index for tenant {{ $labels.user }} has not been updated for more than 35 minutes.'
+                query: min by (user, job) (time() - cortex_bucket_index_last_successful_update_timestamp_seconds) > 2100
+                severity: critical
+              # Compactor
+              - name: Mimir compactor not cleaning up blocks
+                description: Mimir compactor {{ $labels.instance }} has not cleaned up blocks in the last 6 hours.
+                query: (time() - cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 21600) and cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 0
+                severity: critical
+                for: 1h
+              - name: Mimir compactor not running compaction
+                description: Mimir compactor {{ $labels.instance }} has not run compaction in the last 24 hours.
+                query: (time() - cortex_compactor_last_successful_run_timestamp_seconds > 86400) and cortex_compactor_last_successful_run_timestamp_seconds > 0
+                severity: critical
+                for: 15m
+              - name: Mimir compactor has consecutive failures
+                description: Mimir compactor {{ $labels.instance }} has had 2+ compaction failures in the last 2 hours.
+                query: increase(cortex_compactor_runs_failed_total[2h]) > 1
+                severity: critical
+              - name: Mimir compactor has run out of disk space
+                description: Mimir compactor {{ $labels.instance }} has run out of disk space.
+                query: increase(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1
+                severity: critical
+              - name: Mimir compactor has not uploaded blocks
+                description: Mimir compactor {{ $labels.instance }} has not uploaded any block in the last 24 hours.
+                query: (time() - thanos_objstore_bucket_last_successful_upload_time{component="compactor"} > 86400) and thanos_objstore_bucket_last_successful_upload_time{component="compactor"} > 0
+                severity: critical
+                for: 15m
+              - name: Mimir compactor skipped blocks
+                description: Mimir compactor has found blocks that cannot be compacted (reason {{ $labels.reason }}).
+                query: increase(cortex_compactor_blocks_marked_for_no_compaction_total[5m]) > 0
+                severity: warning
+                for: 5m
+              # Ruler
+              - name: Mimir ruler too many failed pushes
+                description: 'Mimir ruler {{ $labels.instance }} is failing to push {{ printf "%.2f" $value }}% of write requests.'
+                query: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1'
+                severity: critical
+                for: 5m
+              - name: Mimir ruler too many failed queries
+                description: 'Mimir ruler {{ $labels.instance }} is failing {{ printf "%.2f" $value }}% of query evaluations.'
+                query: '100 * sum by (instance, job) (rate(cortex_ruler_queries_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 1'
+                severity: critical
+                for: 5m
+              - name: Mimir ruler missed evaluations
+                description: 'Mimir ruler {{ $labels.instance }} is missing {{ printf "%.2f" $value }}% of rule group evaluations.'
+                query: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1'
+                severity: warning
+                for: 5m
+              - name: Mimir ruler failed ring check
+                description: Mimir ruler {{ $labels.job }} is failing ring checks.
+                query: sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0
+                severity: critical
+                for: 5m
+              # Alertmanager
+              - name: Mimir alertmanager sync configs failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to sync configs.
+                query: rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0
+                severity: critical
+                for: 30m
+              - name: Mimir alertmanager ring check failing
+                description: Mimir alertmanager {{ $labels.job }} is failing ring checks.
+                query: rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0
+                severity: critical
+                for: 10m
+              - name: Mimir alertmanager state merge failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to merge state updates.
+                query: rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0
+                severity: critical
+                for: 10m
+              - name: Mimir alertmanager replication failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to replicate state.
+                query: rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0
+                severity: critical
+                for: 10m
+              - name: Mimir alertmanager persist state failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to persist state.
+                query: rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0
+                severity: critical
+                for: 1h
+              - name: Mimir alertmanager initial sync failed
+                description: Mimir alertmanager {{ $labels.job }} failed initial state sync.
+                query: increase(cortex_alertmanager_state_initial_sync_completed_total{outcome="failed"}[1m]) > 0
+                severity: warning
+              - name: Mimir alertmanager instance has no tenants
+                description: Mimir alertmanager {{ $labels.instance }} has no tenants assigned.
+                query: (cortex_alertmanager_tenants_owned == 0) and on (instance) (cortex_alertmanager_tenants_owned offset 1h > 0)
+                severity: warning
+                for: 1h
+              # Gossip
+              - name: Mimir gossip members count too high
+                description: Mimir gossip cluster has more members than expected.
+                query: 'avg(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job) * 1.15 + 10 < max(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job)'
+                severity: warning
+                for: 20m
+              - name: Mimir gossip members count too low
+                description: Mimir gossip cluster has fewer members than expected.
+                query: 'avg(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job) * 0.5 > min(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job)'
+                severity: warning
+                for: 20m
+              # Go runtime
+              - name: Mimir go threads too high warning
+                description: 'Mimir {{ $labels.instance }} has {{ $value }} Go threads.'
+                query: 'go_threads{job=~".*(mimir|cortex).*"} > 5000'
+                severity: warning
+                for: 15m
+                comments: |
+                  A high number of Go threads may indicate a goroutine leak.
+              - name: Mimir go threads too high critical
+                description: 'Mimir {{ $labels.instance }} has {{ $value }} Go threads.'
+                query: 'go_threads{job=~".*(mimir|cortex).*"} > 8000'
+                severity: critical
+                for: 15m
 
       - name: Grafana Alloy
         exporters:
@@ -4738,3 +5420,50 @@ groups:
                 comments: |
                   When the circuit breaker trips to "open" state, Git operations (push, pull, clone) will fail.
                   Check Gitaly service health and logs.
+
+      - name: Jaeger
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://www.jaegertracing.io/docs/latest/monitoring/
+            rules:
+              - name: Jaeger agent HTTP server errors
+                description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors."
+                query: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger client RPC request errors
+                description: "Jaeger client on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors."
+                query: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger client spans dropped
+                description: "Jaeger client on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
+                query: '100 * sum(rate(jaeger_reporter_spans{result=~"dropped|err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger agent spans dropped
+                description: "Jaeger agent on {{ $labels.instance }} is dropping {{ $value | humanize }}% of span batches."
+                query: '100 * sum(rate(jaeger_agent_reporter_batches_failures_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger collector dropping spans
+                description: "Jaeger collector on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
+                query: '100 * sum(rate(jaeger_collector_spans_dropped_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger sampling update failing
+                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of sampling policy updates."
+                query: '100 * sum(rate(jaeger_sampler_queries{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger throttling update failing
+                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of throttling policy updates."
+                query: '100 * sum(rate(jaeger_throttler_updates{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger query request failures
+                description: "Jaeger query on {{ $labels.instance }} is failing {{ $value | humanize }}% of requests."
+                query: '100 * sum(rate(jaeger_query_requests_total{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m

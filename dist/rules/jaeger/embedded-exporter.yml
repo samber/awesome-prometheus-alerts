@@ -1,0 +1,78 @@
+groups:
+
+- name: EmbeddedExporter
+
+  
+  rules:
+
+    - alert: JaegerAgentHttpServerErrors
+      expr: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger agent HTTP server errors (instance {{ $labels.instance }})
+        description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerClientRpcRequestErrors
+      expr: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger client RPC request errors (instance {{ $labels.instance }})
+        description: "Jaeger client on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerClientSpansDropped
+      expr: '100 * sum(rate(jaeger_reporter_spans{result=~"dropped|err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger client spans dropped (instance {{ $labels.instance }})
+        description: "Jaeger client on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerAgentSpansDropped
+      expr: '100 * sum(rate(jaeger_agent_reporter_batches_failures_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger agent spans dropped (instance {{ $labels.instance }})
+        description: "Jaeger agent on {{ $labels.instance }} is dropping {{ $value | humanize }}% of span batches.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerCollectorDroppingSpans
+      expr: '100 * sum(rate(jaeger_collector_spans_dropped_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger collector dropping spans (instance {{ $labels.instance }})
+        description: "Jaeger collector on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerSamplingUpdateFailing
+      expr: '100 * sum(rate(jaeger_sampler_queries{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger sampling update failing (instance {{ $labels.instance }})
+        description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of sampling policy updates.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerThrottlingUpdateFailing
+      expr: '100 * sum(rate(jaeger_throttler_updates{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger throttling update failing (instance {{ $labels.instance }})
+        description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of throttling policy updates.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerQueryRequestFailures
+      expr: '100 * sum(rate(jaeger_query_requests_total{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger query request failures (instance {{ $labels.instance }})
+        description: "Jaeger query on {{ $labels.instance }} is failing {{ $value | humanize }}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

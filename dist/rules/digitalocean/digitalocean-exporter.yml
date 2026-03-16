@@ -1,0 +1,97 @@
+groups:
+
+- name: DigitaloceanExporter
+
+  
+  rules:
+
+    - alert: DigitaloceanDropletDown
+      expr: 'digitalocean_droplet_up == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: DigitalOcean droplet down (instance {{ $labels.instance }})
+        description: "DigitalOcean droplet {{ $labels.name }} ({{ $labels.id }}) in {{ $labels.region }} is not running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanAccountNotActive
+      expr: 'digitalocean_account_active != 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: DigitalOcean account not active (instance {{ $labels.instance }})
+        description: "DigitalOcean account is not active. It may be suspended or locked.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanDatabaseDown
+      expr: 'digitalocean_database_status == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: DigitalOcean database down (instance {{ $labels.instance }})
+        description: "DigitalOcean managed database {{ $labels.name }} ({{ $labels.engine }}) in {{ $labels.region }} is offline.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanKubernetesClusterDown
+      expr: 'digitalocean_kubernetes_cluster_up == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: DigitalOcean Kubernetes cluster down (instance {{ $labels.instance }})
+        description: "DigitalOcean Kubernetes cluster {{ $labels.name }} ({{ $labels.version }}) in {{ $labels.region }} is not running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanLoadBalancerDown
+      expr: 'digitalocean_loadbalancer_status == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: DigitalOcean load balancer down (instance {{ $labels.instance }})
+        description: "DigitalOcean load balancer {{ $labels.name }} ({{ $labels.ip }}) is not active.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanLoadBalancerNoBackends
+      expr: 'digitalocean_loadbalancer_droplets == 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: DigitalOcean load balancer no backends (instance {{ $labels.instance }})
+        description: "DigitalOcean load balancer {{ $labels.name }} ({{ $labels.ip }}) has no droplets attached.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanFloatingIpNotAssigned
+      expr: 'digitalocean_floating_ipv4_active == 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: DigitalOcean floating IP not assigned (instance {{ $labels.instance }})
+        description: "DigitalOcean floating IP {{ $labels.ipv4 }} in {{ $labels.region }} is not assigned to any droplet.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanActiveIncidents
+      expr: 'digitalocean_incidents_total > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: DigitalOcean active incidents (instance {{ $labels.instance }})
+        description: "DigitalOcean platform has {{ $value }} active incident(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: DigitaloceanExporterCollectionErrors
+      expr: 'increase(digitalocean_errors_total[5m]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: DigitalOcean exporter collection errors (instance {{ $labels.instance }})
+        description: "DigitalOcean exporter {{ $labels.collector }} collector has {{ $value }} errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Fires when more than 80% of the account's droplet limit is in use.
+    - alert: DigitaloceanDropletLimitApproaching
+      expr: '(count(digitalocean_droplet_up) / digitalocean_account_droplet_limit) * 100 > 80'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: DigitalOcean droplet limit approaching (instance {{ $labels.instance }})
+        description: "DigitalOcean account is using {{ $value }}% of its droplet quota.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

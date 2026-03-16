@@ -52,6 +52,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules#netdata)
 - [eBPF](https://samber.github.io/awesome-prometheus-alerts/rules#ebpf)
 - [Process Exporter](https://samber.github.io/awesome-prometheus-alerts/rules#process-exporter)
+- [Systemd](https://samber.github.io/awesome-prometheus-alerts/rules#systemd)
 
 #### Databases and brokers
 
@@ -114,6 +115,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules#openebs)
 - [Minio](https://samber.github.io/awesome-prometheus-alerts/rules#minio)
 - [SSL/TLS](https://samber.github.io/awesome-prometheus-alerts/rules#ssl/tls)
+- [cert-manager](https://samber.github.io/awesome-prometheus-alerts/rules#cert-manager)
 - [Juniper](https://samber.github.io/awesome-prometheus-alerts/rules#juniper)
 - [CoreDNS](https://samber.github.io/awesome-prometheus-alerts/rules#coredns)
 - [FreeSwitch](https://samber.github.io/awesome-prometheus-alerts/rules#freeswitch)
@@ -122,6 +124,14 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules#cloudflare)
 - [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules#snmp)
 - [Cilium](https://samber.github.io/awesome-prometheus-alerts/rules#cilium)
+- [WireGuard](https://samber.github.io/awesome-prometheus-alerts/rules#wireguard)
+
+#### Cloud providers
+
+- [AWS CloudWatch](https://samber.github.io/awesome-prometheus-alerts/rules#aws-cloudwatch)
+- [Google Cloud Stackdriver](https://samber.github.io/awesome-prometheus-alerts/rules#google-cloud-stackdriver)
+- [DigitalOcean](https://samber.github.io/awesome-prometheus-alerts/rules#digitalocean)
+- [Azure](https://samber.github.io/awesome-prometheus-alerts/rules#azure)
 
 #### Other
 
@@ -129,11 +139,14 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Loki](https://samber.github.io/awesome-prometheus-alerts/rules#loki)
 - [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules#promtail)
 - [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules#cortex)
+- [Grafana Tempo](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-tempo)
+- [Grafana Mimir](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-mimir)
 - [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
 - [OpenTelemetry Collector](https://samber.github.io/awesome-prometheus-alerts/rules#opentelemetry-collector)
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
 - [GitLab](https://samber.github.io/awesome-prometheus-alerts/rules#gitlab)
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
+- [Jaeger](https://samber.github.io/awesome-prometheus-alerts/rules#jaeger)
 
 ## 🤝 Contributing
 

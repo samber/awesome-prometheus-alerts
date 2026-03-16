@@ -1,0 +1,39 @@
+groups:
+
+- name: MindflavorPrometheusWireguardExporter
+
+  
+  rules:
+
+    # The threshold of 300 seconds (5 minutes) is a rough default. WireGuard peers that are idle but reachable
+    # typically re-handshake every 2 minutes. Adjust based on your keepalive interval.
+    # The `> 0` guard excludes peers that have never completed a handshake (covered by a separate rule).
+    - alert: WireguardPeerHandshakeTooOld
+      expr: 'time() - wireguard_latest_handshake_seconds > 300 and wireguard_latest_handshake_seconds > 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: WireGuard peer handshake too old (instance {{ $labels.instance }})
+        description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has not had a handshake for over 5 minutes. The tunnel may be down.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: WireguardPeerHandshakeNeverEstablished
+      expr: 'wireguard_latest_handshake_seconds == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: WireGuard peer handshake never established (instance {{ $labels.instance }})
+        description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has never completed a handshake. Check peer configuration and network connectivity.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # This alert fires when a peer has a recent handshake but zero traffic flow.
+    # May indicate routing issues or a misconfigured allowed-ips.
+    # Only useful if you expect continuous traffic on all peers.
+    - alert: WireguardNoTrafficOnPeer
+      expr: '(rate(wireguard_sent_bytes_total[15m]) + rate(wireguard_received_bytes_total[15m])) == 0 and wireguard_latest_handshake_seconds > 0 and (time() - wireguard_latest_handshake_seconds) < 300'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: WireGuard no traffic on peer (instance {{ $labels.instance }})
+        description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has had no traffic for 15 minutes despite an active handshake.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -1,0 +1,173 @@
+groups:
+
+- name: EmbeddedExporter
+
+  
+  rules:
+
+    - alert: TempoDistributorUnhealthy
+      expr: 'max by (job) (tempo_ring_members{state="Unhealthy", name="distributor"}) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo distributor unhealthy (instance {{ $labels.instance }})
+        description: "Tempo has {{ $value }} unhealthy distributor(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoLiveStoreUnhealthy
+      expr: 'max by (job) (tempo_ring_members{state="Unhealthy", name="live-store"}) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo live store unhealthy (instance {{ $labels.instance }})
+        description: "Tempo has {{ $value }} unhealthy live store(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoMetricsGeneratorUnhealthy
+      expr: 'max by (job) (tempo_ring_members{state="Unhealthy", name="metrics-generator"}) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo metrics generator unhealthy (instance {{ $labels.instance }})
+        description: "Tempo has {{ $value }} unhealthy metrics generator(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Uses a two-window approach: 1h for historical count and 5m to confirm the issue is ongoing.
+    - alert: TempoCompactionsFailing
+      expr: 'sum by (job) (increase(tempodb_compaction_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_compaction_errors_total[5m])) > 0'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo compactions failing (instance {{ $labels.instance }})
+        description: "Greater than 2 compactions have failed in the past hour.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoPollsFailing
+      expr: 'sum by (job) (increase(tempodb_blocklist_poll_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_poll_errors_total[5m])) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo polls failing (instance {{ $labels.instance }})
+        description: "Greater than 2 blocklist polls have failed in the past hour.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoTenantIndexFailures
+      expr: 'sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[5m])) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo tenant index failures (instance {{ $labels.instance }})
+        description: "Greater than 2 tenant index failures in the past hour.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoNoTenantIndexBuilders
+      expr: 'sum by (tenant) (tempodb_blocklist_tenant_index_builder) == 0 and on() max(tempodb_blocklist_length) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo no tenant index builders (instance {{ $labels.instance }})
+        description: "No tenant index builders for tenant {{ $labels.tenant }}. Tenant index will quickly become stale.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 600s (10 minutes). Adjust based on your tenant index build interval.
+    - alert: TempoTenantIndexTooOld
+      expr: 'max by (tenant) (tempodb_blocklist_tenant_index_age_seconds) > 600'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo tenant index too old (instance {{ $labels.instance }})
+        description: "Tenant index for {{ $labels.tenant }} is {{ $value }}s old.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Fires when the blocklist grows more than 40% over 7 days.
+    - alert: TempoBlockListRisingQuickly
+      expr: '(avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) - 1) * 100 > 40'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo block list rising quickly (instance {{ $labels.instance }})
+        description: "Tempo blocklist length is up {{ printf \"%.0f\" $value }}% over the last 7 days. Consider scaling compactors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoBadOverrides
+      expr: 'sum by (job) (tempo_runtime_config_last_reload_successful == 0) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo bad overrides (instance {{ $labels.instance }})
+        description: "{{ $labels.job }} failed to reload runtime overrides.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoUserConfigurableOverridesReloadFailing
+      expr: 'sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[1h])) > 5 and sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[5m])) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo user configurable overrides reload failing (instance {{ $labels.instance }})
+        description: "Greater than 5 user-configurable overrides reloads have failed in the past hour.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 100 blocks per compactor instance. Adjust based on your environment.
+    - alert: TempoCompactionTooManyOutstandingBlocksWarning
+      expr: 'sum by (instance) (tempodb_compaction_outstanding_blocks) > 100'
+      for: 6h
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo compaction too many outstanding blocks warning (instance {{ $labels.instance }})
+        description: "There are too many outstanding compaction blocks for {{ $labels.instance }}. Consider increasing compactor resources.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoCompactionTooManyOutstandingBlocksCritical
+      expr: 'sum by (instance) (tempodb_compaction_outstanding_blocks) > 250'
+      for: 24h
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo compaction too many outstanding blocks critical (instance {{ $labels.instance }})
+        description: "There are too many outstanding compaction blocks for {{ $labels.instance }}. Increase compactor resources immediately.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoDistributorUsageTrackerErrors
+      expr: 'sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0'
+      for: 30m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo distributor usage tracker errors (instance {{ $labels.instance }})
+        description: "Tempo distributor usage tracker errors for {{ $labels.job }} (reason {{ $labels.reason }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoMetricsGeneratorProcessorUpdatesFailing
+      expr: 'sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo metrics generator processor updates failing (instance {{ $labels.instance }})
+        description: "Tempo metrics generator processor updates are failing for {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoMetricsGeneratorServiceGraphsDroppingSpans
+      expr: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo metrics generator service graphs dropping spans (instance {{ $labels.instance }})
+        description: "Tempo metrics generator is dropping {{ printf \"%.2f\" $value }}% of spans in service graphs for {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoMetricsGeneratorCollectionsFailing
+      expr: 'sum by (job) (increase(tempo_metrics_generator_registry_collections_failed_total[5m])) > 2'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo metrics generator collections failing (instance {{ $labels.instance }})
+        description: "Tempo metrics generator collections are failing for {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Fires when the memcached error rate exceeds 20%. Only relevant if Tempo is configured with memcached caching.
+    - alert: TempoMemcachedErrorsElevated
+      expr: '100 * sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count{status_code="500"}[5m])) / sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 20'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo memcached errors elevated (instance {{ $labels.instance }})
+        description: "Tempo memcached error rate is {{ printf \"%.2f\" $value }}% for {{ $labels.name }} in {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
