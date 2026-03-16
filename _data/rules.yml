@@ -3431,30 +3431,30 @@ groups:
                 comments: From the official snmp-mixin.
               - name: SNMP interface down
                 description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} is operationally down while administratively up."
-                query: "ifOperStatus{ifAdminStatus=\"1\"} == 2"
+                query: '(ifOperStatus{job=~"snmp.*"} == 2) and on(instance, ifIndex) (ifAdminStatus == 1)'
                 severity: critical
                 for: 2m
               - name: SNMP interface high inbound error rate
                 description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} has an inbound error rate above 5%."
-                query: "rate(ifInErrors[5m]) / (rate(ifHCInUcastPkts[5m]) + rate(ifHCInBroadcastPkts[5m]) + rate(ifHCInMulticastPkts[5m])) > 0.05 and (rate(ifHCInUcastPkts[5m]) + rate(ifHCInBroadcastPkts[5m]) + rate(ifHCInMulticastPkts[5m])) > 0"
+                query: 'rate(ifInErrors{job=~"snmp.*"}[5m]) / (rate(ifHCInUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInMulticastPkts{job=~"snmp.*"}[5m])) > 0.05 and (rate(ifHCInUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCInMulticastPkts{job=~"snmp.*"}[5m])) > 0'
                 severity: warning
                 for: 5m
                 comments: Threshold is a rough default. Adjust based on your network environment.
               - name: SNMP interface high outbound error rate
                 description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} has an outbound error rate above 5%."
-                query: "rate(ifOutErrors[5m]) / (rate(ifHCOutUcastPkts[5m]) + rate(ifHCOutBroadcastPkts[5m]) + rate(ifHCOutMulticastPkts[5m])) > 0.05 and (rate(ifHCOutUcastPkts[5m]) + rate(ifHCOutBroadcastPkts[5m]) + rate(ifHCOutMulticastPkts[5m])) > 0"
+                query: 'rate(ifOutErrors{job=~"snmp.*"}[5m]) / (rate(ifHCOutUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutMulticastPkts{job=~"snmp.*"}[5m])) > 0.05 and (rate(ifHCOutUcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutBroadcastPkts{job=~"snmp.*"}[5m]) + rate(ifHCOutMulticastPkts{job=~"snmp.*"}[5m])) > 0'
                 severity: warning
                 for: 5m
                 comments: Threshold is a rough default. Adjust based on your network environment.
               - name: SNMP interface high bandwidth usage inbound
                 description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} inbound utilization is above 80%."
-                query: "rate(ifHCInOctets[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0"
+                query: 'rate(ifHCInOctets{job=~"snmp.*"}[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
                 severity: warning
                 for: 15m
                 comments: Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
               - name: SNMP interface high bandwidth usage outbound
                 description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} outbound utilization is above 80%."
-                query: "rate(ifHCOutOctets[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0"
+                query: 'rate(ifHCOutOctets{job=~"snmp.*"}[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0'
                 severity: warning
                 for: 15m
                 comments: Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
