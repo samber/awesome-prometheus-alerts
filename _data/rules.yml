@@ -3638,6 +3638,35 @@ groups:
                 query: ssl_verified_cert_not_after{chain_no="0"} - time() < 86400 * 7
                 severity: warning
 
+      - name: cert-manager
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://cert-manager.io/docs/devops-tips/prometheus-metrics/
+            rules:
+              - name: Cert-Manager absent
+                description: Cert-Manager has disappeared from Prometheus service discovery. New certificates will not be able to be minted, and existing ones can't be renewed until cert-manager is back.
+                query: 'absent(up{job="cert-manager"})'
+                severity: critical
+                for: 10m
+              - name: Cert-Manager certificate expiring soon
+                description: The certificate {{ $labels.name }} is expiring in less than 21 days.
+                query: 'avg by (exported_namespace, namespace, name) (certmanager_certificate_expiration_timestamp_seconds - time()) < (21 * 24 * 3600)'
+                severity: warning
+                for: 1h
+                comments: |
+                  Threshold of 21 days is a rough default. ACME certificates are typically renewed 30 days before expiry, so expiring within 21 days may indicate issuer misconfiguration.
+              - name: Cert-Manager certificate not ready
+                description: "The certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} is not ready to serve traffic."
+                query: 'max by (name, exported_namespace, namespace, condition) (certmanager_certificate_ready_status{condition!="True"} == 1)'
+                severity: critical
+                for: 10m
+              - name: Cert-Manager hitting ACME rate limits
+                description: Cert-Manager is being rate-limited by the ACME provider. Certificate issuance and renewal may be blocked for up to a week.
+                query: 'sum by (host) (rate(certmanager_http_acme_client_request_count{status="429"}[5m])) > 0'
+                severity: critical
+                for: 5m
+
       - name: Juniper
         exporters:
           - name: czerwonk/junos_exporter
