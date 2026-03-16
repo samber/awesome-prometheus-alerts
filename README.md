@@ -106,6 +106,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [ArgoCD](https://samber.github.io/awesome-prometheus-alerts/rules#argocd)
 - [FluxCD](https://samber.github.io/awesome-prometheus-alerts/rules#fluxcd)
 - [OpenStack](https://samber.github.io/awesome-prometheus-alerts/rules#openstack)
+- [Spinnaker](https://samber.github.io/awesome-prometheus-alerts/rules#spinnaker)
 
 #### Network, security and storage
 

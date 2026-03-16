@@ -3467,6 +3467,89 @@ groups:
                   This alert factors in the allocation ratio to compute effective capacity.
                   The threshold of 90% is a rough default. Adjust based on your allocation ratios and workload patterns.
 
+      - name: Spinnaker
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://spinnaker.io/docs/setup/other_config/monitoring/
+            rules:
+              - name: Spinnaker circuit breaker open
+                description: "Circuit breaker {{ $labels.name }} is open on {{ $labels.instance }}, indicating repeated downstream failures."
+                query: 'resilience4j_circuitbreaker_state{state="open"} == 1'
+                severity: warning
+                for: 5m
+              - name: Spinnaker Orca queue backing up
+                description: "Orca work queue has {{ $value }} messages ready for delivery but not yet picked up. Pipeline executions may be delayed."
+                query: 'queue_ready_depth > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  In a healthy Spinnaker, queue_ready_depth should stay at or near 0.
+                  Sustained non-zero values indicate Orca cannot keep up with incoming work.
+              - name: Spinnaker Orca queue message lag high
+                description: "Orca queue message lag is {{ $value }}s. Pipeline stages are waiting too long before being processed."
+                query: 'rate(queue_message_lag_seconds_sum[5m]) / rate(queue_message_lag_seconds_count[5m]) > 30'
+                severity: warning
+                for: 5m
+                comments: |
+                  The 30s threshold is a rough default. Adjust based on your pipeline SLOs.
+              - name: Spinnaker dead messages
+                description: "Orca is producing dead-lettered messages ({{ $value }} per second). These are tasks that exhausted all retries and will not be executed."
+                query: 'rate(queue_dead_messages_total[5m]) > 0'
+                severity: critical
+                for: 2m
+              - name: Spinnaker zombie executions
+                description: "{{ $value }} zombie pipeline executions detected. These are executions with no corresponding queue messages."
+                query: 'sum(queue_zombies_total) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Zombies are pipeline executions that are running but have lost their queue entry.
+                  See https://spinnaker.io/docs/guides/runbooks/orca-zombie-executions/
+              - name: Spinnaker thread pool exhaustion
+                description: "Orca message handler thread pool has {{ $value }} blocked threads on {{ $labels.instance }}. Pipeline execution throughput is degraded."
+                query: 'threadpool_blockingQueueSize > 0'
+                severity: warning
+                for: 5m
+              - name: Spinnaker polling monitor items over threshold
+                description: "Igor polling monitor {{ $labels.monitor }} for {{ $labels.partition }} has exceeded its item threshold, preventing pipeline triggers."
+                query: 'sum by (monitor, partition) (pollingMonitor_itemsOverThreshold) > 0'
+                severity: critical
+                for: 5m
+                comments: |
+                  When this threshold is exceeded, Igor stops triggering pipelines for the affected monitor.
+                  See https://kb.armory.io/s/article/Hitting-Igor-s-caching-thresholds
+              - name: Spinnaker polling monitor failures
+                description: "Igor polling monitor is experiencing failures ({{ $value }} per second). CI/SCM integrations may not trigger pipelines."
+                query: 'rate(pollingMonitor_failed_total[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: Spinnaker high API error rate
+                description: "Spinnaker API 5xx error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+                query: 'sum by (instance) (rate(controller_invocations_total{status="5xx"}[5m])) / sum by (instance) (rate(controller_invocations_total[5m])) > 0.05 and sum by (instance) (rate(controller_invocations_total[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  The 5% threshold is a rough default. Adjust based on your traffic patterns.
+              - name: Spinnaker API rate limit throttling
+                description: "Gate is actively throttling API requests on {{ $labels.instance }} ({{ $value }} throttled requests per second)."
+                query: 'rate(rateLimitThrottling_total[5m]) > 0'
+                severity: warning
+                for: 2m
+              - name: Spinnaker Clouddriver high error rate
+                description: "Clouddriver 5xx error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}. Cloud operations may be failing."
+                query: 'sum by (instance) (rate(controller_invocations_total{status="5xx", job=~".*clouddriver.*"}[5m])) / sum by (instance) (rate(controller_invocations_total{job=~".*clouddriver.*"}[5m])) > 0.05 and sum by (instance) (rate(controller_invocations_total{job=~".*clouddriver.*"}[5m])) > 0'
+                severity: warning
+                for: 5m
+              - name: Spinnaker AWS rate limiting
+                description: "Clouddriver is being rate-limited by AWS on {{ $labels.instance }} ({{ $value }}ms delay). Cloud operations will be slower."
+                query: 'amazonClientProvider_rateLimitDelayMil > 1000'
+                severity: warning
+                for: 5m
+                comments: |
+                  This metric is specific to AWS cloud providers in Clouddriver.
+                  The 1000ms threshold is a rough default. Adjust based on your AWS usage patterns.
+
   - name: Network, security and storage
     services:
       - name: Ceph
