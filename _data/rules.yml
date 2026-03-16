@@ -4149,6 +4149,366 @@ groups:
                 severity: critical
                 for: 5m
 
+      - name: Grafana Tempo
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://grafana.com/docs/tempo/latest/operations/monitor/
+            rules:
+              - name: Tempo distributor unhealthy
+                description: Tempo has {{ $value }} unhealthy distributor(s).
+                query: max by (job) (tempo_ring_members{state="Unhealthy", name="distributor"}) > 0
+                severity: warning
+                for: 15m
+              - name: Tempo live store unhealthy
+                description: Tempo has {{ $value }} unhealthy live store(s).
+                query: max by (job) (tempo_ring_members{state="Unhealthy", name="live-store"}) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo metrics generator unhealthy
+                description: Tempo has {{ $value }} unhealthy metrics generator(s).
+                query: max by (job) (tempo_ring_members{state="Unhealthy", name="metrics-generator"}) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo compactions failing
+                description: Greater than 2 compactions have failed in the past hour.
+                query: sum by (job) (increase(tempodb_compaction_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_compaction_errors_total[5m])) > 0
+                severity: critical
+                for: 1h
+                comments: |
+                  Uses a two-window approach: 1h for historical count and 5m to confirm the issue is ongoing.
+              - name: Tempo polls failing
+                description: Greater than 2 blocklist polls have failed in the past hour.
+                query: sum by (job) (increase(tempodb_blocklist_poll_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_poll_errors_total[5m])) > 0
+                severity: critical
+              - name: Tempo tenant index failures
+                description: Greater than 2 tenant index failures in the past hour.
+                query: sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[1h])) > 2 and sum by (job) (increase(tempodb_blocklist_tenant_index_errors_total[5m])) > 0
+                severity: critical
+              - name: Tempo no tenant index builders
+                description: No tenant index builders for tenant {{ $labels.tenant }}. Tenant index will quickly become stale.
+                query: sum by (tenant) (tempodb_blocklist_tenant_index_builder) == 0 and max(tempodb_blocklist_length) > 0
+                severity: critical
+                for: 5m
+              - name: Tempo tenant index too old
+                description: Tenant index for {{ $labels.tenant }} is {{ $value }}s old.
+                query: max by (tenant) (tempodb_blocklist_tenant_index_age_seconds) > 600
+                severity: critical
+                for: 5m
+                comments: |
+                  Threshold of 600s (10 minutes). Adjust based on your tenant index build interval.
+              - name: Tempo block list rising quickly
+                description: Tempo blocklist length is up {{ printf "%.0f" $value }}% over the last 7 days. Consider scaling compactors.
+                query: avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) > 1.4
+                severity: critical
+                for: 15m
+                comments: |
+                  Fires when the blocklist grows more than 40% over 7 days.
+              - name: Tempo bad overrides
+                description: '{{ $labels.job }} failed to reload runtime overrides.'
+                query: sum by (job) (tempo_runtime_config_last_reload_successful == 0) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo user configurable overrides reload failing
+                description: Greater than 5 user-configurable overrides reloads have failed in the past hour.
+                query: sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[1h])) > 5 and sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[5m])) > 0
+                severity: critical
+              - name: Tempo compaction too many outstanding blocks warning
+                description: There are too many outstanding compaction blocks for {{ $labels.instance }}. Consider increasing compactor resources.
+                query: sum by (instance) (tempodb_compaction_outstanding_blocks) > 100
+                severity: warning
+                for: 6h
+                comments: |
+                  Threshold of 100 blocks per compactor instance. Adjust based on your environment.
+              - name: Tempo compaction too many outstanding blocks critical
+                description: There are too many outstanding compaction blocks for {{ $labels.instance }}. Increase compactor resources immediately.
+                query: sum by (instance) (tempodb_compaction_outstanding_blocks) > 250
+                severity: critical
+                for: 24h
+              - name: Tempo distributor usage tracker errors
+                description: Tempo distributor usage tracker errors for {{ $labels.job }} (reason {{ $labels.reason }}).
+                query: sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0
+                severity: critical
+                for: 30m
+              - name: Tempo metrics generator processor updates failing
+                description: Tempo metrics generator processor updates are failing for {{ $labels.job }}.
+                query: sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 0
+                severity: critical
+                for: 15m
+              - name: Tempo metrics generator service graphs dropping spans
+                description: Tempo metrics generator is dropping {{ printf "%.2f" $value }}% of spans in service graphs for {{ $labels.job }}.
+                query: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5'
+                severity: warning
+                for: 15m
+              - name: Tempo metrics generator collections failing
+                description: Tempo metrics generator collections are failing for {{ $labels.job }}.
+                query: sum by (job) (increase(tempo_metrics_generator_registry_collections_failed_total[5m])) > 2
+                severity: critical
+                for: 5m
+              - name: Tempo memcached errors elevated
+                description: 'Tempo memcached error rate is {{ printf "%.2f" $value }}% for {{ $labels.name }} in {{ $labels.job }}.'
+                query: '100 * sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count{status_code="500"}[5m])) / sum by (name, job) (rate(tempo_memcache_request_duration_seconds_count[5m])) > 20'
+                severity: warning
+                for: 10m
+                comments: |
+                  Fires when the memcached error rate exceeds 20%. Only relevant if Tempo is configured with memcached caching.
+
+      - name: Grafana Mimir
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://grafana.com/docs/mimir/latest/manage/monitor-grafana-mimir/
+            comments: |
+              Mimir uses the `cortex_` metric prefix for backward compatibility with Cortex. This is intentional and expected.
+            rules:
+              # Core alerts
+              - name: Mimir ingester unhealthy
+                description: Mimir has {{ $value }} unhealthy ingester(s) in the ring.
+                query: min by (job) (cortex_ring_members{state="Unhealthy", name="ingester"}) > 0
+                severity: critical
+                for: 15m
+              - name: Mimir request errors
+                description: 'Mimir {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}% errors.'
+                query: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!~"ready|debug_pprof"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!~"ready|debug_pprof"}[5m])) > 1'
+                severity: critical
+                for: 15m
+              - name: Mimir inconsistent runtime config
+                description: An inconsistent runtime config file is used across Mimir instances.
+                query: count(count by (job, sha256) (cortex_runtime_config_hash)) without(sha256) > 1
+                severity: critical
+                for: 1h
+              - name: Mimir bad runtime config
+                description: '{{ $labels.job }} failed to reload runtime config.'
+                query: sum by (job) (cortex_runtime_config_last_reload_successful == 0) > 0
+                severity: critical
+                for: 5m
+              - name: Mimir scheduler queries stuck
+                description: There are {{ $value }} queued up queries in {{ $labels.job }}.
+                query: sum by (job) (min_over_time(cortex_query_scheduler_queue_length[1m])) > 0
+                severity: critical
+                for: 7m
+              - name: Mimir cache request errors
+                description: 'Mimir cache {{ $labels.name }} is experiencing {{ printf "%.2f" $value }}% errors for {{ $labels.operation }} operation.'
+                query: '(sum by (name, operation, job) (rate(thanos_cache_operation_failures_total[5m])) / sum by (name, operation, job) (rate(thanos_cache_operations_total[5m]))) * 100 > 5'
+                severity: warning
+                for: 5m
+              - name: Mimir KV store failure
+                description: 'Mimir {{ $labels.job }} KV store {{ $labels.kv_name }} is failing with 100% error rate.'
+                query: '(sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.."}[5m])) / sum by (job, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1'
+                severity: critical
+                for: 5m
+              - name: Mimir memory map areas too high
+                description: 'Mimir {{ $labels.job }} is using {{ printf "%.0f" $value }}% of its memory map area limit.'
+                query: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} > 0.8'
+                severity: critical
+                for: 5m
+              - name: Mimir ingester instance has no tenants
+                description: Mimir ingester {{ $labels.instance }} has no tenants assigned.
+                query: (cortex_ingester_memory_users == 0) and on (instance) (cortex_ingester_memory_users offset 1h > 0)
+                severity: warning
+                for: 1h
+              - name: Mimir ruler instance has no rule groups
+                description: Mimir ruler {{ $labels.instance }} has no rule groups assigned.
+                query: (cortex_ruler_managers_total == 0) and on (instance) (cortex_ruler_managers_total offset 1h > 0)
+                severity: warning
+                for: 1h
+              - name: Mimir ingested data too far in the future
+                description: Mimir ingester {{ $labels.job }} has ingested samples with timestamps more than 1 hour in the future.
+                query: max by (job) (cortex_ingester_tsdb_head_max_timestamp_seconds - time() and cortex_ingester_tsdb_head_max_timestamp_seconds > 0) > 3600
+                severity: warning
+                for: 5m
+              - name: Mimir store gateway too many failed operations
+                description: Mimir store-gateway {{ $labels.job }} bucket operations are failing.
+                query: sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0
+                severity: warning
+                for: 5m
+              - name: Mimir ring members mismatch
+                description: Mimir {{ $labels.name }} ring has inconsistent member counts across instances.
+                query: max by (name, job) (sum by (name, job, instance) (cortex_ring_members)) != min by (name, job) (sum by (name, job, instance) (cortex_ring_members))
+                severity: warning
+                for: 15m
+              # Instance limits
+              - name: Mimir ingester reaching series limit warning
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its series limit.'
+                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} > 0.8) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+                severity: warning
+                for: 3h
+              - name: Mimir ingester reaching series limit critical
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its series limit.'
+                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} > 0.9) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+                severity: critical
+                for: 5m
+              - name: Mimir ingester reaching tenants limit warning
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its tenants limit.'
+                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} > 0.7) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+                severity: warning
+                for: 5m
+              - name: Mimir ingester reaching tenants limit critical
+                description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its tenants limit.'
+                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} > 0.8) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+                severity: critical
+                for: 5m
+              - name: Mimir reaching TCP connections limit
+                description: 'Mimir instance {{ $labels.instance }} is using {{ printf "%.0f" $value }}% of its TCP connections limit.'
+                query: cortex_tcp_connections / cortex_tcp_connections_limit > 0.8 and cortex_tcp_connections_limit > 0
+                severity: critical
+                for: 5m
+              - name: Mimir distributor inflight requests high
+                description: 'Mimir distributor {{ $labels.instance }} has too many inflight push requests.'
+                query: '(cortex_distributor_inflight_push_requests / ignoring(limit) cortex_distributor_instance_limits{limit="max_inflight_push_requests"} > 0.8) and cortex_distributor_instance_limits{limit="max_inflight_push_requests"} > 0'
+                severity: critical
+                for: 5m
+              # Blocks and TSDB
+              - name: Mimir ingester TSDB head compaction failed
+                description: Mimir ingester {{ $labels.instance }} is failing to compact TSDB head.
+                query: rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0
+                severity: critical
+                for: 15m
+              - name: Mimir ingester TSDB head truncation failed
+                description: Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head.
+                query: rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0
+                severity: critical
+              - name: Mimir ingester TSDB checkpoint creation failed
+                description: Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints.
+                query: rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0
+                severity: critical
+              - name: Mimir ingester TSDB checkpoint deletion failed
+                description: Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints.
+                query: rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0
+                severity: critical
+              - name: Mimir ingester TSDB WAL truncation failed
+                description: Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL.
+                query: rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0
+                severity: warning
+              - name: Mimir ingester TSDB WAL writes failed
+                description: Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL.
+                query: rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0
+                severity: critical
+                for: 3m
+              - name: Mimir store gateway has not synced bucket
+                description: Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 10 minutes.
+                query: (time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 600) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0
+                severity: critical
+                for: 5m
+              - name: Mimir store gateway no synced tenants
+                description: Mimir store-gateway {{ $labels.instance }} has no synced tenants.
+                query: (min by (instance, job) (cortex_bucket_stores_tenants_synced{component="store-gateway"}) == 0) and on (instance) (cortex_bucket_stores_tenants_synced{component="store-gateway"} offset 1h > 0)
+                severity: warning
+                for: 1h
+              - name: Mimir bucket index not updated
+                description: 'Mimir bucket index for tenant {{ $labels.user }} has not been updated for more than 35 minutes.'
+                query: min by (user, job) (time() - cortex_bucket_index_last_successful_update_timestamp_seconds) > 2100
+                severity: critical
+              # Compactor
+              - name: Mimir compactor not cleaning up blocks
+                description: Mimir compactor {{ $labels.instance }} has not cleaned up blocks in the last 6 hours.
+                query: (time() - cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 21600) and cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 0
+                severity: critical
+                for: 1h
+              - name: Mimir compactor not running compaction
+                description: Mimir compactor {{ $labels.instance }} has not run compaction in the last 24 hours.
+                query: (time() - cortex_compactor_last_successful_run_timestamp_seconds > 86400) and cortex_compactor_last_successful_run_timestamp_seconds > 0
+                severity: critical
+                for: 15m
+              - name: Mimir compactor has consecutive failures
+                description: Mimir compactor {{ $labels.instance }} has had 2+ compaction failures in the last 2 hours.
+                query: increase(cortex_compactor_runs_failed_total[2h]) > 1
+                severity: critical
+              - name: Mimir compactor has run out of disk space
+                description: Mimir compactor {{ $labels.instance }} has run out of disk space.
+                query: increase(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1
+                severity: critical
+              - name: Mimir compactor has not uploaded blocks
+                description: Mimir compactor {{ $labels.instance }} has not uploaded any block in the last 24 hours.
+                query: (time() - thanos_objstore_bucket_last_successful_upload_time{component="compactor"} > 86400) and thanos_objstore_bucket_last_successful_upload_time{component="compactor"} > 0
+                severity: critical
+                for: 15m
+              - name: Mimir compactor skipped blocks
+                description: Mimir compactor has found blocks that cannot be compacted (reason {{ $labels.reason }}).
+                query: increase(cortex_compactor_blocks_marked_for_no_compaction_total[5m]) > 0
+                severity: warning
+                for: 5m
+              # Ruler
+              - name: Mimir ruler too many failed pushes
+                description: 'Mimir ruler {{ $labels.instance }} is failing to push {{ printf "%.2f" $value }}% of write requests.'
+                query: '100 * sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 1'
+                severity: critical
+                for: 5m
+              - name: Mimir ruler too many failed queries
+                description: 'Mimir ruler {{ $labels.instance }} is failing {{ printf "%.2f" $value }}% of query evaluations.'
+                query: '100 * sum by (instance, job) (rate(cortex_ruler_queries_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_queries_total[5m])) > 1'
+                severity: critical
+                for: 5m
+              - name: Mimir ruler missed evaluations
+                description: 'Mimir ruler {{ $labels.instance }} is missing {{ printf "%.2f" $value }}% of rule group evaluations.'
+                query: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1'
+                severity: warning
+                for: 5m
+              - name: Mimir ruler failed ring check
+                description: Mimir ruler {{ $labels.job }} is failing ring checks.
+                query: sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0
+                severity: critical
+                for: 5m
+              # Alertmanager
+              - name: Mimir alertmanager sync configs failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to sync configs.
+                query: rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0
+                severity: critical
+                for: 30m
+              - name: Mimir alertmanager ring check failing
+                description: Mimir alertmanager {{ $labels.job }} is failing ring checks.
+                query: rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0
+                severity: critical
+                for: 10m
+              - name: Mimir alertmanager state merge failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to merge state updates.
+                query: rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0
+                severity: critical
+                for: 10m
+              - name: Mimir alertmanager replication failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to replicate state.
+                query: rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0
+                severity: critical
+                for: 10m
+              - name: Mimir alertmanager persist state failing
+                description: Mimir alertmanager {{ $labels.job }} is failing to persist state.
+                query: rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0
+                severity: critical
+                for: 1h
+              - name: Mimir alertmanager initial sync failed
+                description: Mimir alertmanager {{ $labels.job }} failed initial state sync.
+                query: increase(cortex_alertmanager_state_initial_sync_completed_total{outcome="failed"}[1m]) > 0
+                severity: warning
+              - name: Mimir alertmanager instance has no tenants
+                description: Mimir alertmanager {{ $labels.instance }} has no tenants assigned.
+                query: (cortex_alertmanager_tenants_owned == 0) and on (instance) (cortex_alertmanager_tenants_owned offset 1h > 0)
+                severity: warning
+                for: 1h
+              # Gossip
+              - name: Mimir gossip members count too high
+                description: Mimir gossip cluster has more members than expected.
+                query: 'avg(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job) * 1.15 + 10 < max(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job)'
+                severity: warning
+                for: 20m
+              - name: Mimir gossip members count too low
+                description: Mimir gossip cluster has fewer members than expected.
+                query: 'avg(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job) * 0.5 > min(memberlist_client_cluster_members_count{job=~".*(mimir|cortex).*"}) by (job)'
+                severity: warning
+                for: 20m
+              # Go runtime
+              - name: Mimir go threads too high warning
+                description: 'Mimir {{ $labels.instance }} has {{ $value }} Go threads.'
+                query: 'go_threads{job=~".*(mimir|cortex).*"} > 5000'
+                severity: warning
+                for: 15m
+                comments: |
+                  A high number of Go threads may indicate a goroutine leak.
+              - name: Mimir go threads too high critical
+                description: 'Mimir {{ $labels.instance }} has {{ $value }} Go threads.'
+                query: 'go_threads{job=~".*(mimir|cortex).*"} > 8000'
+                severity: critical
+                for: 15m
+
       - name: Grafana Alloy
         exporters:
           - slug: embedded-exporter

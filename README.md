@@ -128,6 +128,8 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Loki](https://samber.github.io/awesome-prometheus-alerts/rules#loki)
 - [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules#promtail)
 - [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules#cortex)
+- [Grafana Tempo](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-tempo)
+- [Grafana Mimir](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-mimir)
 - [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
 - [OpenTelemetry Collector](https://samber.github.io/awesome-prometheus-alerts/rules#opentelemetry-collector)
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
