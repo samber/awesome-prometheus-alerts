@@ -2363,18 +2363,14 @@ groups:
                 for: 5m
               - name: Envoy high cluster upstream request timeout rate
                 description: "More than 5% of upstream requests are timing out in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
-                query: "increase(envoy_cluster_upstream_rq_timeout[5m]) / (increase(envoy_cluster_upstream_rq_completed[5m]) + 1) * 100 > 5"
+                query: "increase(envoy_cluster_upstream_rq_timeout[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0"
                 severity: warning
                 for: 5m
-                comments: |
-                  The +1 in the denominator guards against division by zero.
               - name: Envoy high cluster upstream 5xx error rate
                 description: "More than 5% of upstream requests return 5xx in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
-                query: 'increase(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / (increase(envoy_cluster_upstream_rq_completed[5m]) + 1) * 100 > 5'
+                query: 'increase(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0'
                 severity: critical
                 for: 1m
-                comments: |
-                  The +1 in the denominator guards against division by zero.
               - name: Envoy cluster health check failures
                 description: "Health checks are consistently failing in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}"
                 query: "increase(envoy_cluster_health_check_failure[5m]) > 5"
