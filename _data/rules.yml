@@ -810,6 +810,53 @@ groups:
                 comments: |
                   Detects restarts by watching for changes in the oldest process start time within the group.
 
+      - name: Systemd
+        exporters:
+          - name: prometheus-community/systemd_exporter
+            slug: systemd-exporter
+            doc_url: https://github.com/prometheus-community/systemd_exporter
+            rules:
+              - name: Systemd unit failed
+                description: "Systemd unit {{ $labels.name }} has entered failed state. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_state{state="failed"} == 1'
+                severity: warning
+                for: 5m
+              - name: Systemd unit inactive
+                description: "Systemd unit {{ $labels.name }} is inactive. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_state{state="inactive"} == 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  Many units are legitimately inactive. Filter by unit name to avoid noise, e.g.:
+                  systemd_unit_state{state="inactive", name=~"your-critical-service.+"} == 1
+              - name: Systemd service crash looping
+                description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})"
+                query: 'increase(systemd_service_restart_total[1h]) > 5'
+                severity: critical
+                for: 5m
+              - name: Systemd unit tasks near limit
+                description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_tasks_current / systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
+                severity: warning
+                for: 5m
+              - name: Systemd socket refused connections
+                description: "Systemd socket {{ $labels.name }} is refusing connections. (instance {{ $labels.instance }})"
+                query: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
+                severity: warning
+              - name: Systemd socket high connections
+                description: "Systemd socket {{ $labels.name }} has {{ $value }} active connections. (instance {{ $labels.instance }})"
+                query: 'systemd_socket_current_connections > 100'
+                severity: warning
+                comments: |
+                  Threshold of 100 connections is arbitrary. Adjust to your workload.
+              - name: Systemd timer missed trigger
+                description: "Systemd timer {{ $labels.name }} has not triggered for over 24 hours. (instance {{ $labels.instance }})"
+                query: '(time() - systemd_timer_last_trigger_seconds) / 3600 > 24 and systemd_timer_last_trigger_seconds > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Triggers if timer hasn't fired in 24 hours. Adjust threshold per timer schedule.
+
   - name: Databases and brokers
     services:
       - name: MySQL

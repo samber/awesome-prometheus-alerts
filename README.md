@@ -52,6 +52,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules#netdata)
 - [eBPF](https://samber.github.io/awesome-prometheus-alerts/rules#ebpf)
 - [Process Exporter](https://samber.github.io/awesome-prometheus-alerts/rules#process-exporter)
+- [Systemd](https://samber.github.io/awesome-prometheus-alerts/rules#systemd)
 
 #### Databases and brokers
 
