@@ -3825,6 +3825,189 @@ groups:
                 severity: info
                 comments: sysUpTime is in centiseconds (hundredths of a second).
 
+      - name: Cilium
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://docs.cilium.io/en/stable/observability/metrics/
+            rules:
+              # Agent health
+              - name: Cilium agent unreachable nodes
+                description: "Cilium agent {{ $labels.pod }} cannot reach {{ $value }} node(s). Check network connectivity and node health."
+                query: "sum(cilium_unreachable_nodes{}) by (pod) > 0"
+                severity: warning
+                for: 15m
+              - name: Cilium agent unreachable health endpoints
+                description: "Cilium agent {{ $labels.pod }} cannot reach {{ $value }} health endpoint(s). Node-to-node health probes are failing."
+                query: "sum(cilium_unreachable_health_endpoints{}) by (pod) > 0"
+                severity: warning
+                for: 15m
+              - name: Cilium agent failing controllers
+                description: "Cilium agent {{ $labels.pod }} has {{ $value }} failing controller(s). Check cilium-agent logs for details."
+                query: "sum(cilium_controllers_failing{}) by (pod) > 0"
+                severity: warning
+                for: 5m
+              - name: Cilium agent high restart rate
+                description: "Cilium agent has restarted more than twice in the last 15 minutes. It might be crashlooping."
+                query: 'changes(process_start_time_seconds{k8s_app="cilium"}[15m]) > 2'
+                severity: warning
+              # Endpoints
+              - name: Cilium agent endpoint failures
+                description: "Cilium agent {{ $labels.pod }} has {{ $value }} endpoint(s) in invalid state."
+                query: 'sum(cilium_endpoint_state{endpoint_state="invalid"}) by (pod) > 0'
+                severity: warning
+                for: 5m
+              - name: Cilium agent endpoint regeneration failures
+                description: "Cilium agent {{ $labels.pod }} is failing to regenerate endpoints. Network policy enforcement may be stale."
+                query: 'sum(rate(cilium_endpoint_regenerations_total{outcome="fail"}[5m])) by (pod) > 0'
+                severity: warning
+                for: 5m
+              - name: Cilium agent endpoint update failure
+                description: "Cilium agent {{ $labels.pod }} is failing K8s endpoint update API calls ({{ $labels.method }} {{ $labels.return_code }})."
+                query: 'sum(rate(cilium_k8s_client_api_calls_total{method=~"(PUT|POST|PATCH)", endpoint="endpoint", return_code!~"2[0-9][0-9]"}[5m])) by (pod, method, return_code) > 0'
+                severity: warning
+                for: 5m
+              - name: Cilium agent endpoint create failure
+                description: "Cilium agent {{ $labels.pod }} is failing CNI endpoint-create calls. New pods may fail to get networking."
+                query: 'sum(rate(cilium_api_limiter_processed_requests_total{api_call=~"endpoint-create", outcome="fail"}[1m])) by (pod, api_call) > 0'
+                severity: info
+                for: 5m
+              # BPF maps
+              - name: Cilium agent map operation failures
+                description: "Cilium agent {{ $labels.pod }} has eBPF map operation failures on {{ $labels.map_name }}. Datapath may be degraded."
+                query: 'sum(rate(cilium_bpf_map_ops_total{outcome="fail"}[5m])) by (map_name, pod) > 0'
+                severity: warning
+                for: 5m
+              - name: Cilium agent BPF map pressure
+                description: "Cilium agent {{ $labels.pod }} eBPF map {{ $labels.map_name }} is above 90% utilization. Map may become full."
+                query: "cilium_bpf_map_pressure{} > 0.9"
+                severity: warning
+                for: 5m
+                comments: Map pressure is a ratio from 0 to 1. At 1.0, the map is full and new entries will be dropped.
+              # Conntrack and NAT
+              - name: Cilium agent conntrack table full
+                description: "Cilium agent {{ $labels.pod }} conntrack table is full, causing packet drops. Increase CT map size or investigate connection leaks."
+                query: 'sum(rate(cilium_drop_count_total{reason="CT: Map insertion failed"}[5m])) by (pod) > 0'
+                severity: critical
+                for: 5m
+              - name: Cilium agent conntrack failed garbage collection
+                description: "Cilium agent {{ $labels.pod }} conntrack garbage collection is failing. Stale entries may accumulate."
+                query: 'sum(rate(cilium_datapath_conntrack_gc_runs_total{status="uncompleted"}[5m])) by (pod) > 0'
+                severity: warning
+                for: 5m
+              - name: Cilium agent NAT table full
+                description: "Cilium agent {{ $labels.pod }} NAT table is full, causing masquerade failures. Increase NAT map size or investigate."
+                query: 'sum(rate(cilium_drop_count_total{reason="No mapping for NAT masquerade"}[1m])) by (pod) > 0'
+                severity: critical
+                for: 5m
+              # Packet drops
+              - name: Cilium agent high denied rate
+                description: "Cilium agent {{ $labels.pod }} is dropping packets due to policy denial. Verify network policies are correct."
+                query: 'sum(rate(cilium_drop_count_total{reason="Policy denied"}[1m])) by (pod) > 0'
+                severity: info
+                for: 10m
+                comments: Policy denials may be expected behavior. Investigate only if unexpected traffic is being blocked.
+              - name: Cilium agent high drop rate
+                description: "Cilium agent {{ $labels.pod }} is dropping packets for reason {{ $labels.reason }}. This indicates infrastructure issues."
+                query: 'sum(rate(cilium_drop_count_total{reason!~"Policy denied"}[5m])) by (pod, reason) > 0'
+                severity: warning
+                for: 5m
+              # Policy
+              - name: Cilium agent policy map pressure
+                description: "Cilium agent {{ $labels.pod }} policy BPF map is above 90% utilization. New policies may fail to apply."
+                query: 'sum(cilium_bpf_map_pressure{map_name=~"cilium_policy_.*"}) by (pod) > 0.9'
+                severity: warning
+                for: 5m
+              - name: Cilium agent policy import errors
+                description: "Cilium agent {{ $labels.pod }} is failing to import network policies. Policy enforcement may be incomplete."
+                query: 'sum(rate(cilium_policy_change_total{outcome="fail"}[5m])) by (pod) > 0'
+                severity: warning
+                for: 5m
+              - name: Cilium agent policy implementation delay
+                description: "Cilium agent {{ $labels.pod }} P99 policy deployment latency exceeds 60 seconds. Endpoints may run with stale policies."
+                query: "histogram_quantile(0.99, sum(rate(cilium_policy_implementation_delay[5m])) by (le, pod)) > 60"
+                severity: warning
+                for: 5m
+                comments: Threshold of 60s is a rough default. Adjust based on cluster size and policy complexity.
+              # Identity
+              - name: Cilium node-local high identity allocation
+                description: "Cilium agent {{ $labels.pod }} node-local identity allocation is above 80%. Approaching the 65535 identity limit."
+                query: "(sum(cilium_identity{type=\"node_local\"}) by (pod) / (2^16-1)) > 0.8"
+                severity: warning
+                for: 5m
+              - name: Cilium cluster high identity allocation
+                description: "Cilium cluster-wide identity allocation is above 80%. Approaching the maximum identity limit."
+                query: "(sum(cilium_identity{type=\"cluster_local\"}) by () / (2^16-256)) > 0.8"
+                severity: warning
+                for: 5m
+              # IPAM
+              - name: Cilium operator exhausted IPAM IPs
+                description: "Cilium operator has no available IPAM IPs. New pods will fail to schedule networking."
+                query: 'sum(cilium_operator_ipam_ips{type="available"}) by () <= 0'
+                severity: critical
+                for: 5m
+              - name: Cilium operator low available IPAM IPs
+                description: "Cilium operator IPAM IP pool is over 90% utilized. Allocate more IPs to avoid exhaustion."
+                query: 'sum(cilium_operator_ipam_ips{type!="available"}) by () / sum(cilium_operator_ipam_ips) by () > 0.9 and sum(cilium_operator_ipam_ips) by () > 0'
+                severity: warning
+                for: 5m
+                comments: Threshold of 90% is a rough default. Adjust based on your pod churn rate and IP pool size.
+              - name: Cilium operator IPAM interface creation failures
+                description: "Cilium operator is failing to create IPAM network interfaces. IP allocation may be impacted."
+                query: 'sum(rate(cilium_operator_ipam_interface_creation_ops{status!="success"}[5m])) by () > 0'
+                severity: warning
+                for: 10m
+              # API and K8s client
+              - name: Cilium agent API errors
+                description: "Cilium agent {{ $labels.pod }} API is returning 5xx errors ({{ $labels.return_code }}). Agent may be unhealthy."
+                query: 'sum(rate(cilium_agent_api_process_time_seconds_count{return_code=~"5[0-9][0-9]"}[5m])) by (pod, return_code) > 0'
+                severity: warning
+                for: 5m
+              - name: Cilium agent Kubernetes client errors
+                description: "Cilium agent {{ $labels.pod }} is receiving errors from K8s API for endpoint {{ $labels.endpoint }} ({{ $labels.return_code }})."
+                query: 'sum(rate(cilium_k8s_client_api_calls_total{endpoint!="metrics", return_code!~"2[0-9][0-9]"}[5m])) by (pod, endpoint, return_code) > 0'
+                severity: info
+                for: 5m
+              # ClusterMesh
+              - name: Cilium ClusterMesh remote cluster not ready
+                description: "Cilium ClusterMesh remote cluster {{ $labels.target_cluster }} is not ready from {{ $labels.source_cluster }}."
+                query: "count(cilium_clustermesh_remote_cluster_readiness_status < 1) by (source_cluster, target_cluster) > 0"
+                severity: critical
+                for: 5m
+              - name: Cilium ClusterMesh remote cluster failing
+                description: "Cilium ClusterMesh connectivity to remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is failing."
+                query: "sum(rate(cilium_clustermesh_remote_cluster_failures[5m])) by (source_cluster, target_cluster) > 0"
+                severity: critical
+                for: 5m
+              # KVStoreMesh
+              - name: Cilium KVStoreMesh remote cluster not ready
+                description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} is not ready from {{ $labels.source_cluster }}."
+                query: "count(cilium_kvstoremesh_remote_cluster_readiness_status < 1) by (source_cluster, target_cluster) > 0"
+                severity: critical
+                for: 5m
+              - name: Cilium KVStoreMesh remote cluster failing
+                description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is experiencing failures."
+                query: "sum(rate(cilium_kvstoremesh_remote_cluster_failures[5m])) by (source_cluster, target_cluster) > 0"
+                severity: critical
+                for: 5m
+              - name: Cilium KVStoreMesh sync errors
+                description: "Cilium KVStoreMesh from {{ $labels.source_cluster }} is experiencing kvstore sync errors."
+                query: "sum(rate(cilium_kvstoremesh_kvstore_sync_errors_total[5m])) by (source_cluster) > 0"
+                severity: critical
+                for: 5m
+              # Hubble
+              - name: Cilium Hubble lost events
+                description: "Cilium Hubble on {{ $labels.pod }} is losing flow events. Observability data may be incomplete."
+                query: "sum(rate(hubble_lost_events_total[5m])) by (pod) > 0"
+                severity: warning
+                for: 5m
+              - name: Cilium Hubble high DNS error rate
+                description: "Cilium Hubble on {{ $labels.pod }} is observing more than 10% DNS error responses."
+                query: "sum(rate(hubble_dns_responses_total{rcode!=\"No Error\"}[5m])) by (pod) / sum(rate(hubble_dns_responses_total[5m])) by (pod) > 0.1 and sum(rate(hubble_dns_responses_total[5m])) by (pod) > 0"
+                severity: warning
+                for: 5m
+                comments: Threshold of 10% is a rough default. Some DNS errors may be normal depending on your workload.
+
   - name: Other
     services:
       - name: Thanos
