@@ -1019,6 +1019,66 @@ groups:
                 severity: warning
                 for: 1m
 
+      - name: Oracle Database
+        exporters:
+          - name: iamseth/oracledb_exporter
+            slug: iamseth-oracledb-exporter
+            doc_url: https://github.com/iamseth/oracledb_exporter
+            rules:
+              - name: Oracle DB down
+                description: Oracle Database instance is down on {{ $labels.instance }}
+                query: "oracledb_up == 0"
+                severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
+              - name: Oracle DB sessions reaching limit (> 85%)
+                description: "Oracle Database session utilization is above 85% on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "oracledb_resource_current_utilization{resource_name=\"sessions\"} / oracledb_resource_limit_value{resource_name=\"sessions\"} * 100 > 85 and oracledb_resource_limit_value{resource_name=\"sessions\"} > 0"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is workload-dependent. Adjust 85% to suit your environment.
+              - name: Oracle DB processes reaching limit (> 85%)
+                description: "Oracle Database process utilization is above 85% on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "oracledb_resource_current_utilization{resource_name=\"processes\"} / oracledb_resource_limit_value{resource_name=\"processes\"} * 100 > 85 and oracledb_resource_limit_value{resource_name=\"processes\"} > 0"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is workload-dependent. Adjust 85% to suit your environment.
+              - name: Oracle DB tablespace reaching capacity (> 85%)
+                description: "Oracle Database tablespace {{ $labels.tablespace }} is above 85% usage on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "oracledb_tablespace_used_percent > 85"
+                severity: warning
+                for: 5m
+              - name: Oracle DB tablespace full (> 95%)
+                description: "Oracle Database tablespace {{ $labels.tablespace }} is critically full on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "oracledb_tablespace_used_percent > 95"
+                severity: critical
+                for: 5m
+              - name: Oracle DB high user rollbacks
+                description: "Oracle Database on {{ $labels.instance }} has a high rollback rate ({{ $value }}% of transactions are rolled back)"
+                query: "rate(oracledb_activity_user_rollbacks[5m]) / (rate(oracledb_activity_user_commits[5m]) + rate(oracledb_activity_user_rollbacks[5m])) * 100 > 20 and (rate(oracledb_activity_user_commits[5m]) + rate(oracledb_activity_user_rollbacks[5m])) > 0"
+                severity: warning
+                for: 5m
+                comments: |
+                  A high rollback rate (>20%) often indicates application-level issues such as deadlocks, constraint violations, or poorly designed transactions.
+              - name: Oracle DB too many active sessions
+                description: "Oracle Database on {{ $labels.instance }} has too many active user sessions (current value: {{ $value }})"
+                query: "oracledb_sessions_activity{status=\"ACTIVE\", type=\"USER\"} > 200"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold is highly workload-dependent. Adjust 200 to suit your environment.
+              - name: Oracle DB high wait time (user I/O)
+                description: "Oracle Database on {{ $labels.instance }} is experiencing high user I/O wait time"
+                query: "rate(oracledb_wait_time_user_io[5m]) > 300"
+                severity: warning
+                for: 5m
+                comments: |
+                  High user I/O wait time indicates storage performance issues (slow disks, SAN latency, etc.).
+                  The metric is in centiseconds per second. Threshold 300 means 3 seconds of I/O wait per second of wall time.
+
       - name: Patroni
         exporters:
           - name: Embedded exporter (Patroni >= 2.1.0)
