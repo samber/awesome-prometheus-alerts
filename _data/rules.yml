@@ -3924,7 +3924,7 @@ groups:
                 for: 5m
               - name: Cilium agent high restart rate
                 description: "Cilium agent has restarted more than twice in the last 15 minutes. It might be crashlooping."
-                query: 'changes(process_start_time_seconds{k8s_app="cilium"}[15m]) > 2'
+                query: 'changes(process_start_time_seconds{job=~".*cilium.*"}[15m]) > 2'
                 severity: warning
               # Endpoints
               - name: Cilium agent endpoint failures
@@ -4007,12 +4007,12 @@ groups:
               # Identity
               - name: Cilium node-local high identity allocation
                 description: "Cilium agent {{ $labels.pod }} node-local identity allocation is above 80%. Approaching the 65535 identity limit."
-                query: "(sum(cilium_identity{type=\"node_local\"}) by (pod) / (2^16-1)) > 0.8"
+                query: '(sum(cilium_identity{type="node_local"}) by (pod) / (2^16-1)) > 0.8'
                 severity: warning
                 for: 5m
               - name: Cilium cluster high identity allocation
                 description: "Cilium cluster-wide identity allocation is above 80%. Approaching the maximum identity limit."
-                query: "(sum(cilium_identity{type=\"cluster_local\"}) by () / (2^16-256)) > 0.8"
+                query: '(sum(cilium_identity{type="cluster_local"}) by () / (2^16-256)) > 0.8'
                 severity: warning
                 for: 5m
               # IPAM
@@ -4078,7 +4078,7 @@ groups:
                 for: 5m
               - name: Cilium Hubble high DNS error rate
                 description: "Cilium Hubble on {{ $labels.pod }} is observing more than 10% DNS error responses."
-                query: "sum(rate(hubble_dns_responses_total{rcode!=\"No Error\"}[5m])) by (pod) / sum(rate(hubble_dns_responses_total[5m])) by (pod) > 0.1 and sum(rate(hubble_dns_responses_total[5m])) by (pod) > 0"
+                query: 'sum(rate(hubble_dns_responses_total{rcode!="No Error"}[5m])) by (pod) / sum(rate(hubble_dns_responses_total[5m])) by (pod) > 0.1 and sum(rate(hubble_dns_responses_total[5m])) by (pod) > 0'
                 severity: warning
                 for: 5m
                 comments: Threshold of 10% is a rough default. Some DNS errors may be normal depending on your workload.
