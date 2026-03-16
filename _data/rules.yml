@@ -4187,7 +4187,7 @@ groups:
                 severity: critical
               - name: Tempo no tenant index builders
                 description: No tenant index builders for tenant {{ $labels.tenant }}. Tenant index will quickly become stale.
-                query: sum by (tenant) (tempodb_blocklist_tenant_index_builder) == 0 and max(tempodb_blocklist_length) > 0
+                query: sum by (tenant) (tempodb_blocklist_tenant_index_builder) == 0 and on() max(tempodb_blocklist_length) > 0
                 severity: critical
                 for: 5m
               - name: Tempo tenant index too old
@@ -4199,7 +4199,7 @@ groups:
                   Threshold of 600s (10 minutes). Adjust based on your tenant index build interval.
               - name: Tempo block list rising quickly
                 description: Tempo blocklist length is up {{ printf "%.0f" $value }}% over the last 7 days. Consider scaling compactors.
-                query: avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) > 1.4
+                query: (avg(tempodb_blocklist_length) / avg(tempodb_blocklist_length offset 7d) - 1) * 100 > 40
                 severity: critical
                 for: 15m
                 comments: |
@@ -4299,7 +4299,7 @@ groups:
                 for: 5m
               - name: Mimir memory map areas too high
                 description: 'Mimir {{ $labels.job }} is using {{ printf "%.0f" $value }}% of its memory map area limit.'
-                query: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} > 0.8'
+                query: 'process_memory_map_areas{job=~".*(ingester|cortex|mimir|store-gateway).*"} / process_memory_map_areas_limit{job=~".*(ingester|cortex|mimir|store-gateway).*"} * 100 > 80'
                 severity: critical
                 for: 5m
               - name: Mimir ingester instance has no tenants
@@ -4330,32 +4330,32 @@ groups:
               # Instance limits
               - name: Mimir ingester reaching series limit warning
                 description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its series limit.'
-                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} > 0.8) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} * 100 > 80) and cortex_ingester_instance_limits{limit="max_series"} > 0'
                 severity: warning
                 for: 3h
               - name: Mimir ingester reaching series limit critical
                 description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its series limit.'
-                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} > 0.9) and cortex_ingester_instance_limits{limit="max_series"} > 0'
+                query: '(cortex_ingester_memory_series / ignoring(limit) cortex_ingester_instance_limits{limit="max_series"} * 100 > 90) and cortex_ingester_instance_limits{limit="max_series"} > 0'
                 severity: critical
                 for: 5m
               - name: Mimir ingester reaching tenants limit warning
                 description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its tenants limit.'
-                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} > 0.7) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} * 100 > 70) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
                 severity: warning
                 for: 5m
               - name: Mimir ingester reaching tenants limit critical
                 description: 'Mimir ingester {{ $labels.instance }} has reached {{ printf "%.0f" $value }}% of its tenants limit.'
-                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} > 0.8) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
+                query: '(cortex_ingester_memory_users / ignoring(limit) cortex_ingester_instance_limits{limit="max_tenants"} * 100 > 80) and cortex_ingester_instance_limits{limit="max_tenants"} > 0'
                 severity: critical
                 for: 5m
               - name: Mimir reaching TCP connections limit
                 description: 'Mimir instance {{ $labels.instance }} is using {{ printf "%.0f" $value }}% of its TCP connections limit.'
-                query: cortex_tcp_connections / cortex_tcp_connections_limit > 0.8 and cortex_tcp_connections_limit > 0
+                query: cortex_tcp_connections / cortex_tcp_connections_limit * 100 > 80 and cortex_tcp_connections_limit > 0
                 severity: critical
                 for: 5m
               - name: Mimir distributor inflight requests high
-                description: 'Mimir distributor {{ $labels.instance }} has too many inflight push requests.'
-                query: '(cortex_distributor_inflight_push_requests / ignoring(limit) cortex_distributor_instance_limits{limit="max_inflight_push_requests"} > 0.8) and cortex_distributor_instance_limits{limit="max_inflight_push_requests"} > 0'
+                description: 'Mimir distributor {{ $labels.instance }} is using {{ printf "%.0f" $value }}% of its inflight push requests limit.'
+                query: '(cortex_distributor_inflight_push_requests / ignoring(limit) cortex_distributor_instance_limits{limit="max_inflight_push_requests"} * 100 > 80) and cortex_distributor_instance_limits{limit="max_inflight_push_requests"} > 0'
                 severity: critical
                 for: 5m
               # Blocks and TSDB
