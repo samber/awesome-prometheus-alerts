@@ -3610,7 +3610,7 @@ groups:
                 comments: From the official snmp-mixin.
               - name: SNMP interface down
                 description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} is operationally down while administratively up."
-                query: '(ifOperStatus{job=~"snmp.*"} == 2) and on(instance, ifIndex) (ifAdminStatus == 1)'
+                query: '(ifOperStatus{job=~"snmp.*"} == 2) and on(instance, job, ifIndex) (ifAdminStatus{job=~"snmp.*"} == 1)'
                 severity: critical
                 for: 2m
               - name: SNMP interface high inbound error rate
