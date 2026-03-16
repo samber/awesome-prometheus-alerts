@@ -133,6 +133,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
 - [GitLab](https://samber.github.io/awesome-prometheus-alerts/rules#gitlab)
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
+- [Jaeger](https://samber.github.io/awesome-prometheus-alerts/rules#jaeger)
 
 ## 🤝 Contributing
 

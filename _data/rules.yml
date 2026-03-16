@@ -4555,3 +4555,50 @@ groups:
                 comments: |
                   When the circuit breaker trips to "open" state, Git operations (push, pull, clone) will fail.
                   Check Gitaly service health and logs.
+
+      - name: Jaeger
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://www.jaegertracing.io/docs/latest/monitoring/
+            rules:
+              - name: Jaeger agent HTTP server errors
+                description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors."
+                query: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger agent RPC request errors
+                description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors."
+                query: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger client spans dropped
+                description: "Jaeger client on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
+                query: '100 * sum(rate(jaeger_reporter_spans{result=~"dropped|err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger agent spans dropped
+                description: "Jaeger agent on {{ $labels.instance }} is dropping {{ $value | humanize }}% of span batches."
+                query: '100 * sum(rate(jaeger_agent_reporter_batches_failures_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger collector dropping spans
+                description: "Jaeger collector on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
+                query: '100 * sum(rate(jaeger_collector_spans_dropped_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger sampling update failing
+                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of sampling policy updates."
+                query: '100 * sum(rate(jaeger_sampler_queries{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger throttling update failing
+                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of throttling policy updates."
+                query: '100 * sum(rate(jaeger_throttler_updates{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger query request failures
+                description: "Jaeger query on {{ $labels.instance }} is failing {{ $value | humanize }}% of requests."
+                query: '100 * sum(rate(jaeger_query_requests_total{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
