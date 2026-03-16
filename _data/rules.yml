@@ -3500,7 +3500,7 @@ groups:
                 for: 2m
               - name: Spinnaker zombie executions
                 description: "{{ $value }} zombie pipeline executions detected. These are executions with no corresponding queue messages."
-                query: 'sum(queue_zombies_total) > 0'
+                query: 'rate(queue_zombies_total[5m]) > 0'
                 severity: warning
                 for: 5m
                 comments: |
