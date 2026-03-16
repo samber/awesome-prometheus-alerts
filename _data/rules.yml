@@ -4567,8 +4567,8 @@ groups:
                 query: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1'
                 severity: warning
                 for: 15m
-              - name: Jaeger agent RPC request errors
-                description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors."
+              - name: Jaeger client RPC request errors
+                description: "Jaeger client on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors."
                 query: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1'
                 severity: warning
                 for: 15m
