@@ -4155,3 +4155,221 @@ groups:
                 description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`"
                 query: "store_connection_wait_time_ms > 20"
                 severity: critical
+
+      - name: GitLab
+        exporters:
+          - name: GitLab built-in exporter
+            slug: gitlab-built-in-exporter
+            doc_url: https://docs.gitlab.com/administration/monitoring/prometheus/gitlab_metrics/
+            rules:
+              # Puma web server
+              - name: GitLab Puma high queued connections
+                description: "GitLab Puma has {{ $value }} queued connections on {{ $labels.instance }}. Requests are waiting for an available worker thread."
+                query: "avg_over_time(puma_queued_connections[5m]) > 5"
+                severity: warning
+                for: 5m
+                comments: |
+                  Queued connections indicate Puma workers are saturated.
+                  Consider increasing puma['worker_processes'] or puma['max_threads'] in gitlab.rb.
+              - name: GitLab Puma no available pool capacity
+                description: "GitLab Puma pool capacity on {{ $labels.instance }} has been at 0 for 5 minutes. All threads are busy."
+                query: "puma_pool_capacity == 0"
+                severity: critical
+                for: 5m
+              - name: GitLab Puma workers not running
+                description: "GitLab Puma on {{ $labels.instance }} has {{ $value }} running workers out of expected total."
+                query: "puma_running_workers < puma_workers"
+                severity: warning
+                for: 5m
+              # HTTP request handling
+              - name: GitLab high HTTP error rate
+                description: "GitLab is returning more than 5% HTTP 5xx errors on {{ $labels.instance }}."
+                query: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5'
+                severity: critical
+                for: 5m
+                comments: |
+                  Threshold is 5% of all requests returning server errors.
+                  Check GitLab logs at /var/log/gitlab/ for root cause.
+              - name: GitLab high HTTP request latency
+                description: "GitLab p95 HTTP request latency on {{ $labels.instance }} is above 10 seconds."
+                query: "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 10"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 10s may need adjustment based on your instance size and workload.
+              # Sidekiq background jobs
+              - name: GitLab Sidekiq jobs failing
+                description: "GitLab Sidekiq jobs are failing at a rate of {{ $value }} per second on {{ $labels.instance }}."
+                query: "rate(sidekiq_jobs_failed_total[5m]) > 0"
+                severity: warning
+                for: 10m
+                comments: |
+                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+                  A sustained failure rate indicates background processing issues.
+              - name: GitLab Sidekiq queue too large
+                description: "GitLab Sidekiq has {{ $value }} running jobs, approaching concurrency limit on {{ $labels.instance }}."
+                query: "sum(sidekiq_running_jobs) >= sum(sidekiq_concurrency) * 0.9"
+                severity: warning
+                for: 10m
+                comments: |
+                  When running jobs approach the concurrency limit, new jobs will queue up.
+                  Consider scaling Sidekiq workers or increasing concurrency.
+              - name: GitLab Sidekiq high job completion time
+                description: "GitLab Sidekiq job average completion time on {{ $labels.instance }} is above 5 minutes."
+                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_completion_seconds_bucket[5m])) by (le, worker)) > 300"
+                severity: warning
+                for: 10m
+                comments: |
+                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+              - name: GitLab Sidekiq high queue latency
+                description: "GitLab Sidekiq jobs on {{ $labels.instance }} are waiting more than 60 seconds before being processed."
+                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_queue_duration_seconds_bucket[5m])) by (le)) > 60"
+                severity: warning
+                for: 5m
+                comments: |
+                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+                  High queue latency means jobs are stuck waiting. Check Sidekiq concurrency and queue sizes.
+              # Database connection pool
+              - name: GitLab database connection pool saturation
+                description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) is {{ $value }}% busy."
+                query: "gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90"
+                severity: warning
+                for: 5m
+                comments: |
+                  When the pool is near saturation, requests may block waiting for a connection.
+                  Increase db_pool_size in gitlab.rb or investigate slow queries.
+              - name: GitLab database connection pool dead connections
+                description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) has {{ $value }} dead connections."
+                query: "gitlab_database_connection_pool_dead > 0"
+                severity: warning
+                for: 5m
+              - name: GitLab database connection pool waiting
+                description: "GitLab on {{ $labels.instance }} has {{ $value }} threads waiting for a database connection."
+                query: "gitlab_database_connection_pool_waiting > 0"
+                severity: warning
+                for: 5m
+              # CI/CD pipelines
+              - name: GitLab CI pipeline creation slow
+                description: "GitLab CI pipeline creation p95 latency on {{ $labels.instance }} is above 30 seconds."
+                query: "histogram_quantile(0.95, sum(rate(gitlab_ci_pipeline_creation_duration_seconds_bucket[5m])) by (le)) > 30"
+                severity: warning
+                for: 5m
+              - name: GitLab CI pipeline failures increasing
+                description: "GitLab CI pipeline failures are increasing on {{ $labels.instance }} ({{ $value }}/s)."
+                query: "rate(gitlab_ci_pipeline_failure_reasons[5m]) > 0"
+                severity: warning
+                for: 10m
+              - name: GitLab CI runner authentication failures
+                description: "GitLab CI runners are experiencing authentication failures on {{ $labels.instance }} ({{ $value }} failures)."
+                query: "increase(gitlab_ci_runner_authentication_failure_total[5m]) > 5"
+                severity: warning
+                for: 5m
+                comments: |
+                  Frequent runner auth failures may indicate expired tokens or misconfigured runners.
+              # Ruby process health
+              - name: GitLab high memory usage
+                description: "GitLab process on {{ $labels.instance }} is using {{ $value | humanize1024 }}B of RSS memory."
+                query: "process_resident_memory_bytes{job=~\".*gitlab.*\"} > 2e+9"
+                severity: warning
+                for: 10m
+                comments: |
+                  Threshold of 2GB may need adjustment based on your instance size.
+                  High memory usage can lead to OOM kills and service disruptions.
+              - name: GitLab Ruby heap fragmentation
+                description: "GitLab Ruby heap fragmentation on {{ $labels.instance }} is {{ $value }}. High fragmentation wastes memory."
+                query: "ruby_gc_stat_ext_heap_fragmentation{job=~\".*gitlab.*\"} > 0.5"
+                severity: warning
+                for: 15m
+                comments: |
+                  Heap fragmentation above 50% means a significant amount of memory is wasted.
+                  A Puma worker restart may help reclaim memory.
+              # Uncaught errors
+              - name: GitLab rack uncaught errors
+                description: "GitLab is experiencing uncaught errors in the Rack layer on {{ $labels.instance }} ({{ $value }}/s)."
+                query: "rate(rack_uncaught_errors_total[5m]) > 0"
+                severity: warning
+                for: 5m
+              # Application version / deployment
+              - name: GitLab version mismatch
+                description: "Multiple GitLab versions are running across the fleet."
+                query: 'count(count by (version) (deployments{version!=""})) > 1'
+                severity: warning
+                comments: |
+                  This may happen during a rolling deployment. If it persists, investigate incomplete upgrades.
+              # File descriptors
+              - name: GitLab high file descriptor usage
+                description: "GitLab on {{ $labels.instance }} is using {{ $value }}% of available file descriptors."
+                query: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80'
+                severity: warning
+                for: 5m
+              # Ruby threads
+              - name: GitLab Ruby threads saturated
+                description: "GitLab running threads on {{ $labels.instance }} have exceeded the expected maximum ({{ $value }})."
+                query: "sum by (instance) (gitlab_ruby_threads_running_threads) > on(instance) gitlab_ruby_threads_max_expected_threads * 1.5"
+                severity: warning
+                for: 10m
+
+          - name: Workhorse
+            slug: workhorse
+            doc_url: https://docs.gitlab.com/administration/monitoring/prometheus/gitlab_metrics/#gitlab-workhorse
+            rules:
+              - name: GitLab Workhorse high error rate
+                description: "GitLab Workhorse on {{ $labels.instance }} is returning more than 10% HTTP 5xx errors."
+                query: 'sum(rate(gitlab_workhorse_http_request_duration_seconds_count{code=~"5.."}[5m])) / sum(rate(gitlab_workhorse_http_request_duration_seconds_count[5m])) * 100 > 10'
+                severity: critical
+                for: 5m
+                comments: |
+                  Workhorse sits in front of Puma and handles Git HTTP, file uploads, and proxying.
+                  Threshold from GitLab Omnibus default rules: 10% for high-traffic instances.
+              - name: GitLab Workhorse high latency
+                description: "GitLab Workhorse on {{ $labels.instance }} p95 request latency is above 10 seconds."
+                query: "histogram_quantile(0.95, sum(rate(gitlab_workhorse_http_request_duration_seconds_bucket[5m])) by (le)) > 10"
+                severity: warning
+                for: 5m
+              - name: GitLab Workhorse high in-flight requests
+                description: "GitLab Workhorse on {{ $labels.instance }} has {{ $value }} in-flight requests."
+                query: "gitlab_workhorse_http_in_flight_requests > 100"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 100 may need adjustment based on instance size.
+
+          - name: Gitaly
+            slug: gitaly
+            doc_url: https://docs.gitlab.com/administration/gitaly/monitoring/
+            rules:
+              - name: GitLab Gitaly high gRPC error rate
+                description: "Gitaly on {{ $labels.instance }} is returning more than 5% gRPC errors."
+                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code!="OK"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5'
+                severity: warning
+                for: 5m
+              - name: GitLab Gitaly resource exhausted
+                description: "Gitaly on {{ $labels.instance }} is returning ResourceExhausted errors, indicating overload ({{ $value }}%)."
+                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1'
+                severity: critical
+                for: 5m
+                comments: |
+                  ResourceExhausted errors from Gitaly mean Git operations are being rejected due to
+                  concurrency limits. This directly impacts users trying to push, pull, or clone.
+                  This alert is derived from the GitLab Omnibus default rules.
+              - name: GitLab Gitaly high RPC latency
+                description: "Gitaly on {{ $labels.instance }} p95 unary RPC latency exceeds 1 second ({{ $value }}s)."
+                query: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
+                severity: warning
+                for: 5m
+              - name: GitLab Gitaly CPU throttled
+                description: "Gitaly processes on {{ $labels.instance }} are being CPU throttled by cgroups."
+                query: "rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0"
+                severity: warning
+                for: 5m
+              - name: GitLab Gitaly authentication failures
+                description: "Gitaly on {{ $labels.instance }} has authentication failures ({{ $value }})."
+                query: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 0'
+                severity: warning
+              - name: GitLab Gitaly circuit breaker tripped
+                description: "Gitaly circuit breaker has tripped on {{ $labels.instance }}. Git operations are failing."
+                query: 'increase(gitaly_circuit_breaker_transitions_total{to_state="open"}[5m]) > 0'
+                severity: critical
+                comments: |
+                  When the circuit breaker trips to "open" state, Git operations (push, pull, clone) will fail.
+                  Check Gitaly service health and logs.

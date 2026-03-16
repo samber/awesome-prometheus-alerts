@@ -128,6 +128,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
 - [OpenTelemetry Collector](https://samber.github.io/awesome-prometheus-alerts/rules#opentelemetry-collector)
 - [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
+- [GitLab](https://samber.github.io/awesome-prometheus-alerts/rules#gitlab)
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
 
 ## 🤝 Contributing
