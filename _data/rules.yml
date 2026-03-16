@@ -444,9 +444,10 @@ groups:
                 comments: |
                   The metric uses inverted logic: 1=no fault, 0=fault detected.
               - name: IPMI SEL almost full
-                description: "IPMI System Event Log on {{ $labels.instance }} has only {{ $value }} bytes free. Clear the SEL to prevent loss of new events."
+                description: "IPMI System Event Log on {{ $labels.instance }} has only {{ printf \"%.0f\" $value }} bytes free. Clear the SEL to prevent loss of new events."
                 query: 'ipmi_sel_free_space_bytes < 512'
                 severity: warning
+                for: 5m
                 comments: |
                   SEL storage is typically very limited (e.g., 16KB). When full, new events may be dropped.
 
