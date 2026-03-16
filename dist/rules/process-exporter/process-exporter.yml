@@ -1,0 +1,102 @@
+groups:
+
+- name: ProcessExporter
+
+  
+  rules:
+
+    - alert: ProcessExporterGroupDown
+      expr: 'namedprocess_namegroup_num_procs == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Process exporter group down (instance {{ $labels.instance }})
+        description: "No processes found for group {{ $labels.groupname }}. The service may have stopped. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 4GB is arbitrary and depends on the process being monitored. Adjust per group.
+    - alert: ProcessExporterHighMemoryUsage
+      expr: 'namedprocess_namegroup_memory_bytes{memtype="resident"} > 4e+09'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Process exporter high memory usage (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} is using {{ $value | humanize }}B of resident memory. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Value is core-equivalent %: 100% = 1 full core, 200% = 2 cores, etc. Threshold of 80% is per-core. Adjust based on expected workload.
+    - alert: ProcessExporterHighCpuUsage
+      expr: 'rate(namedprocess_namegroup_cpu_seconds_total[5m]) * 100 > 80'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Process exporter high CPU usage (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} is using {{ $value }}% CPU (core-equivalent). (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ProcessExporterHighFileDescriptorUsage
+      expr: 'namedprocess_namegroup_worst_fd_ratio > 0.8'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Process exporter high file descriptor usage (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} is using more than 80% of its file descriptor limit. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ProcessExporterFileDescriptorsExhausted
+      expr: 'namedprocess_namegroup_worst_fd_ratio > 0.95'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Process exporter file descriptors exhausted (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} has nearly exhausted its file descriptor limit. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 512MB is arbitrary. Adjust per group and environment.
+    - alert: ProcessExporterHighSwapUsage
+      expr: 'namedprocess_namegroup_memory_bytes{memtype="swapped"} > 512e+06'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Process exporter high swap usage (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} is using {{ $value | humanize }}B of swap. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ProcessExporterZombieProcesses
+      expr: 'namedprocess_namegroup_states{state="Zombie"} > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Process exporter zombie processes (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} has {{ $value }} zombie processes. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 10000 switches/s is a rough default. Adjust based on the workload profile.
+    - alert: ProcessExporterHighContextSwitching
+      expr: 'rate(namedprocess_namegroup_context_switches_total[5m]) > 10000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Process exporter high context switching (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} has a high rate of context switches ({{ $value }}/s). (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 100MB/s is arbitrary. Adjust per group.
+    - alert: ProcessExporterHighDiskWriteIo
+      expr: 'rate(namedprocess_namegroup_write_bytes_total[5m]) > 100e+06'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Process exporter high disk write IO (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} is performing {{ $value | humanize }}B/s of disk writes. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Detects restarts by watching for changes in the oldest process start time within the group.
+    - alert: ProcessExporterProcessRestarting
+      expr: 'changes(namedprocess_namegroup_oldest_start_time_seconds[5m]) > 0 and namedprocess_namegroup_num_procs > 0'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: Process exporter process restarting (instance {{ $labels.instance }})
+        description: "Process group {{ $labels.groupname }} has restarted (oldest process start time changed). (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

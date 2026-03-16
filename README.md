@@ -51,6 +51,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Proxmox VE](https://samber.github.io/awesome-prometheus-alerts/rules#proxmox-ve)
 - [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules#netdata)
 - [eBPF](https://samber.github.io/awesome-prometheus-alerts/rules#ebpf)
+- [Process Exporter](https://samber.github.io/awesome-prometheus-alerts/rules#process-exporter)
 
 #### Databases and brokers
 
@@ -102,6 +103,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Istio](https://samber.github.io/awesome-prometheus-alerts/rules#istio)
 - [ArgoCD](https://samber.github.io/awesome-prometheus-alerts/rules#argocd)
 - [FluxCD](https://samber.github.io/awesome-prometheus-alerts/rules#fluxcd)
+- [OpenStack](https://samber.github.io/awesome-prometheus-alerts/rules#openstack)
 
 #### Network, security and storage
 

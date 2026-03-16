@@ -742,6 +742,74 @@ groups:
                 severity: warning
                 for: 5m
 
+      - name: Process Exporter
+        exporters:
+          - name: ncabatoff/process-exporter
+            slug: process-exporter
+            doc_url: https://github.com/ncabatoff/process-exporter
+            rules:
+              - name: Process exporter group down
+                description: "No processes found for group {{ $labels.groupname }}. The service may have stopped. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_num_procs == 0'
+                severity: critical
+                for: 2m
+              - name: Process exporter high memory usage
+                description: "Process group {{ $labels.groupname }} is using {{ $value | humanize }}B of resident memory. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_memory_bytes{memtype="resident"} > 4e+09'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 4GB is arbitrary and depends on the process being monitored. Adjust per group.
+              - name: Process exporter high CPU usage
+                description: "Process group {{ $labels.groupname }} is using {{ $value }}% CPU (core-equivalent). (instance {{ $labels.instance }})"
+                query: 'rate(namedprocess_namegroup_cpu_seconds_total[5m]) * 100 > 80'
+                severity: warning
+                for: 5m
+                comments: |
+                  Value is core-equivalent %: 100% = 1 full core, 200% = 2 cores, etc. Threshold of 80% is per-core. Adjust based on expected workload.
+              - name: Process exporter high file descriptor usage
+                description: "Process group {{ $labels.groupname }} is using more than 80% of its file descriptor limit. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_worst_fd_ratio > 0.8'
+                severity: warning
+                for: 5m
+              - name: Process exporter file descriptors exhausted
+                description: "Process group {{ $labels.groupname }} has nearly exhausted its file descriptor limit. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_worst_fd_ratio > 0.95'
+                severity: critical
+                for: 2m
+              - name: Process exporter high swap usage
+                description: "Process group {{ $labels.groupname }} is using {{ $value | humanize }}B of swap. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_memory_bytes{memtype="swapped"} > 512e+06'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 512MB is arbitrary. Adjust per group and environment.
+              - name: Process exporter zombie processes
+                description: "Process group {{ $labels.groupname }} has {{ $value }} zombie processes. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_states{state="Zombie"} > 0'
+                severity: warning
+                for: 5m
+              - name: Process exporter high context switching
+                description: "Process group {{ $labels.groupname }} has a high rate of context switches ({{ $value }}/s). (instance {{ $labels.instance }})"
+                query: 'rate(namedprocess_namegroup_context_switches_total[5m]) > 10000'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 10000 switches/s is a rough default. Adjust based on the workload profile.
+              - name: Process exporter high disk write IO
+                description: "Process group {{ $labels.groupname }} is performing {{ $value | humanize }}B/s of disk writes. (instance {{ $labels.instance }})"
+                query: 'rate(namedprocess_namegroup_write_bytes_total[5m]) > 100e+06'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 100MB/s is arbitrary. Adjust per group.
+              - name: Process exporter process restarting
+                description: "Process group {{ $labels.groupname }} has restarted (oldest process start time changed). (instance {{ $labels.instance }})"
+                query: 'changes(namedprocess_namegroup_oldest_start_time_seconds[5m]) > 0 and namedprocess_namegroup_num_procs > 0'
+                severity: info
+                comments: |
+                  Detects restarts by watching for changes in the oldest process start time within the group.
+
   - name: Databases and brokers
     services:
       - name: MySQL
@@ -3150,6 +3218,117 @@ groups:
                 query: 'gotk_resource_info{ready="False", customresource_kind=~"ImagePolicy|ImageRepository|ImageUpdateAutomation"} > 0'
                 severity: warning
                 for: 15m
+
+      - name: OpenStack
+        exporters:
+          - name: openstack-exporter/openstack-exporter
+            slug: openstack-exporter
+            doc_url: https://github.com/openstack-exporter/openstack-exporter
+            rules:
+              - name: OpenStack exporter down
+                description: The OpenStack exporter is down. OpenStack cloud metrics are no longer being collected.
+                query: 'up{job=~".*openstack.*"} == 0'
+                severity: critical
+                for: 2m
+              - name: OpenStack Nova agent down
+                description: "Nova agent {{ $labels.hostname }} ({{ $labels.service }}) is down in zone {{ $labels.zone }}"
+                query: 'openstack_nova_agent_state{adminState="enabled"} == 0'
+                severity: critical
+                for: 2m
+              - name: OpenStack Neutron agent down
+                description: "Neutron agent {{ $labels.hostname }} ({{ $labels.service }}) is down"
+                query: 'openstack_neutron_agent_state{adminState="enabled"} == 0'
+                severity: critical
+                for: 2m
+              - name: OpenStack Cinder agent down
+                description: "Cinder agent {{ $labels.hostname }} ({{ $labels.service }}) is down in zone {{ $labels.zone }}"
+                query: 'openstack_cinder_agent_state{adminState="enabled"} == 0'
+                severity: critical
+                for: 2m
+              - name: OpenStack hypervisor high vCPU usage
+                description: "Hypervisor {{ $labels.hostname }} vCPU usage is above 90%"
+                query: 'openstack_nova_vcpus_used / openstack_nova_vcpus_available > 0.9 and openstack_nova_vcpus_available > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  The threshold of 90% is a rough default. Adjust based on your overcommit ratio and workload patterns.
+              - name: OpenStack hypervisor high memory usage
+                description: "Hypervisor {{ $labels.hostname }} memory usage is above 90%"
+                query: 'openstack_nova_memory_used_bytes / openstack_nova_memory_available_bytes > 0.9 and openstack_nova_memory_available_bytes > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  The threshold of 90% is a rough default. Adjust based on your overcommit ratio and workload patterns.
+              - name: OpenStack hypervisor high disk usage
+                description: "Hypervisor {{ $labels.hostname }} local disk usage is above 90%"
+                query: 'openstack_nova_local_storage_used_bytes / openstack_nova_local_storage_available_bytes > 0.9 and openstack_nova_local_storage_available_bytes > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack Nova tenant vCPU quota nearly exhausted
+                description: "Tenant {{ $labels.tenant }} has used over 90% of its vCPU quota"
+                query: 'openstack_nova_limits_vcpus_used / openstack_nova_limits_vcpus_max > 0.9 and openstack_nova_limits_vcpus_max > 0'
+                severity: warning
+                comments: |
+                  A value of -1 for limits_vcpus_max means unlimited quota (no limit set).
+              - name: OpenStack Nova tenant memory quota nearly exhausted
+                description: "Tenant {{ $labels.tenant }} has used over 90% of its memory quota"
+                query: 'openstack_nova_limits_memory_used / openstack_nova_limits_memory_max > 0.9 and openstack_nova_limits_memory_max > 0'
+                severity: warning
+              - name: OpenStack Nova tenant instance quota nearly exhausted
+                description: "Tenant {{ $labels.tenant }} has used over 90% of its instance quota"
+                query: 'openstack_nova_limits_instances_used / openstack_nova_limits_instances_max > 0.9 and openstack_nova_limits_instances_max > 0'
+                severity: warning
+              - name: OpenStack Cinder tenant volume quota nearly exhausted
+                description: "Tenant {{ $labels.tenant }} has used over 90% of its volume storage quota"
+                query: 'openstack_cinder_limits_volume_used_gb / openstack_cinder_limits_volume_max_gb > 0.9 and openstack_cinder_limits_volume_max_gb > 0'
+                severity: warning
+              - name: OpenStack Cinder pool low free capacity
+                description: "Cinder storage pool {{ $labels.name }} has less than 10% free capacity"
+                query: 'openstack_cinder_pool_capacity_free_gb / openstack_cinder_pool_capacity_total_gb < 0.1 and openstack_cinder_pool_capacity_total_gb > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack Neutron floating IPs associated but not active
+                description: "{{ $value }} floating IPs are associated to a private IP but are not in ACTIVE state"
+                query: 'openstack_neutron_floating_ips_associated_not_active > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack Neutron routers not active
+                description: "{{ $value }} Neutron routers are not in ACTIVE state"
+                query: 'openstack_neutron_routers_not_active > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack Neutron subnet IP pool exhaustion
+                description: "Subnet {{ $labels.subnet_name }} on network {{ $labels.network_name }} has used over 90% of its IP pool"
+                query: 'openstack_neutron_network_ip_availabilities_used / openstack_neutron_network_ip_availabilities_total > 0.9 and openstack_neutron_network_ip_availabilities_total > 0'
+                severity: warning
+              - name: OpenStack Neutron ports without IPs
+                description: "{{ $value }} active ports have no IP addresses assigned"
+                query: 'openstack_neutron_ports_no_ips > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack load balancer not online
+                description: "Load balancer {{ $labels.name }} ({{ $labels.id }}) operating status is {{ $labels.operating_status }}"
+                query: 'openstack_loadbalancer_loadbalancer_status{operating_status!="ONLINE"} > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack Nova instances in ERROR state
+                description: "{{ $value }} Nova instances are in ERROR state"
+                query: 'sum(openstack_nova_server_status{status="ERROR"}) > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack Cinder volumes in error state
+                description: "{{ $value }} Cinder volumes are in an error state"
+                query: 'openstack_cinder_volume_status_counter{status=~"error.*"} > 0'
+                severity: warning
+                for: 5m
+              - name: OpenStack placement resource high usage
+                description: "Resource {{ $labels.resourcetype }} on host {{ $labels.hostname }} usage exceeds 90% of its allocation"
+                query: 'openstack_placement_resource_usage / (openstack_placement_resource_total * openstack_placement_resource_allocation_ratio) > 0.9 and openstack_placement_resource_total > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  This alert factors in the allocation ratio to compute effective capacity.
+                  The threshold of 90% is a rough default. Adjust based on your allocation ratios and workload patterns.
 
   - name: Network, security and storage
     services:

@@ -77,9 +77,8 @@ groups:
         summary: Envoy high cluster upstream connection failures (instance {{ $labels.instance }})
         description: "High rate of upstream connection failures in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # The +1 in the denominator guards against division by zero.
     - alert: EnvoyHighClusterUpstreamRequestTimeoutRate
-      expr: 'increase(envoy_cluster_upstream_rq_timeout[5m]) / (increase(envoy_cluster_upstream_rq_completed[5m]) + 1) * 100 > 5'
+      expr: 'increase(envoy_cluster_upstream_rq_timeout[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0'
       for: 5m
       labels:
         severity: warning
@@ -87,9 +86,8 @@ groups:
         summary: Envoy high cluster upstream request timeout rate (instance {{ $labels.instance }})
         description: "More than 5% of upstream requests are timing out in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # The +1 in the denominator guards against division by zero.
     - alert: EnvoyHighClusterUpstream5xxErrorRate
-      expr: 'increase(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / (increase(envoy_cluster_upstream_rq_completed[5m]) + 1) * 100 > 5'
+      expr: 'increase(envoy_cluster_upstream_rq_xx{envoy_response_code_class="5"}[5m]) / increase(envoy_cluster_upstream_rq_completed[5m]) * 100 > 5 and increase(envoy_cluster_upstream_rq_completed[5m]) > 0'
       for: 1m
       labels:
         severity: critical

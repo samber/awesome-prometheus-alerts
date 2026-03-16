@@ -1,0 +1,191 @@
+groups:
+
+- name: OpenstackExporter
+
+  
+  rules:
+
+    - alert: OpenstackExporterDown
+      expr: 'up{job=~".*openstack.*"} == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenStack exporter down (instance {{ $labels.instance }})
+        description: "The OpenStack exporter is down. OpenStack cloud metrics are no longer being collected.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNovaAgentDown
+      expr: 'openstack_nova_agent_state{adminState="enabled"} == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenStack Nova agent down (instance {{ $labels.instance }})
+        description: "Nova agent {{ $labels.hostname }} ({{ $labels.service }}) is down in zone {{ $labels.zone }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNeutronAgentDown
+      expr: 'openstack_neutron_agent_state{adminState="enabled"} == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenStack Neutron agent down (instance {{ $labels.instance }})
+        description: "Neutron agent {{ $labels.hostname }} ({{ $labels.service }}) is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackCinderAgentDown
+      expr: 'openstack_cinder_agent_state{adminState="enabled"} == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenStack Cinder agent down (instance {{ $labels.instance }})
+        description: "Cinder agent {{ $labels.hostname }} ({{ $labels.service }}) is down in zone {{ $labels.zone }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # The threshold of 90% is a rough default. Adjust based on your overcommit ratio and workload patterns.
+    - alert: OpenstackHypervisorHighVcpuUsage
+      expr: 'openstack_nova_vcpus_used / openstack_nova_vcpus_available > 0.9 and openstack_nova_vcpus_available > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack hypervisor high vCPU usage (instance {{ $labels.instance }})
+        description: "Hypervisor {{ $labels.hostname }} vCPU usage is above 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # The threshold of 90% is a rough default. Adjust based on your overcommit ratio and workload patterns.
+    - alert: OpenstackHypervisorHighMemoryUsage
+      expr: 'openstack_nova_memory_used_bytes / openstack_nova_memory_available_bytes > 0.9 and openstack_nova_memory_available_bytes > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack hypervisor high memory usage (instance {{ $labels.instance }})
+        description: "Hypervisor {{ $labels.hostname }} memory usage is above 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackHypervisorHighDiskUsage
+      expr: 'openstack_nova_local_storage_used_bytes / openstack_nova_local_storage_available_bytes > 0.9 and openstack_nova_local_storage_available_bytes > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack hypervisor high disk usage (instance {{ $labels.instance }})
+        description: "Hypervisor {{ $labels.hostname }} local disk usage is above 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # A value of -1 for limits_vcpus_max means unlimited quota (no limit set).
+    - alert: OpenstackNovaTenantVcpuQuotaNearlyExhausted
+      expr: 'openstack_nova_limits_vcpus_used / openstack_nova_limits_vcpus_max > 0.9 and openstack_nova_limits_vcpus_max > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Nova tenant vCPU quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its vCPU quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNovaTenantMemoryQuotaNearlyExhausted
+      expr: 'openstack_nova_limits_memory_used / openstack_nova_limits_memory_max > 0.9 and openstack_nova_limits_memory_max > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Nova tenant memory quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its memory quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNovaTenantInstanceQuotaNearlyExhausted
+      expr: 'openstack_nova_limits_instances_used / openstack_nova_limits_instances_max > 0.9 and openstack_nova_limits_instances_max > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Nova tenant instance quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its instance quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackCinderTenantVolumeQuotaNearlyExhausted
+      expr: 'openstack_cinder_limits_volume_used_gb / openstack_cinder_limits_volume_max_gb > 0.9 and openstack_cinder_limits_volume_max_gb > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Cinder tenant volume quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its volume storage quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackCinderPoolLowFreeCapacity
+      expr: 'openstack_cinder_pool_capacity_free_gb / openstack_cinder_pool_capacity_total_gb < 0.1 and openstack_cinder_pool_capacity_total_gb > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Cinder pool low free capacity (instance {{ $labels.instance }})
+        description: "Cinder storage pool {{ $labels.name }} has less than 10% free capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNeutronFloatingIpsAssociatedButNotActive
+      expr: 'openstack_neutron_floating_ips_associated_not_active > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Neutron floating IPs associated but not active (instance {{ $labels.instance }})
+        description: "{{ $value }} floating IPs are associated to a private IP but are not in ACTIVE state\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNeutronRoutersNotActive
+      expr: 'openstack_neutron_routers_not_active > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Neutron routers not active (instance {{ $labels.instance }})
+        description: "{{ $value }} Neutron routers are not in ACTIVE state\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNeutronSubnetIpPoolExhaustion
+      expr: 'openstack_neutron_network_ip_availabilities_used / openstack_neutron_network_ip_availabilities_total > 0.9 and openstack_neutron_network_ip_availabilities_total > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Neutron subnet IP pool exhaustion (instance {{ $labels.instance }})
+        description: "Subnet {{ $labels.subnet_name }} on network {{ $labels.network_name }} has used over 90% of its IP pool\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNeutronPortsWithoutIps
+      expr: 'openstack_neutron_ports_no_ips > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Neutron ports without IPs (instance {{ $labels.instance }})
+        description: "{{ $value }} active ports have no IP addresses assigned\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackLoadBalancerNotOnline
+      expr: 'openstack_loadbalancer_loadbalancer_status{operating_status!="ONLINE"} > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack load balancer not online (instance {{ $labels.instance }})
+        description: "Load balancer {{ $labels.name }} ({{ $labels.id }}) operating status is {{ $labels.operating_status }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNovaInstancesInErrorState
+      expr: 'sum(openstack_nova_server_status{status="ERROR"}) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Nova instances in ERROR state (instance {{ $labels.instance }})
+        description: "{{ $value }} Nova instances are in ERROR state\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackCinderVolumesInErrorState
+      expr: 'openstack_cinder_volume_status_counter{status=~"error.*"} > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Cinder volumes in error state (instance {{ $labels.instance }})
+        description: "{{ $value }} Cinder volumes are in an error state\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # This alert factors in the allocation ratio to compute effective capacity.
+    # The threshold of 90% is a rough default. Adjust based on your allocation ratios and workload patterns.
+    - alert: OpenstackPlacementResourceHighUsage
+      expr: 'openstack_placement_resource_usage / (openstack_placement_resource_total * openstack_placement_resource_allocation_ratio) > 0.9 and openstack_placement_resource_total > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack placement resource high usage (instance {{ $labels.instance }})
+        description: "Resource {{ $labels.resourcetype }} on host {{ $labels.hostname }} usage exceeds 90% of its allocation\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

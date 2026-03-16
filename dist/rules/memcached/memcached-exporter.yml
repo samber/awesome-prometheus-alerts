@@ -1,0 +1,91 @@
+groups:
+
+- name: MemcachedExporter
+
+  
+  rules:
+
+    # 1m delay allows a restart without triggering an alert.
+    - alert: MemcachedDown
+      expr: 'memcached_up == 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Memcached down (instance {{ $labels.instance }})
+        description: "Memcached instance is down on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MemcachedConnectionLimitApproaching(>80%)
+      expr: '(memcached_current_connections / memcached_max_connections * 100) > 80'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Memcached connection limit approaching (> 80%) (instance {{ $labels.instance }})
+        description: "Memcached connection usage is above 80% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MemcachedConnectionLimitApproaching(>95%)
+      expr: '(memcached_current_connections / memcached_max_connections * 100) > 95'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Memcached connection limit approaching (> 95%) (instance {{ $labels.instance }})
+        description: "Memcached connection usage is above 95% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MemcachedOutOfMemoryErrors
+      expr: 'sum without (slab) (rate(memcached_slab_items_outofmemory_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Memcached out of memory errors (instance {{ $labels.instance }})
+        description: "Memcached is returning out-of-memory errors on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # High memory usage is expected if the cache is well-utilized. This alert fires when it approaches the configured limit, which may cause evictions.
+    - alert: MemcachedMemoryUsageHigh(>90%)
+      expr: '(memcached_current_bytes / memcached_limit_bytes * 100) > 90'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Memcached memory usage high (> 90%) (instance {{ $labels.instance }})
+        description: "Memcached memory usage is above 90% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # A sustained eviction rate indicates memory pressure. Consider increasing memcached memory limit or reducing cache usage. Threshold of 10 evictions/s is a rough default — adjust based on your workload.
+    - alert: MemcachedHighEvictionRate
+      expr: 'rate(memcached_items_evicted_total[5m]) > 10'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Memcached high eviction rate (instance {{ $labels.instance }})
+        description: "Memcached is evicting items at a high rate on {{ $labels.instance }} ({{ $value }} evictions/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # A low hit rate may indicate poor cache utilization, incorrect cache keys, or TTLs that are too short. Threshold of 80% is a rough default — adjust based on your workload and access patterns.
+    - alert: MemcachedLowCacheHitRate(<80%)
+      expr: '(rate(memcached_commands_total{command="get", status="hit"}[5m]) / (rate(memcached_commands_total{command="get", status="hit"}[5m]) + rate(memcached_commands_total{command="get", status="miss"}[5m])) * 100) < 80 and (rate(memcached_commands_total{command="get", status="hit"}[5m]) + rate(memcached_commands_total{command="get", status="miss"}[5m])) > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Memcached low cache hit rate (< 80%) (instance {{ $labels.instance }})
+        description: "Memcached cache hit rate is below 80% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MemcachedConnectionsRejected
+      expr: 'increase(memcached_connections_rejected_total[5m]) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Memcached connections rejected (instance {{ $labels.instance }})
+        description: "Memcached is rejecting connections on {{ $labels.instance }} ({{ $value }} rejections in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MemcachedItemsTooLarge
+      expr: 'increase(memcached_item_too_large_total[5m]) > 0'
+      for: 5m
+      labels:
+        severity: info
+      annotations:
+        summary: Memcached items too large (instance {{ $labels.instance }})
+        description: "Memcached is rejecting items exceeding max-item-size on {{ $labels.instance }} ({{ $value }} rejections in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
