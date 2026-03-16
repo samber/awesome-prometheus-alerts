@@ -810,6 +810,52 @@ groups:
                 comments: |
                   Detects restarts by watching for changes in the oldest process start time within the group.
 
+      - name: Systemd
+        exporters:
+          - name: prometheus-community/systemd_exporter
+            slug: systemd-exporter
+            doc_url: https://github.com/prometheus-community/systemd_exporter
+            rules:
+              - name: Systemd unit failed
+                description: "Systemd unit {{ $labels.name }} has entered failed state. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_state{state="failed"} == 1'
+                severity: warning
+                for: 5m
+              - name: Systemd unit inactive
+                description: "Systemd unit {{ $labels.name }} is inactive. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_state{state="inactive", type="service", name=~"your-critical-service.+"} == 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  Many units are legitimately inactive. You must adjust the name=~ filter to match your critical services.
+              - name: Systemd service crash looping
+                description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})"
+                query: 'increase(systemd_service_restart_total[1h]) > 5'
+                severity: critical
+                for: 5m
+              - name: Systemd unit tasks near limit
+                description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})"
+                query: 'systemd_unit_tasks_current / systemd_unit_tasks_max > 0.9 and systemd_unit_tasks_max > 0'
+                severity: warning
+                for: 5m
+              - name: Systemd socket refused connections
+                description: "Systemd socket {{ $labels.name }} is refusing connections. (instance {{ $labels.instance }})"
+                query: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
+                severity: warning
+              - name: Systemd socket high connections
+                description: "Systemd socket {{ $labels.name }} has {{ $value }} active connections. (instance {{ $labels.instance }})"
+                query: 'systemd_socket_current_connections > 100'
+                severity: warning
+                comments: |
+                  Threshold of 100 connections is arbitrary. Adjust to your workload.
+              - name: Systemd timer missed trigger
+                description: "Systemd timer {{ $labels.name }} has not triggered for over 24 hours. (instance {{ $labels.instance }})"
+                query: '(time() - systemd_timer_last_trigger_seconds) / 3600 > 24 and systemd_timer_last_trigger_seconds > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Triggers if timer hasn't fired in 24 hours. Adjust threshold per timer schedule.
+
   - name: Databases and brokers
     services:
       - name: MySQL
@@ -3854,6 +3900,223 @@ groups:
                   This alert fires when a peer has a recent handshake but zero traffic flow.
                   May indicate routing issues or a misconfigured allowed-ips.
                   Only useful if you expect continuous traffic on all peers.
+
+  - name: Cloud providers
+    services:
+      - name: AWS CloudWatch
+        exporters:
+          - name: prometheus/cloudwatch_exporter
+            slug: prometheus-cloudwatch-exporter
+            doc_url: https://github.com/prometheus/cloudwatch_exporter
+            comments: |
+              CloudWatch metrics are exported as aws_{namespace}_{metric_name}_{statistic} gauges.
+              The rules below cover both exporter health and common AWS service alerts.
+              Adjust thresholds and label filters to match your CloudWatch exporter configuration.
+            rules:
+              - name: CloudWatch exporter scrape error
+                description: "CloudWatch exporter on {{ $labels.instance }} failed to scrape metrics from AWS CloudWatch API."
+                query: "cloudwatch_exporter_scrape_error > 0"
+                severity: warning
+                for: 5m
+              - name: CloudWatch exporter slow scrape
+                description: "CloudWatch exporter on {{ $labels.instance }} scrape is taking more than 5 minutes ({{ $value }}s). Consider reducing the number of metrics or splitting across multiple exporters."
+                query: "cloudwatch_exporter_scrape_duration_seconds > 300"
+                severity: warning
+                for: 5m
+              - name: CloudWatch API high request rate
+                description: "CloudWatch exporter on {{ $labels.instance }} is making {{ $value }} API calls per minute to namespace {{ $labels.namespace }}. This can lead to high AWS costs."
+                query: "sum by (instance, namespace) (rate(cloudwatch_requests_total[5m])) * 60 > 100"
+                severity: warning
+                comments: |
+                  CloudWatch API calls cost money (~$0.01 per 1000 GetMetricData requests).
+                  100 requests/minute ≈ $45/month. Adjust the threshold based on your budget.
+              - name: AWS EC2 high CPU utilization
+                description: "EC2 instance {{ $labels.instance_id }} CPU utilization is above 90% ({{ $value }}%)."
+                query: "aws_ec2_cpuutilization_average > 90"
+                severity: warning
+                for: 15m
+                comments: Requires EC2 CPUUtilization metric configured in the CloudWatch exporter.
+              - name: AWS RDS low free storage space
+                description: "RDS instance {{ $labels.dbinstance_identifier }} has less than 2GB free storage ({{ $value }} bytes remaining)."
+                query: "aws_rds_free_storage_space_average < 2000000000"
+                severity: warning
+                for: 5m
+                comments: |
+                  Requires RDS FreeStorageSpace metric. The threshold of 2GB is a rough default.
+                  Adjust based on your database size.
+              - name: AWS RDS high CPU utilization
+                description: "RDS instance {{ $labels.dbinstance_identifier }} CPU utilization is above 90% ({{ $value }}%)."
+                query: "aws_rds_cpuutilization_average > 90"
+                severity: warning
+                for: 15m
+                comments: Requires RDS CPUUtilization metric configured in the CloudWatch exporter.
+              - name: AWS RDS high database connections
+                description: "RDS instance {{ $labels.dbinstance_identifier }} has {{ $value }} active connections."
+                query: "aws_rds_database_connections_average > 100"
+                severity: warning
+                for: 5m
+                comments: |
+                  The threshold depends on the RDS instance class. Adjust based on your
+                  instance type's max_connections parameter.
+              - name: AWS SQS queue messages visible
+                description: "SQS queue {{ $labels.queue_name }} has {{ $value }} messages waiting to be processed."
+                query: "aws_sqs_approximate_number_of_messages_visible_average > 1000"
+                severity: warning
+                for: 10m
+                comments: |
+                  Requires SQS ApproximateNumberOfMessagesVisible metric. The threshold of 1000
+                  is a rough default. Adjust based on your expected queue depth.
+              - name: AWS SQS message age too old
+                description: "SQS queue {{ $labels.queue_name }} has messages older than 1 hour ({{ $value }}s)."
+                query: "aws_sqs_approximate_age_of_oldest_message_maximum > 3600"
+                severity: warning
+                comments: Requires SQS ApproximateAgeOfOldestMessage metric.
+              - name: AWS ALB unhealthy targets
+                description: "ALB {{ $labels.load_balancer }} has {{ $value }} unhealthy target(s) in target group {{ $labels.target_group }}."
+                query: "aws_applicationelb_unhealthy_host_count_average > 0"
+                severity: critical
+                for: 5m
+                comments: Requires ApplicationELB UnHealthyHostCount metric.
+              - name: AWS ALB high 5xx error rate
+                description: "ALB {{ $labels.load_balancer }} 5xx error rate is above 5% ({{ $value }}%)."
+                query: "(aws_applicationelb_httpcode_elb_5_xx_count_sum / aws_applicationelb_request_count_sum) * 100 > 5"
+                severity: critical
+                for: 5m
+                comments: Requires ApplicationELB HTTPCode_ELB_5XX_Count and RequestCount metrics.
+              - name: AWS ALB high target response time
+                description: "ALB {{ $labels.load_balancer }} average target response time is above 2 seconds ({{ $value }}s)."
+                query: "aws_applicationelb_target_response_time_average > 2"
+                severity: warning
+                for: 5m
+                comments: Requires ApplicationELB TargetResponseTime metric.
+              - name: AWS Lambda high error rate
+                description: "Lambda function {{ $labels.function_name }} error rate is above 5% ({{ $value }}%)."
+                query: "(aws_lambda_errors_sum / aws_lambda_invocations_sum) * 100 > 5"
+                severity: warning
+                for: 5m
+                comments: Requires Lambda Errors and Invocations metrics.
+
+      - name: Google Cloud Stackdriver
+        exporters:
+          - name: prometheus-community/stackdriver_exporter
+            slug: stackdriver-exporter
+            doc_url: https://github.com/prometheus-community/stackdriver_exporter
+            comments: |
+              Self-monitoring metrics use the stackdriver_monitoring_* prefix.
+              All self-monitoring metrics include a project_id label.
+            rules:
+              - name: Stackdriver exporter scrape error
+                description: "Stackdriver exporter failed to scrape metrics from Google Cloud Monitoring API for project {{ $labels.project_id }}."
+                query: "stackdriver_monitoring_last_scrape_error > 0"
+                severity: warning
+                for: 5m
+              - name: Stackdriver exporter slow scrape
+                description: "Stackdriver exporter scrape for project {{ $labels.project_id }} is taking more than 5 minutes ({{ $value }}s)."
+                query: "stackdriver_monitoring_last_scrape_duration_seconds > 300"
+                severity: warning
+                for: 5m
+              - name: Stackdriver exporter scrape errors increasing
+                description: "Stackdriver exporter has had {{ $value }} scrape errors in the last 15 minutes for project {{ $labels.project_id }}."
+                query: "increase(stackdriver_monitoring_scrape_errors_total[15m]) > 5"
+                severity: warning
+              - name: Stackdriver exporter high API calls
+                description: "Stackdriver exporter is making {{ $value }} API calls per minute for project {{ $labels.project_id }}. This may hit Google Cloud Monitoring API quotas."
+                query: "rate(stackdriver_monitoring_api_calls_total[5m]) * 60 > 100"
+                severity: warning
+              - name: Stackdriver exporter scrape stale
+                description: "Stackdriver exporter has not successfully scraped metrics for project {{ $labels.project_id }} in the last 10 minutes."
+                query: "time() - stackdriver_monitoring_last_scrape_timestamp > 600"
+                severity: warning
+
+      - name: DigitalOcean
+        exporters:
+          - name: metalmatze/digitalocean_exporter
+            slug: digitalocean-exporter
+            doc_url: https://github.com/metalmatze/digitalocean_exporter
+            rules:
+              - name: DigitalOcean droplet down
+                description: "DigitalOcean droplet {{ $labels.name }} ({{ $labels.id }}) in {{ $labels.region }} is not running."
+                query: "digitalocean_droplet_up == 0"
+                severity: critical
+                for: 5m
+              - name: DigitalOcean account not active
+                description: "DigitalOcean account is not active. It may be suspended or locked."
+                query: "digitalocean_account_active != 1"
+                severity: critical
+              - name: DigitalOcean database down
+                description: "DigitalOcean managed database {{ $labels.name }} ({{ $labels.engine }}) in {{ $labels.region }} is offline."
+                query: "digitalocean_database_status == 0"
+                severity: critical
+                for: 2m
+              - name: DigitalOcean Kubernetes cluster down
+                description: "DigitalOcean Kubernetes cluster {{ $labels.name }} ({{ $labels.version }}) in {{ $labels.region }} is not running."
+                query: "digitalocean_kubernetes_cluster_up == 0"
+                severity: critical
+                for: 5m
+              - name: DigitalOcean load balancer down
+                description: "DigitalOcean load balancer {{ $labels.name }} ({{ $labels.ip }}) is not active."
+                query: "digitalocean_loadbalancer_status == 0"
+                severity: critical
+                for: 2m
+              - name: DigitalOcean load balancer no backends
+                description: "DigitalOcean load balancer {{ $labels.name }} ({{ $labels.ip }}) has no droplets attached."
+                query: "digitalocean_loadbalancer_droplets == 0"
+                severity: warning
+              - name: DigitalOcean floating IP not assigned
+                description: "DigitalOcean floating IP {{ $labels.ipv4 }} in {{ $labels.region }} is not assigned to any droplet."
+                query: "digitalocean_floating_ipv4_active == 0"
+                severity: warning
+              - name: DigitalOcean active incidents
+                description: "DigitalOcean platform has {{ $value }} active incident(s)."
+                query: "digitalocean_incidents_total > 0"
+                severity: warning
+              - name: DigitalOcean exporter collection errors
+                description: "DigitalOcean exporter {{ $labels.collector }} collector has {{ $value }} errors."
+                query: "increase(digitalocean_errors_total[5m]) > 0"
+                severity: warning
+              - name: DigitalOcean droplet limit approaching
+                description: "DigitalOcean account is using {{ $value }}% of its droplet quota."
+                query: "(count(digitalocean_droplet_up) / digitalocean_account_droplet_limit) * 100 > 80"
+                severity: warning
+                comments: Fires when more than 80% of the account's droplet limit is in use.
+
+      - name: Azure
+        exporters:
+          - name: webdevops/azure-metrics-exporter
+            slug: azure-metrics-exporter
+            doc_url: https://github.com/webdevops/azure-metrics-exporter
+            comments: |
+              The exporter uses azurerm_resource_metric as the default metric name for forwarded Azure Monitor metrics.
+              The metric name can be customized via the name parameter in probe configuration.
+              Self-monitoring metrics use the azurerm_stats_* and azurerm_api_* prefixes.
+            rules:
+              - name: Azure exporter request errors
+                description: "Azure metrics exporter on {{ $labels.instance }} has {{ $value }} API request errors in the last 15 minutes."
+                query: 'increase(azurerm_stats_metric_requests{result="error"}[15m]) > 5'
+                severity: warning
+              - name: Azure exporter high error rate
+                description: "Azure metrics exporter on {{ $labels.instance }} has an error rate above 10% ({{ $value }}%)."
+                query: 'sum by (instance) (rate(azurerm_stats_metric_requests{result="error"}[5m])) / sum by (instance) (rate(azurerm_stats_metric_requests[5m])) * 100 > 10'
+                severity: warning
+                for: 5m
+              - name: Azure API read rate limit approaching
+                description: "Azure API read rate limit for subscription {{ $labels.subscriptionID }} is running low ({{ $value }} remaining)."
+                query: 'azurerm_api_ratelimit{type="read"} < 100'
+                severity: warning
+                comments: |
+                  Azure Resource Manager enforces rate limits per subscription.
+                  The threshold of 100 remaining calls is a rough default. Adjust based on your
+                  scrape interval and number of monitored resources.
+              - name: Azure API write rate limit approaching
+                description: "Azure API write rate limit for subscription {{ $labels.subscriptionID }} is running low ({{ $value }} remaining)."
+                query: 'azurerm_api_ratelimit{type="write"} < 50'
+                severity: warning
+              - name: Azure exporter slow collection
+                description: "Azure metrics exporter on {{ $labels.instance }} metric collection is taking more than 5 minutes ({{ $value }}s)."
+                query: "azurerm_stats_metric_collecttime > 300"
+                severity: warning
+                for: 5m
+
 
   - name: Other
     services:
