@@ -3586,7 +3586,7 @@ groups:
             rules:
               - name: Keycloak high login failure rate
                 description: "More than 5% of login attempts are failing in realm {{ $labels.realm }} (current value: {{ $value | printf \"%.1f\" }}%)."
-                query: '(sum by (realm) (rate(keycloak_failed_login_attempts_total[5m])) / sum by (realm) (rate(keycloak_login_attempts_total[5m]))) * 100 > 5 and sum by (realm) (rate(keycloak_login_attempts_total[5m])) > 0'
+                query: '(sum by (realm) (rate(keycloak_failed_login_attempts_total[5m])) / (sum by (realm) (rate(keycloak_logins_total[5m])) + sum by (realm) (rate(keycloak_failed_login_attempts_total[5m])))) * 100 > 5 and (sum by (realm) (rate(keycloak_logins_total[5m])) + sum by (realm) (rate(keycloak_failed_login_attempts_total[5m]))) > 0'
                 severity: warning
                 for: 5m
                 comments: |
@@ -3594,7 +3594,7 @@ groups:
                   A spike in failed logins may indicate a brute-force attack or misconfigured client.
               - name: Keycloak no successful logins
                 description: "No successful logins in realm {{ $labels.realm }} for the last 15 minutes."
-                query: 'sum by (realm) (rate(keycloak_logins_total[15m])) == 0 and sum by (realm) (rate(keycloak_login_attempts_total[15m])) > 0'
+                query: 'sum by (realm) (rate(keycloak_logins_total[15m])) == 0 and (sum by (realm) (rate(keycloak_logins_total[15m])) + sum by (realm) (rate(keycloak_failed_login_attempts_total[15m]))) > 0'
                 severity: critical
                 for: 5m
                 comments: Only fires when login attempts exist but none succeed — may indicate an authentication outage.
@@ -3618,7 +3618,7 @@ groups:
                 comments: Threshold of 10% is a rough default.
               - name: Keycloak slow request response time
                 description: "Keycloak {{ $labels.method }} requests are taking more than 2 seconds on average."
-                query: 'rate(keycloak_request_duration_sum[5m]) / rate(keycloak_request_duration_count[5m]) > 2 and rate(keycloak_request_duration_count[5m]) > 0'
+                query: 'sum by (method) (rate(keycloak_request_duration_sum[5m])) / sum by (method) (rate(keycloak_request_duration_count[5m])) > 2 and sum by (method) (rate(keycloak_request_duration_count[5m])) > 0'
                 severity: warning
                 for: 5m
                 comments: Threshold of 2 seconds is a rough default. Adjust based on your performance requirements.
