@@ -125,7 +125,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 #### Cloud providers
 
 - [AWS CloudWatch](https://samber.github.io/awesome-prometheus-alerts/rules#aws-cloudwatch)
-- [Google Cloud / Stackdriver](https://samber.github.io/awesome-prometheus-alerts/rules#google-cloud--stackdriver)
+- [Google Cloud Stackdriver](https://samber.github.io/awesome-prometheus-alerts/rules#google-cloud-stackdriver)
 - [DigitalOcean](https://samber.github.io/awesome-prometheus-alerts/rules#digitalocean)
 - [Azure](https://samber.github.io/awesome-prometheus-alerts/rules#azure)
 
