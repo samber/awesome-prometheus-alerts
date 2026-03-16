@@ -3182,8 +3182,8 @@ groups:
                 query: 'openstack_neutron_ports_no_ips > 0'
                 severity: warning
                 for: 5m
-              - name: OpenStack load balancer not active
-                description: "Load balancer {{ $labels.name }} ({{ $labels.id }}) is not in ACTIVE operating state"
+              - name: OpenStack load balancer not online
+                description: "Load balancer {{ $labels.name }} ({{ $labels.id }}) operating status is {{ $labels.operating_status }}"
                 query: 'openstack_loadbalancer_loadbalancer_status{operating_status!="ONLINE"} > 0'
                 severity: warning
                 for: 5m
