@@ -567,6 +567,30 @@ groups:
                 query: "increase(netdata_smartd_log_offline_uncorrectable_sector_count_sectors_average[2m]) > 0"
                 severity: warning
 
+      - name: eBPF
+        exporters:
+          - name: cloudflare/ebpf_exporter
+            slug: ebpf-exporter
+            doc_url: https://github.com/cloudflare/ebpf_exporter
+            rules:
+              - name: eBPF exporter program not attached
+                description: "eBPF program {{ $labels.name }} failed to attach. The program is not collecting data. (instance {{ $labels.instance }})"
+                query: 'ebpf_exporter_ebpf_program_attached == 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  The exporter uses loose attachment: if a program fails to load (missing BTF, kernel incompatibility), it sets this metric to 0 and continues running.
+              - name: eBPF exporter decoder errors
+                description: "eBPF exporter is experiencing decoder errors for program {{ $labels.name }}. Kernel data is not being correctly transformed into labels. (instance {{ $labels.instance }})"
+                query: 'rate(ebpf_exporter_decoder_errors_total[5m]) > 0'
+                severity: warning
+                for: 5m
+              - name: eBPF exporter no enabled configs
+                description: "eBPF exporter has no enabled configurations. No eBPF programs are being run. (instance {{ $labels.instance }})"
+                query: 'ebpf_exporter_enabled_configs == 0'
+                severity: warning
+                for: 5m
+
   - name: Databases and brokers
     services:
       - name: MySQL
