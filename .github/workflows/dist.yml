@@ -6,6 +6,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: write
+
 jobs:
   publish:
     name: Publish
@@ -22,7 +25,7 @@ jobs:
           ruby-version: 3.4
 
       - name: Set up yq
-        uses: mikefarah/yq@master
+        uses: mikefarah/yq@v4
 
       - name: Install liquid
         run: |
@@ -53,7 +56,7 @@ jobs:
       # https://peterevans.dev/posts/github-actions-how-to-automate-code-formatting-in-pull-requests/
       - name: Check for modified files
         id: git-check
-        run: echo ::set-output name=modified::$(git status -s --porcelain | wc -l | awk '{$1=$1};1')
+        run: echo "modified=$(git status -s --porcelain | wc -l | awk '{$1=$1};1')" >> $GITHUB_OUTPUT
       - name: Push changes
         if: steps.git-check.outputs.modified != '0'
         run: |

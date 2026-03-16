@@ -1,6 +1,10 @@
 name: Promtool check
 
-on: [pull_request, push]
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
   promtool-check:
@@ -16,7 +20,7 @@ jobs:
           ruby-version: 3.4
 
       - name: Set up yq
-        uses: mikefarah/yq@master
+        uses: mikefarah/yq@v4
 
       - name: Install liquid
         run: gem install liquid-cli
