@@ -742,6 +742,74 @@ groups:
                 severity: warning
                 for: 5m
 
+      - name: Process
+        exporters:
+          - name: ncabatoff/process-exporter
+            slug: process-exporter
+            doc_url: https://github.com/ncabatoff/process-exporter
+            rules:
+              - name: Process exporter group down
+                description: "No processes found for group {{ $labels.groupname }}. The service may have stopped. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_num_procs == 0'
+                severity: critical
+                for: 2m
+              - name: Process exporter high memory usage
+                description: "Process group {{ $labels.groupname }} is using {{ $value | humanize }}B of resident memory. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_memory_bytes{memtype="resident"} > 4e+09'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 4GB is arbitrary and depends on the process being monitored. Adjust per group.
+              - name: Process exporter high CPU usage
+                description: "Process group {{ $labels.groupname }} is using {{ $value }}% CPU. (instance {{ $labels.instance }})"
+                query: 'rate(namedprocess_namegroup_cpu_seconds_total[5m]) * 100 > 80'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 80% is per-core. Adjust based on expected workload.
+              - name: Process exporter high file descriptors usage
+                description: "Process group {{ $labels.groupname }} is using more than 80% of its file descriptor limit. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_worst_fd_ratio > 0.8'
+                severity: warning
+                for: 5m
+              - name: Process exporter file descriptors exhausted
+                description: "Process group {{ $labels.groupname }} has nearly exhausted its file descriptor limit. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_worst_fd_ratio > 0.95'
+                severity: critical
+                for: 2m
+              - name: Process exporter high swap usage
+                description: "Process group {{ $labels.groupname }} is using {{ $value | humanize }}B of swap. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_memory_bytes{memtype="swapped"} > 512e+06'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 512MB is arbitrary. Adjust per group and environment.
+              - name: Process exporter zombie processes
+                description: "Process group {{ $labels.groupname }} has {{ $value }} zombie processes. (instance {{ $labels.instance }})"
+                query: 'namedprocess_namegroup_states{state="Zombie"} > 0'
+                severity: warning
+                for: 5m
+              - name: Process exporter high context switching
+                description: "Process group {{ $labels.groupname }} has a high rate of context switches ({{ $value }}/s). (instance {{ $labels.instance }})"
+                query: 'rate(namedprocess_namegroup_context_switches_total[5m]) > 10000'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 10000 switches/s is a rough default. Adjust based on the workload profile.
+              - name: Process exporter high disk IO
+                description: "Process group {{ $labels.groupname }} is performing {{ $value | humanize }}B/s of disk writes. (instance {{ $labels.instance }})"
+                query: 'rate(namedprocess_namegroup_write_bytes_total[5m]) > 100e+06'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 100MB/s is arbitrary. Adjust per group.
+              - name: Process exporter process restarting
+                description: "Process group {{ $labels.groupname }} has restarted (oldest process start time changed). (instance {{ $labels.instance }})"
+                query: 'changes(namedprocess_namegroup_oldest_start_time_seconds[5m]) > 0 and namedprocess_namegroup_num_procs > 0'
+                severity: info
+                comments: |
+                  Detects restarts by watching for changes in the oldest process start time within the group.
+
   - name: Databases and brokers
     services:
       - name: MySQL
