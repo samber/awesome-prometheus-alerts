@@ -356,6 +356,100 @@ groups:
                 query: "smartctl_device_available_spare < smartctl_device_available_spare_threshold"
                 severity: critical
 
+      - name: IPMI
+        exporters:
+          - name: prometheus-community/ipmi_exporter
+            slug: ipmi-exporter
+            doc_url: https://github.com/prometheus-community/ipmi_exporter
+            rules:
+              - name: IPMI collector down
+                description: "IPMI collector {{ $labels.collector }} on {{ $labels.instance }} failed to scrape sensor data. Check FreeIPMI tools and BMC connectivity."
+                query: 'ipmi_up == 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  The ipmi_up metric is per-collector. A value of 0 means the collector could not retrieve data from the BMC.
+              - name: IPMI temperature sensor warning
+                description: "IPMI temperature sensor {{ $labels.name }} on {{ $labels.instance }} is in warning state."
+                query: 'ipmi_temperature_state == 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  State values: 0=nominal, 1=warning, 2=critical. Thresholds are defined in the BMC firmware.
+              - name: IPMI temperature sensor critical
+                description: "IPMI temperature sensor {{ $labels.name }} on {{ $labels.instance }} is in critical state. Immediate attention required to prevent hardware damage."
+                query: 'ipmi_temperature_state == 2'
+                severity: critical
+              - name: IPMI fan speed sensor warning
+                description: "IPMI fan sensor {{ $labels.name }} on {{ $labels.instance }} is in warning state."
+                query: 'ipmi_fan_speed_state == 1'
+                severity: warning
+                for: 5m
+              - name: IPMI fan speed sensor critical
+                description: "IPMI fan sensor {{ $labels.name }} on {{ $labels.instance }} is in critical state. A fan may have failed."
+                query: 'ipmi_fan_speed_state == 2'
+                severity: critical
+              - name: IPMI fan speed zero
+                description: "IPMI fan {{ $labels.name }} on {{ $labels.instance }} reports 0 RPM. The fan may have failed."
+                query: 'ipmi_fan_speed_rpm == 0'
+                severity: critical
+                for: 5m
+              - name: IPMI voltage sensor warning
+                description: "IPMI voltage sensor {{ $labels.name }} on {{ $labels.instance }} is in warning state."
+                query: 'ipmi_voltage_state == 1'
+                severity: warning
+                for: 5m
+              - name: IPMI voltage sensor critical
+                description: "IPMI voltage sensor {{ $labels.name }} on {{ $labels.instance }} is in critical state. Power supply or motherboard issue possible."
+                query: 'ipmi_voltage_state == 2'
+                severity: critical
+              - name: IPMI current sensor warning
+                description: "IPMI current sensor {{ $labels.name }} on {{ $labels.instance }} is in warning state."
+                query: 'ipmi_current_state == 1'
+                severity: warning
+                for: 5m
+              - name: IPMI current sensor critical
+                description: "IPMI current sensor {{ $labels.name }} on {{ $labels.instance }} is in critical state."
+                query: 'ipmi_current_state == 2'
+                severity: critical
+              - name: IPMI power sensor warning
+                description: "IPMI power sensor {{ $labels.name }} on {{ $labels.instance }} is in warning state."
+                query: 'ipmi_power_state == 1'
+                severity: warning
+                for: 5m
+              - name: IPMI power sensor critical
+                description: "IPMI power sensor {{ $labels.name }} on {{ $labels.instance }} is in critical state."
+                query: 'ipmi_power_state == 2'
+                severity: critical
+              - name: IPMI generic sensor critical
+                description: "IPMI sensor {{ $labels.name }} (type={{ $labels.type }}) on {{ $labels.instance }} is in critical state."
+                query: 'ipmi_sensor_state == 2'
+                severity: critical
+                comments: |
+                  Catches any sensor type not covered by the specific temperature/fan/voltage/current/power alerts.
+              - name: IPMI chassis power off
+                description: "IPMI reports chassis power is off on {{ $labels.instance }}. The server may have shut down unexpectedly."
+                query: 'ipmi_chassis_power_state == 0'
+                severity: critical
+              - name: IPMI chassis drive fault
+                description: "IPMI reports a drive fault on {{ $labels.instance }}. Check disk health."
+                query: 'ipmi_chassis_drive_fault_state == 0'
+                severity: critical
+                comments: |
+                  The metric uses inverted logic: 1=no fault, 0=fault detected.
+              - name: IPMI chassis cooling fault
+                description: "IPMI reports a cooling/fan fault on {{ $labels.instance }}. Check fans and airflow."
+                query: 'ipmi_chassis_cooling_fault_state == 0'
+                severity: critical
+                comments: |
+                  The metric uses inverted logic: 1=no fault, 0=fault detected.
+              - name: IPMI SEL almost full
+                description: "IPMI System Event Log on {{ $labels.instance }} has only {{ $value }} bytes free. Clear the SEL to prevent loss of new events."
+                query: 'ipmi_sel_free_space_bytes < 512'
+                severity: warning
+                comments: |
+                  SEL storage is typically very limited (e.g., 16KB). When full, new events may be dropped.
+
       - name: Docker containers
         exporters:
           - name: google/cAdvisor
