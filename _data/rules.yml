@@ -3084,6 +3084,56 @@ groups:
                 query: '(sum by (zone) (rate(cloudflare_zone_requests_status{status=~"^5.."}[5m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[5m]))) * 100 > 5'
                 severity: critical
 
+      - name: SNMP
+        exporters:
+          - name: prometheus/snmp_exporter
+            slug: snmp-exporter
+            doc_url: https://github.com/prometheus/snmp_exporter
+            comments: |
+              These rules use standard IF-MIB and SNMPv2-MIB metrics. Metric names depend on your snmp.yml module configuration.
+              Thresholds for bandwidth and error rates are rough defaults - adjust to your environment.
+            rules:
+              - name: SNMP target down
+                description: "SNMP device {{ $labels.instance }} is unreachable."
+                query: 'up{job=~"snmp.*"} == 0'
+                severity: critical
+                for: 5m
+                comments: From the official snmp-mixin.
+              - name: SNMP interface down
+                description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} is operationally down while administratively up."
+                query: "ifOperStatus{ifAdminStatus=\"1\"} == 2"
+                severity: critical
+                for: 2m
+              - name: SNMP interface high inbound error rate
+                description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} has an inbound error rate above 5%."
+                query: "rate(ifInErrors[5m]) / (rate(ifHCInUcastPkts[5m]) + rate(ifHCInBroadcastPkts[5m]) + rate(ifHCInMulticastPkts[5m])) > 0.05 and (rate(ifHCInUcastPkts[5m]) + rate(ifHCInBroadcastPkts[5m]) + rate(ifHCInMulticastPkts[5m])) > 0"
+                severity: warning
+                for: 5m
+                comments: Threshold is a rough default. Adjust based on your network environment.
+              - name: SNMP interface high outbound error rate
+                description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} has an outbound error rate above 5%."
+                query: "rate(ifOutErrors[5m]) / (rate(ifHCOutUcastPkts[5m]) + rate(ifHCOutBroadcastPkts[5m]) + rate(ifHCOutMulticastPkts[5m])) > 0.05 and (rate(ifHCOutUcastPkts[5m]) + rate(ifHCOutBroadcastPkts[5m]) + rate(ifHCOutMulticastPkts[5m])) > 0"
+                severity: warning
+                for: 5m
+                comments: Threshold is a rough default. Adjust based on your network environment.
+              - name: SNMP interface high bandwidth usage inbound
+                description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} inbound utilization is above 80%."
+                query: "rate(ifHCInOctets[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0"
+                severity: warning
+                for: 15m
+                comments: Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
+              - name: SNMP interface high bandwidth usage outbound
+                description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} outbound utilization is above 80%."
+                query: "rate(ifHCOutOctets[5m]) * 8 / ifSpeed > 0.80 and ifSpeed > 0"
+                severity: warning
+                for: 15m
+                comments: Threshold is a rough default. Adjust based on your link capacity and traffic patterns.
+              - name: SNMP device restarted
+                description: "SNMP device {{ $labels.instance }} has restarted (uptime < 5 minutes)."
+                query: "sysUpTime / 100 < 300"
+                severity: info
+                comments: sysUpTime is in centiseconds (hundredths of a second).
+
   - name: Other
     services:
       - name: Thanos

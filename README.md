@@ -110,6 +110,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [FreeSwitch](https://samber.github.io/awesome-prometheus-alerts/rules#freeswitch)
 - [Hashicorp Vault](https://samber.github.io/awesome-prometheus-alerts/rules#hashicorp-vault)
 - [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules#cloudflare)
+- [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules#snmp)
 
 #### Other
 
