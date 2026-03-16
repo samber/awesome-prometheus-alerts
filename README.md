@@ -48,6 +48,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Windows](https://samber.github.io/awesome-prometheus-alerts/rules#windows-server)
 - [VMWare](https://samber.github.io/awesome-prometheus-alerts/rules#vmware)
 - [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules#netdata)
+- [eBPF](https://samber.github.io/awesome-prometheus-alerts/rules#ebpf)
 
 #### Databases and brokers
 
