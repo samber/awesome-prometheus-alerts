@@ -114,6 +114,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules#openebs)
 - [Minio](https://samber.github.io/awesome-prometheus-alerts/rules#minio)
 - [SSL/TLS](https://samber.github.io/awesome-prometheus-alerts/rules#ssl/tls)
+- [cert-manager](https://samber.github.io/awesome-prometheus-alerts/rules#cert-manager)
 - [Juniper](https://samber.github.io/awesome-prometheus-alerts/rules#juniper)
 - [CoreDNS](https://samber.github.io/awesome-prometheus-alerts/rules#coredns)
 - [FreeSwitch](https://samber.github.io/awesome-prometheus-alerts/rules#freeswitch)
