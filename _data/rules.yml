@@ -519,6 +519,62 @@ groups:
                 severity: warning
                 for: 5m
 
+      - name: Proxmox VE
+        exporters:
+          - name: prometheus-pve/prometheus-pve-exporter
+            slug: prometheus-pve-exporter
+            doc_url: https://github.com/prometheus-pve/prometheus-pve-exporter
+            rules:
+              - name: PVE node down
+                description: 'Proxmox VE node {{ $labels.id }} is down.'
+                query: 'pve_up{id=~"node/.*"} == 0'
+                severity: critical
+                for: 2m
+              - name: PVE VM/CT down
+                description: 'Proxmox VE guest {{ $labels.id }} is not running.'
+                query: 'pve_up{id=~"(qemu|lxc)/.*"} == 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  This alert triggers for all VMs and containers that are not running.
+                  You may want to filter by specific guests using the `id` label, or exclude
+                  intentionally stopped guests with additional label matchers.
+              - name: PVE high CPU usage
+                description: 'Proxmox VE CPU usage is above 90% on {{ $labels.id }}. Current value: {{ $value | printf "%.2f" }}%'
+                query: 'pve_cpu_usage_ratio * 100 > 90'
+                severity: warning
+                for: 5m
+              - name: PVE high memory usage
+                description: 'Proxmox VE memory usage is above 90% on {{ $labels.id }}. Current value: {{ $value | printf "%.2f" }}%'
+                query: 'pve_memory_usage_bytes / pve_memory_size_bytes * 100 > 90'
+                severity: warning
+                for: 5m
+              - name: PVE storage filling up
+                description: 'Proxmox VE storage {{ $labels.id }} is above 80% used. Current value: {{ $value | printf "%.2f" }}%'
+                query: 'pve_disk_usage_bytes{id=~"storage/.*"} / pve_disk_size_bytes{id=~"storage/.*"} * 100 > 80 and pve_disk_size_bytes{id=~"storage/.*"} > 0'
+                severity: warning
+                for: 5m
+              - name: PVE storage almost full
+                description: 'Proxmox VE storage {{ $labels.id }} is above 95% used. Current value: {{ $value | printf "%.2f" }}%'
+                query: 'pve_disk_usage_bytes{id=~"storage/.*"} / pve_disk_size_bytes{id=~"storage/.*"} * 100 > 95 and pve_disk_size_bytes{id=~"storage/.*"} > 0'
+                severity: critical
+                for: 2m
+              - name: PVE guest not backed up
+                description: '{{ $value }} Proxmox VE guest(s) are not covered by any backup job.'
+                query: 'pve_not_backed_up_total > 0'
+                severity: warning
+              - name: PVE replication failed
+                description: 'Proxmox VE replication for {{ $labels.id }} has {{ $value }} failed sync(s).'
+                query: 'pve_replication_failed_syncs > 0'
+                severity: warning
+              - name: PVE cluster not quorate
+                description: 'Proxmox VE cluster has lost quorum.'
+                query: 'pve_cluster_info{quorate="0"} == 1'
+                severity: critical
+                comments: |
+                  Loss of quorum means the cluster cannot make decisions about VM placement
+                  and fencing. This requires immediate attention.
+
       - name: Netdata
         exporters:
           - name: Embedded exporter

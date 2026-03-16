@@ -47,6 +47,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Blackbox](https://samber.github.io/awesome-prometheus-alerts/rules#blackbox)
 - [Windows](https://samber.github.io/awesome-prometheus-alerts/rules#windows-server)
 - [VMWare](https://samber.github.io/awesome-prometheus-alerts/rules#vmware)
+- [Proxmox VE](https://samber.github.io/awesome-prometheus-alerts/rules#proxmox-ve)
 - [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules#netdata)
 
 #### Databases and brokers
