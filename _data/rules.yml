@@ -742,7 +742,7 @@ groups:
                 severity: warning
                 for: 5m
 
-      - name: Process
+      - name: Process Exporter
         exporters:
           - name: ncabatoff/process-exporter
             slug: process-exporter
@@ -761,13 +761,13 @@ groups:
                 comments: |
                   Threshold of 4GB is arbitrary and depends on the process being monitored. Adjust per group.
               - name: Process exporter high CPU usage
-                description: "Process group {{ $labels.groupname }} is using {{ $value }}% CPU. (instance {{ $labels.instance }})"
+                description: "Process group {{ $labels.groupname }} is using {{ $value }}% CPU (core-equivalent). (instance {{ $labels.instance }})"
                 query: 'rate(namedprocess_namegroup_cpu_seconds_total[5m]) * 100 > 80'
                 severity: warning
                 for: 5m
                 comments: |
-                  Threshold of 80% is per-core. Adjust based on expected workload.
-              - name: Process exporter high file descriptors usage
+                  Value is core-equivalent %: 100% = 1 full core, 200% = 2 cores, etc. Threshold of 80% is per-core. Adjust based on expected workload.
+              - name: Process exporter high file descriptor usage
                 description: "Process group {{ $labels.groupname }} is using more than 80% of its file descriptor limit. (instance {{ $labels.instance }})"
                 query: 'namedprocess_namegroup_worst_fd_ratio > 0.8'
                 severity: warning
@@ -796,7 +796,7 @@ groups:
                 for: 5m
                 comments: |
                   Threshold of 10000 switches/s is a rough default. Adjust based on the workload profile.
-              - name: Process exporter high disk IO
+              - name: Process exporter high disk write IO
                 description: "Process group {{ $labels.groupname }} is performing {{ $value | humanize }}B/s of disk writes. (instance {{ $labels.instance }})"
                 query: 'rate(namedprocess_namegroup_write_bytes_total[5m]) > 100e+06'
                 severity: warning

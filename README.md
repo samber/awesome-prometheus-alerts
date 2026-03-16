@@ -51,7 +51,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Proxmox VE](https://samber.github.io/awesome-prometheus-alerts/rules#proxmox-ve)
 - [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules#netdata)
 - [eBPF](https://samber.github.io/awesome-prometheus-alerts/rules#ebpf)
-- [Process](https://samber.github.io/awesome-prometheus-alerts/rules#process)
+- [Process Exporter](https://samber.github.io/awesome-prometheus-alerts/rules#process-exporter)
 
 #### Databases and brokers
 
