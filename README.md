@@ -121,6 +121,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Keycloak](https://samber.github.io/awesome-prometheus-alerts/rules#keycloak)
 - [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules#cloudflare)
 - [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules#snmp)
+- [WireGuard](https://samber.github.io/awesome-prometheus-alerts/rules#wireguard)
 
 #### Other
 
