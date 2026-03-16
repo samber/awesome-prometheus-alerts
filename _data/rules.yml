@@ -3839,7 +3839,7 @@ groups:
                 comments: |
                   The threshold of 300 seconds (5 minutes) is a rough default. WireGuard peers that are idle but reachable
                   typically re-handshake every 2 minutes. Adjust based on your keepalive interval.
-                  The `> 0` guard excludes peers that have never handshaked (covered by a separate rule).
+                  The `> 0` guard excludes peers that have never completed a handshake (covered by a separate rule).
               - name: WireGuard peer handshake never established
                 description: "WireGuard peer {{ $labels.public_key }} on interface {{ $labels.interface }} has never completed a handshake. Check peer configuration and network connectivity."
                 query: 'wireguard_latest_handshake_seconds == 0'
