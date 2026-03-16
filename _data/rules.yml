@@ -3578,6 +3578,51 @@ groups:
                 query: "sum(vault_core_active) / count(vault_core_active) <= 0.5"
                 severity: critical
 
+      - name: Keycloak
+        exporters:
+          - name: aerogear/keycloak-metrics-spi
+            slug: aerogear-keycloak-metrics-spi
+            doc_url: https://github.com/aerogear/keycloak-metrics-spi
+            rules:
+              - name: Keycloak high login failure rate
+                description: "More than 5% of login attempts are failing in realm {{ $labels.realm }} (current value: {{ $value | printf \"%.1f\" }}%)."
+                query: '(sum by (realm) (rate(keycloak_failed_login_attempts_total[5m])) / sum by (realm) (rate(keycloak_login_attempts_total[5m]))) * 100 > 5 and sum by (realm) (rate(keycloak_login_attempts_total[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 5% is a rough default. Adjust based on your user base and expected error rates.
+                  A spike in failed logins may indicate a brute-force attack or misconfigured client.
+              - name: Keycloak no successful logins
+                description: "No successful logins in realm {{ $labels.realm }} for the last 15 minutes."
+                query: 'sum by (realm) (rate(keycloak_logins_total[15m])) == 0 and sum by (realm) (rate(keycloak_login_attempts_total[15m])) > 0'
+                severity: critical
+                for: 5m
+                comments: Only fires when login attempts exist but none succeed — may indicate an authentication outage.
+              - name: Keycloak high token refresh error rate
+                description: "More than 10% of token refresh attempts are failing in realm {{ $labels.realm }} (current value: {{ $value | printf \"%.1f\" }}%)."
+                query: '(sum by (realm) (rate(keycloak_refresh_tokens_errors_total[5m])) / sum by (realm) (rate(keycloak_refresh_tokens_total[5m]))) * 100 > 10 and sum by (realm) (rate(keycloak_refresh_tokens_total[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: Threshold of 10% is a rough default. High refresh token errors may indicate expired sessions or token store issues.
+              - name: Keycloak high code-to-token exchange error rate
+                description: "More than 10% of code-to-token exchanges are failing in realm {{ $labels.realm }} (current value: {{ $value | printf \"%.1f\" }}%)."
+                query: '(sum by (realm) (rate(keycloak_code_to_tokens_errors_total[5m])) / sum by (realm) (rate(keycloak_code_to_tokens_total[5m]))) * 100 > 10 and sum by (realm) (rate(keycloak_code_to_tokens_total[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: Threshold of 10% is a rough default. Code-to-token failures may indicate misconfigured OAuth clients or replay attacks.
+              - name: Keycloak high registration failure rate
+                description: "More than 10% of registration attempts are failing in realm {{ $labels.realm }} (current value: {{ $value | printf \"%.1f\" }}%)."
+                query: '(sum by (realm) (rate(keycloak_registrations_errors_total[5m])) / sum by (realm) (rate(keycloak_registrations_total[5m]))) * 100 > 10 and sum by (realm) (rate(keycloak_registrations_total[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: Threshold of 10% is a rough default.
+              - name: Keycloak slow request response time
+                description: "Keycloak {{ $labels.method }} requests are taking more than 2 seconds on average."
+                query: 'rate(keycloak_request_duration_sum[5m]) / rate(keycloak_request_duration_count[5m]) > 2 and rate(keycloak_request_duration_count[5m]) > 0'
+                severity: warning
+                for: 5m
+                comments: Threshold of 2 seconds is a rough default. Adjust based on your performance requirements.
+
       - name: Cloudflare
         exporters:
           - name: lablabs/cloudflare-exporter

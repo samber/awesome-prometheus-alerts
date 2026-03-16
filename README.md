@@ -116,6 +116,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [CoreDNS](https://samber.github.io/awesome-prometheus-alerts/rules#coredns)
 - [FreeSwitch](https://samber.github.io/awesome-prometheus-alerts/rules#freeswitch)
 - [Hashicorp Vault](https://samber.github.io/awesome-prometheus-alerts/rules#hashicorp-vault)
+- [Keycloak](https://samber.github.io/awesome-prometheus-alerts/rules#keycloak)
 - [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules#cloudflare)
 - [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules#snmp)
 
