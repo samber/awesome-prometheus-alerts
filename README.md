@@ -60,6 +60,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Patroni](https://samber.github.io/awesome-prometheus-alerts/rules#patroni)
 - [PGBouncer](https://samber.github.io/awesome-prometheus-alerts/rules#pgbouncer)
 - [Redis](https://samber.github.io/awesome-prometheus-alerts/rules#redis)
+- [Memcached](https://samber.github.io/awesome-prometheus-alerts/rules#memcached)
 - [MongoDB](https://samber.github.io/awesome-prometheus-alerts/rules#mongodb)
 - [RabbitMQ](https://samber.github.io/awesome-prometheus-alerts/rules#rabbitmq)
 - [Elasticsearch](https://samber.github.io/awesome-prometheus-alerts/rules#elasticsearch)

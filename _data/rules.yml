@@ -1053,6 +1053,66 @@ groups:
                 query: "increase(redis_rejected_connections_total[1m]) > 5"
                 severity: warning
 
+      - name: Memcached
+        exporters:
+          - name: prometheus/memcached_exporter
+            slug: memcached-exporter
+            doc_url: https://github.com/prometheus/memcached_exporter
+            rules:
+              - name: Memcached down
+                description: Memcached instance is down on {{ $labels.instance }}
+                query: "memcached_up == 0"
+                severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
+              - name: Memcached connection limit approaching (> 80%)
+                description: "Memcached connection usage is above 80% on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "(memcached_current_connections / memcached_max_connections * 100) > 80"
+                severity: warning
+                for: 2m
+              - name: Memcached connection limit approaching (> 95%)
+                description: "Memcached connection usage is above 95% on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "(memcached_current_connections / memcached_max_connections * 100) > 95"
+                severity: critical
+                for: 2m
+              - name: Memcached out of memory errors
+                description: "Memcached is returning out-of-memory errors on {{ $labels.instance }}"
+                query: "sum without (slab) (rate(memcached_slab_items_outofmemory_total[5m])) > 0"
+                severity: warning
+                for: 5m
+              - name: Memcached memory usage high (> 90%)
+                description: "Memcached memory usage is above 90% on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "(memcached_current_bytes / memcached_limit_bytes * 100) > 90"
+                severity: warning
+                for: 5m
+                comments: |
+                  High memory usage is expected if the cache is well-utilized. This alert fires when it approaches the configured limit, which may cause evictions.
+              - name: Memcached high eviction rate
+                description: "Memcached is evicting items at a high rate on {{ $labels.instance }} ({{ $value }} evictions/s)"
+                query: "rate(memcached_items_evicted_total[5m]) > 10"
+                severity: warning
+                for: 5m
+                comments: |
+                  A sustained eviction rate indicates memory pressure. Consider increasing memcached memory limit or reducing cache usage. Threshold of 10 evictions/s is a rough default — adjust based on your workload.
+              - name: Memcached low cache hit rate (< 80%)
+                description: "Memcached cache hit rate is below 80% on {{ $labels.instance }} (current value: {{ $value }}%)"
+                query: "(rate(memcached_commands_total{command=\"get\", status=\"hit\"}[5m]) / (rate(memcached_commands_total{command=\"get\", status=\"hit\"}[5m]) + rate(memcached_commands_total{command=\"get\", status=\"miss\"}[5m])) * 100) < 80 and (rate(memcached_commands_total{command=\"get\", status=\"hit\"}[5m]) + rate(memcached_commands_total{command=\"get\", status=\"miss\"}[5m])) > 0"
+                severity: warning
+                for: 10m
+                comments: |
+                  A low hit rate may indicate poor cache utilization, incorrect cache keys, or TTLs that are too short. Threshold of 80% is a rough default — adjust based on your workload and access patterns.
+              - name: Memcached connections rejected
+                description: "Memcached is rejecting connections on {{ $labels.instance }} ({{ $value }} rejections in the last 5m)"
+                query: "increase(memcached_connections_rejected_total[5m]) > 0"
+                severity: warning
+                for: 5m
+              - name: Memcached items too large
+                description: "Memcached is rejecting items exceeding max-item-size on {{ $labels.instance }} ({{ $value }} rejections in the last 5m)"
+                query: "increase(memcached_item_too_large_total[5m]) > 0"
+                severity: info
+                for: 5m
+
       - name: MongoDB
         exporters:
           - name: percona/mongodb_exporter
