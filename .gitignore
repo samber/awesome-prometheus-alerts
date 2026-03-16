@@ -5,3 +5,4 @@ _site/
 _data/rules.json
 test/rules/
 /node_modules
+.worktrees/
