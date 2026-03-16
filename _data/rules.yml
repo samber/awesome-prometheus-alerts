@@ -823,12 +823,11 @@ groups:
                 for: 5m
               - name: Systemd unit inactive
                 description: "Systemd unit {{ $labels.name }} is inactive. (instance {{ $labels.instance }})"
-                query: 'systemd_unit_state{state="inactive"} == 1'
+                query: 'systemd_unit_state{state="inactive", type="service", name=~"your-critical-service.+"} == 1'
                 severity: warning
                 for: 5m
                 comments: |
-                  Many units are legitimately inactive. Filter by unit name to avoid noise, e.g.:
-                  systemd_unit_state{state="inactive", name=~"your-critical-service.+"} == 1
+                  Many units are legitimately inactive. You must adjust the name=~ filter to match your critical services.
               - name: Systemd service crash looping
                 description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})"
                 query: 'increase(systemd_service_restart_total[1h]) > 5'
