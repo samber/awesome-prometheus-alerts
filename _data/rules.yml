@@ -856,7 +856,7 @@ groups:
                 comments: |
                   Triggers if timer hasn't fired in 24 hours. Adjust threshold per timer schedule.
 
-  - name: Databases and brokers
+  - name: Databases
     services:
       - name: MySQL
         exporters:
@@ -1385,141 +1385,6 @@ groups:
                 query: 'changes(mgob_scheduler_backup_total{status="500"}[1h]) > 0'
                 severity: critical
 
-      - name: RabbitMQ
-        exporters:
-          - name: rabbitmq/rabbitmq-prometheus
-            slug: rabbitmq-exporter
-            doc_url: https://github.com/rabbitmq/rabbitmq-prometheus
-            rules:
-              - name: RabbitMQ node down
-                description: Less than 3 nodes running in RabbitMQ cluster
-                query: "sum(rabbitmq_build_info) < 3"
-                severity: critical
-                for: 1m
-                comments: |
-                  1m delay allows a restart without triggering an alert.
-              - name: RabbitMQ node not distributed
-                description: Distribution link state is not 'up'
-                query: "erlang_vm_dist_node_state < 3"
-                severity: critical
-                for: 1m
-                comments: |
-                  1m delay allows a restart without triggering an alert.
-              - name: RabbitMQ instances different versions
-                description: Running different version of RabbitMQ in the same cluster, can lead to failure.
-                query: "count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1"
-                severity: warning
-                for: 1h
-              - name: RabbitMQ memory high
-                description: A node use more than 90% of allocated RAM
-                query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90 and rabbitmq_resident_memory_limit_bytes > 0"
-                severity: warning
-                for: 2m
-              - name: RabbitMQ file descriptors usage
-                description: A node use more than 90% of file descriptors
-                query: "rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90 and rabbitmq_process_max_fds > 0"
-                severity: warning
-                for: 2m
-              - name: RabbitMQ too many ready messages
-                description: RabbitMQ too many ready messages on {{ $labels.instance }}
-                query: "sum(rabbitmq_queue_messages_ready) BY (queue) > 1000"
-                severity: warning
-                for: 1m
-              - name: RabbitMQ too many unack messages
-                description: Too many unacknowledged messages
-                query: "sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000"
-                severity: warning
-                for: 1m
-              - name: RabbitMQ too many connections
-                description: The total connections of a node is too high
-                query: "rabbitmq_connections > 1000"
-                severity: warning
-                for: 2m
-              - name: RabbitMQ no queue consumer
-                description: A queue has less than 1 consumer
-                query: "rabbitmq_queue_consumers < 1"
-                severity: warning
-                for: 1m # allows a short service restart
-              - name: RabbitMQ unroutable messages
-                description: A queue has unroutable messages
-                query: "increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0"
-                severity: warning
-                for: 2m
-
-          - name: kbudde/rabbitmq-exporter
-            slug: kbudde-rabbitmq-exporter
-            doc_url: https://github.com/kbudde/rabbitmq_exporter
-            rules:
-              - name: RabbitMQ down
-                description: RabbitMQ node down
-                query: "rabbitmq_up == 0"
-                severity: critical
-                for: 1m
-                comments: |
-                  1m delay allows a restart without triggering an alert.
-              - name: RabbitMQ cluster down
-                description: Less than 3 nodes running in RabbitMQ cluster
-                query: "sum(rabbitmq_running) < 3"
-                severity: critical
-                for: 1m
-                comments: |
-                  1m delay allows a restart without triggering an alert.
-              - name: RabbitMQ cluster partition
-                description: Cluster partition
-                query: "rabbitmq_partitions > 0"
-                severity: critical
-              - name: RabbitMQ out of memory
-                description: Memory available for RabbitMQ is low (< 10%)
-                query: "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90 and rabbitmq_node_mem_limit > 0"
-                severity: warning
-                for: 2m
-              - name: RabbitMQ too many connections
-                description: RabbitMQ instance has too many connections (> 1000)
-                query: "rabbitmq_connectionsTotal > 1000"
-                severity: warning
-                for: 2m
-              - name: RabbitMQ dead letter queue filling up
-                description: Dead letter queue is filling up (> 10 msgs)
-                query: 'rabbitmq_queue_messages{queue="my-dead-letter-queue"} > 10'
-                severity: warning
-                for: 1m
-                comments: |
-                  Indicate the queue name in dedicated label.
-              - name: RabbitMQ too many messages in queue
-                description: Queue is filling up (> 1000 msgs)
-                query: 'rabbitmq_queue_messages_ready{queue="my-queue"} > 1000'
-                severity: warning
-                for: 2m
-                comments: |
-                  Indicate the queue name in dedicated label.
-              - name: RabbitMQ slow queue consuming
-                description: Queue messages are consumed slowly (> 60s)
-                query: 'time() - rabbitmq_queue_head_message_timestamp{queue="my-queue"} > 60'
-                severity: warning
-                for: 2m
-                comments: |
-                  Indicate the queue name in dedicated label.
-              - name: RabbitMQ no consumer
-                description: Queue has no consumer
-                query: "rabbitmq_queue_consumers == 0"
-                severity: critical
-                for: 5m
-                comments: |
-                  Allows a short service restart.
-              - name: RabbitMQ too many consumers
-                description: Queue should have only 1 consumer
-                query: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
-                severity: critical
-                comments: |
-                  Indicate the queue name in dedicated label.
-              - name: RabbitMQ inactive exchange
-                description: Exchange receive less than 5 msgs per second
-                query: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
-                severity: warning
-                comments: |
-                  Indicate the exchange name in dedicated label.
-                for: 2m
-
       - name: Elasticsearch
         exporters:
           - name: prometheus-community/elasticsearch_exporter
@@ -1999,6 +1864,167 @@ groups:
                 severity: critical
                 for: 1m
 
+      - name: Solr
+        exporters:
+          - name: embedded exporter
+            slug: embedded-exporter
+            doc_url: https://solr.apache.org/guide/8_11/monitoring-solr-with-prometheus-and-grafana.html
+            rules:
+              - name: Solr update errors
+                description: Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: "increase(solr_metrics_core_update_handler_errors_total[1m]) > 1"
+                severity: critical
+              - name: Solr query errors
+                description: Solr has increased query errors in collection {{ $labels.collection }} for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: 'increase(solr_metrics_core_errors_total{category="QUERY"}[1m]) > 1'
+                severity: warning
+                for: 5m
+              - name: Solr replication errors
+                description: Solr collection {{ $labels.collection }} has replication errors for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: 'increase(solr_metrics_core_errors_total{category="REPLICATION"}[1m]) > 1'
+                severity: critical
+              - name: Solr low live node count
+                description: Solr collection {{ $labels.collection }} has less than two live nodes for replica {{ $labels.replica }} on {{ $labels.base_url }}.
+                query: "solr_collections_live_nodes < 2"
+                severity: critical
+
+  - name: Message brokers
+    services:
+      - name: RabbitMQ
+        exporters:
+          - name: rabbitmq/rabbitmq-prometheus
+            slug: rabbitmq-exporter
+            doc_url: https://github.com/rabbitmq/rabbitmq-prometheus
+            rules:
+              - name: RabbitMQ node down
+                description: Less than 3 nodes running in RabbitMQ cluster
+                query: "sum(rabbitmq_build_info) < 3"
+                severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
+              - name: RabbitMQ node not distributed
+                description: Distribution link state is not 'up'
+                query: "erlang_vm_dist_node_state < 3"
+                severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
+              - name: RabbitMQ instances different versions
+                description: Running different version of RabbitMQ in the same cluster, can lead to failure.
+                query: "count(count(rabbitmq_build_info) by (rabbitmq_version)) > 1"
+                severity: warning
+                for: 1h
+              - name: RabbitMQ memory high
+                description: A node use more than 90% of allocated RAM
+                query: "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90 and rabbitmq_resident_memory_limit_bytes > 0"
+                severity: warning
+                for: 2m
+              - name: RabbitMQ file descriptors usage
+                description: A node use more than 90% of file descriptors
+                query: "rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90 and rabbitmq_process_max_fds > 0"
+                severity: warning
+                for: 2m
+              - name: RabbitMQ too many ready messages
+                description: RabbitMQ too many ready messages on {{ $labels.instance }}
+                query: "sum(rabbitmq_queue_messages_ready) BY (queue) > 1000"
+                severity: warning
+                for: 1m
+              - name: RabbitMQ too many unack messages
+                description: Too many unacknowledged messages
+                query: "sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000"
+                severity: warning
+                for: 1m
+              - name: RabbitMQ too many connections
+                description: The total connections of a node is too high
+                query: "rabbitmq_connections > 1000"
+                severity: warning
+                for: 2m
+              - name: RabbitMQ no queue consumer
+                description: A queue has less than 1 consumer
+                query: "rabbitmq_queue_consumers < 1"
+                severity: warning
+                for: 1m # allows a short service restart
+              - name: RabbitMQ unroutable messages
+                description: A queue has unroutable messages
+                query: "increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0"
+                severity: warning
+                for: 2m
+
+          - name: kbudde/rabbitmq-exporter
+            slug: kbudde-rabbitmq-exporter
+            doc_url: https://github.com/kbudde/rabbitmq_exporter
+            rules:
+              - name: RabbitMQ down
+                description: RabbitMQ node down
+                query: "rabbitmq_up == 0"
+                severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
+              - name: RabbitMQ cluster down
+                description: Less than 3 nodes running in RabbitMQ cluster
+                query: "sum(rabbitmq_running) < 3"
+                severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
+              - name: RabbitMQ cluster partition
+                description: Cluster partition
+                query: "rabbitmq_partitions > 0"
+                severity: critical
+              - name: RabbitMQ out of memory
+                description: Memory available for RabbitMQ is low (< 10%)
+                query: "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100 > 90 and rabbitmq_node_mem_limit > 0"
+                severity: warning
+                for: 2m
+              - name: RabbitMQ too many connections
+                description: RabbitMQ instance has too many connections (> 1000)
+                query: "rabbitmq_connectionsTotal > 1000"
+                severity: warning
+                for: 2m
+              - name: RabbitMQ dead letter queue filling up
+                description: Dead letter queue is filling up (> 10 msgs)
+                query: 'rabbitmq_queue_messages{queue="my-dead-letter-queue"} > 10'
+                severity: warning
+                for: 1m
+                comments: |
+                  Indicate the queue name in dedicated label.
+              - name: RabbitMQ too many messages in queue
+                description: Queue is filling up (> 1000 msgs)
+                query: 'rabbitmq_queue_messages_ready{queue="my-queue"} > 1000'
+                severity: warning
+                for: 2m
+                comments: |
+                  Indicate the queue name in dedicated label.
+              - name: RabbitMQ slow queue consuming
+                description: Queue messages are consumed slowly (> 60s)
+                query: 'time() - rabbitmq_queue_head_message_timestamp{queue="my-queue"} > 60'
+                severity: warning
+                for: 2m
+                comments: |
+                  Indicate the queue name in dedicated label.
+              - name: RabbitMQ no consumer
+                description: Queue has no consumer
+                query: "rabbitmq_queue_consumers == 0"
+                severity: critical
+                for: 5m
+                comments: |
+                  Allows a short service restart.
+              - name: RabbitMQ too many consumers
+                description: Queue should have only 1 consumer
+                query: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
+                severity: critical
+                comments: |
+                  Indicate the queue name in dedicated label.
+              - name: RabbitMQ inactive exchange
+                description: Exchange receive less than 5 msgs per second
+                query: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
+                severity: warning
+                comments: |
+                  Indicate the exchange name in dedicated label.
+                for: 2m
+
       - name: Zookeeper
         exporters:
           - name: cloudflare/kafka_zookeeper_exporter
@@ -2190,107 +2216,7 @@ groups:
                 severity: warning
                 for: 5m
 
-      - name: Solr
-        exporters:
-          - name: embedded exporter
-            slug: embedded-exporter
-            doc_url: https://solr.apache.org/guide/8_11/monitoring-solr-with-prometheus-and-grafana.html
-            rules:
-              - name: Solr update errors
-                description: Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.
-                query: "increase(solr_metrics_core_update_handler_errors_total[1m]) > 1"
-                severity: critical
-              - name: Solr query errors
-                description: Solr has increased query errors in collection {{ $labels.collection }} for replica {{ $labels.replica }} on {{ $labels.base_url }}.
-                query: 'increase(solr_metrics_core_errors_total{category="QUERY"}[1m]) > 1'
-                severity: warning
-                for: 5m
-              - name: Solr replication errors
-                description: Solr collection {{ $labels.collection }} has replication errors for replica {{ $labels.replica }} on {{ $labels.base_url }}.
-                query: 'increase(solr_metrics_core_errors_total{category="REPLICATION"}[1m]) > 1'
-                severity: critical
-              - name: Solr low live node count
-                description: Solr collection {{ $labels.collection }} has less than two live nodes for replica {{ $labels.replica }} on {{ $labels.base_url }}.
-                query: "solr_collections_live_nodes < 2"
-                severity: critical
-
-      - name: Hadoop
-        exporters:
-          - name: hadoop/jmx_exporter
-            slug: jmx_exporter
-            doc_url: https://github.com/prometheus/jmx_exporter
-            rules:
-              # Alert rule for NameNode availability
-              - name: Hadoop Name Node Down
-                query: up{job="hadoop-namenode"} == 0
-                for: 5m
-                severity: critical
-                description: "The Hadoop NameNode service is unavailable."
-
-              # Alert rule for ResourceManager availability
-              - name: Hadoop Resource Manager Down
-                query: up{job="hadoop-resourcemanager"} == 0
-                for: 5m
-                severity: critical
-                description: "The Hadoop ResourceManager service is unavailable."
-
-              # Alert rule for DataNode status
-              - name: Hadoop Data Node Out Of Service
-                query: hadoop_datanode_last_heartbeat == 0
-                for: 10m
-                severity: warning
-                description: "The Hadoop DataNode is not sending heartbeats."
-
-              # Alert rule for low HDFS disk space
-              - name: Hadoop HDFS Disk Space Low
-                query: (hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1
-                for: 15m
-                severity: warning
-                description: "Available HDFS disk space is running low."
-
-              # Alert rule for excessive MapReduce task failures
-              - name: Hadoop Map Reduce Task Failures
-                query: increase(hadoop_mapreduce_task_failures_total[1h]) > 100
-                for: 10m
-                severity: critical
-                description: "There is an unusually high number of MapReduce task failures."
-
-              # Alert rule for high ResourceManager memory usage
-              - name: Hadoop Resource Manager Memory High
-                query: hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8
-                for: 15m
-                severity: warning
-                description: "The Hadoop ResourceManager is approaching its memory limit."
-
-              # Alert rule for high YARN container allocation failures
-              - name: Hadoop YARN Container Allocation Failures
-                query: increase(hadoop_yarn_container_allocation_failures_total[1h]) > 10
-                for: 10m
-                severity: warning
-                description: "There is a significant number of YARN container allocation failures."
-
-              # Alert rule for excessive HBase region server region count
-              - name: Hadoop HBase Region Count High
-                query: hadoop_hbase_region_count > 5000
-                for: 15m
-                severity: warning
-                description: "The HBase cluster has an unusually high number of regions."
-
-              # Alert rule for low HBase region server heap space
-              - name: Hadoop HBase Region Server Heap Low
-                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8
-                for: 10m
-                severity: warning
-                description: "HBase Region Servers are running low on heap space."
-
-              # Alert rule for high HBase Write Requests latency
-              - name: Hadoop HBase Write Requests Latency High
-                query: hadoop_hbase_write_requests_latency_seconds > 0.5
-                for: 10m
-                severity: warning
-                description: "HBase Write Requests are experiencing high latency."
-
-  - name: Reverse proxies and load balancers
+  - name: Proxies, load balancers and service meshes
     services:
       - name: Nginx
         exporters:
@@ -2645,6 +2571,74 @@ groups:
                 severity: warning
                 for: 5m
 
+      - name: Linkerd
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://linkerd.io/2/tasks/exporting-metrics/
+            rules:
+              - name: Linkerd high error rate
+                description: Linkerd error rate for {{ $labels.deployment | $labels.statefulset | $labels.daemonset }} is over 10%
+                query: "sum(rate(request_errors_total[1m])) by (deployment, statefulset, daemonset) / sum(rate(request_total[1m])) by (deployment, statefulset, daemonset) * 100 > 10"
+                severity: warning
+                for: 1m
+
+      - name: Istio
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://istio.io/latest/docs/tasks/observability/metrics/querying-metrics/
+            rules:
+              - name: Istio Kubernetes gateway availability drop
+                description: Gateway pods have dropped. Inbound traffic will likely be affected.
+                query: 'min(kube_deployment_status_replicas_available{deployment="istio-ingressgateway", namespace="istio-system"}) without (instance, pod) < 2'
+                severity: warning
+                for: 1m
+              - name: Istio Pilot high total request rate
+                description: Number of Istio Pilot push errors is too high (> 5%). Envoy sidecars might have outdated configuration.
+                query: "sum(rate(pilot_xds_push_errors[1m])) / sum(rate(pilot_xds_pushes[1m])) * 100 > 5"
+                severity: warning
+                for: 1m
+              - name: Istio Mixer Prometheus dispatches low
+                description: Number of Mixer dispatches to Prometheus is too low. Istio metrics might not be being exported properly.
+                query: 'sum(rate(mixer_runtime_dispatches_total{adapter=~"prometheus"}[1m])) < 180'
+                severity: warning
+                for: 1m
+              - name: Istio high total request rate
+                description: Global request rate in the service mesh is unusually high.
+                query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) > 1000'
+                severity: warning
+                for: 2m
+              - name: Istio low total request rate
+                description: Global request rate in the service mesh is unusually low.
+                query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) < 100'
+                severity: warning
+                for: 2m
+              - name: Istio high 4xx error rate
+                description: High percentage of HTTP 4xx responses in Istio (> 5%).
+                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
+                severity: warning
+                for: 1m
+              - name: Istio high 5xx error rate
+                description: High percentage of HTTP 5xx responses in Istio (> 5%).
+                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"5.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
+                severity: warning
+                for: 1m
+              - name: Istio high request latency
+                description: Istio average requests execution is longer than 100ms.
+                query: 'rate(istio_request_duration_milliseconds_sum{reporter="destination"}[1m]) / rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 100'
+                severity: warning
+                for: 1m
+              - name: Istio latency 99 percentile
+                description: Istio 1% slowest requests are longer than 1000ms.
+                query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1000"
+                severity: warning
+                for: 1m
+              - name: Istio Pilot Duplicate Entry
+                description: Istio pilot duplicate entry error.
+                query: "sum(rate(pilot_duplicate_envoy_clusters{}[5m])) > 0"
+                severity: critical
+
   - name: Runtimes
     services:
       - name: PHP-FPM
@@ -2892,6 +2886,8 @@ groups:
                 query: "max(sidekiq_queue_latency) > 60"
                 severity: critical
 
+  - name: Data engineering
+    services:
       - name: Apache Flink
         exporters:
           - name: Built-in Prometheus reporter
@@ -3028,6 +3024,82 @@ groups:
                 for: 5m
                 comments: |
                   Disk spilling indicates insufficient memory for the workload.
+
+      - name: Hadoop
+        exporters:
+          - name: hadoop/jmx_exporter
+            slug: jmx_exporter
+            doc_url: https://github.com/prometheus/jmx_exporter
+            rules:
+              # Alert rule for NameNode availability
+              - name: Hadoop Name Node Down
+                query: up{job="hadoop-namenode"} == 0
+                for: 5m
+                severity: critical
+                description: "The Hadoop NameNode service is unavailable."
+
+              # Alert rule for ResourceManager availability
+              - name: Hadoop Resource Manager Down
+                query: up{job="hadoop-resourcemanager"} == 0
+                for: 5m
+                severity: critical
+                description: "The Hadoop ResourceManager service is unavailable."
+
+              # Alert rule for DataNode status
+              - name: Hadoop Data Node Out Of Service
+                query: hadoop_datanode_last_heartbeat == 0
+                for: 10m
+                severity: warning
+                description: "The Hadoop DataNode is not sending heartbeats."
+
+              # Alert rule for low HDFS disk space
+              - name: Hadoop HDFS Disk Space Low
+                query: (hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1
+                for: 15m
+                severity: warning
+                description: "Available HDFS disk space is running low."
+
+              # Alert rule for excessive MapReduce task failures
+              - name: Hadoop Map Reduce Task Failures
+                query: increase(hadoop_mapreduce_task_failures_total[1h]) > 100
+                for: 10m
+                severity: critical
+                description: "There is an unusually high number of MapReduce task failures."
+
+              # Alert rule for high ResourceManager memory usage
+              - name: Hadoop Resource Manager Memory High
+                query: hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8
+                for: 15m
+                severity: warning
+                description: "The Hadoop ResourceManager is approaching its memory limit."
+
+              # Alert rule for high YARN container allocation failures
+              - name: Hadoop YARN Container Allocation Failures
+                query: increase(hadoop_yarn_container_allocation_failures_total[1h]) > 10
+                for: 10m
+                severity: warning
+                description: "There is a significant number of YARN container allocation failures."
+
+              # Alert rule for excessive HBase region server region count
+              - name: Hadoop HBase Region Count High
+                query: hadoop_hbase_region_count > 5000
+                for: 15m
+                severity: warning
+                description: "The HBase cluster has an unusually high number of regions."
+
+              # Alert rule for low HBase region server heap space
+              - name: Hadoop HBase Region Server Heap Low
+                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8
+                for: 10m
+                severity: warning
+                description: "HBase Region Servers are running low on heap space."
+
+              # Alert rule for high HBase Write Requests latency
+              - name: Hadoop HBase Write Requests Latency High
+                query: hadoop_hbase_write_requests_latency_seconds > 0.5
+                for: 10m
+                severity: warning
+                description: "HBase Write Requests are experiencing high latency."
 
   - name: Orchestrators
     services:
@@ -3350,118 +3422,6 @@ groups:
                 severity: warning
                 for: 2m
 
-      - name: Linkerd
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            doc_url: https://linkerd.io/2/tasks/exporting-metrics/
-            rules:
-              - name: Linkerd high error rate
-                description: Linkerd error rate for {{ $labels.deployment | $labels.statefulset | $labels.daemonset }} is over 10%
-                query: "sum(rate(request_errors_total[1m])) by (deployment, statefulset, daemonset) / sum(rate(request_total[1m])) by (deployment, statefulset, daemonset) * 100 > 10"
-                severity: warning
-                for: 1m
-
-      - name: Istio
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            doc_url: https://istio.io/latest/docs/tasks/observability/metrics/querying-metrics/
-            rules:
-              - name: Istio Kubernetes gateway availability drop
-                description: Gateway pods have dropped. Inbound traffic will likely be affected.
-                query: 'min(kube_deployment_status_replicas_available{deployment="istio-ingressgateway", namespace="istio-system"}) without (instance, pod) < 2'
-                severity: warning
-                for: 1m
-              - name: Istio Pilot high total request rate
-                description: Number of Istio Pilot push errors is too high (> 5%). Envoy sidecars might have outdated configuration.
-                query: "sum(rate(pilot_xds_push_errors[1m])) / sum(rate(pilot_xds_pushes[1m])) * 100 > 5"
-                severity: warning
-                for: 1m
-              - name: Istio Mixer Prometheus dispatches low
-                description: Number of Mixer dispatches to Prometheus is too low. Istio metrics might not be being exported properly.
-                query: 'sum(rate(mixer_runtime_dispatches_total{adapter=~"prometheus"}[1m])) < 180'
-                severity: warning
-                for: 1m
-              - name: Istio high total request rate
-                description: Global request rate in the service mesh is unusually high.
-                query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) > 1000'
-                severity: warning
-                for: 2m
-              - name: Istio low total request rate
-                description: Global request rate in the service mesh is unusually low.
-                query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) < 100'
-                severity: warning
-                for: 2m
-              - name: Istio high 4xx error rate
-                description: High percentage of HTTP 4xx responses in Istio (> 5%).
-                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
-                severity: warning
-                for: 1m
-              - name: Istio high 5xx error rate
-                description: High percentage of HTTP 5xx responses in Istio (> 5%).
-                query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"5.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5'
-                severity: warning
-                for: 1m
-              - name: Istio high request latency
-                description: Istio average requests execution is longer than 100ms.
-                query: 'rate(istio_request_duration_milliseconds_sum{reporter="destination"}[1m]) / rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 100'
-                severity: warning
-                for: 1m
-              - name: Istio latency 99 percentile
-                description: Istio 1% slowest requests are longer than 1000ms.
-                query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1000"
-                severity: warning
-                for: 1m
-              - name: Istio Pilot Duplicate Entry
-                description: Istio pilot duplicate entry error.
-                query: "sum(rate(pilot_duplicate_envoy_clusters{}[5m])) > 0"
-                severity: critical
-
-      - name: ArgoCD
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            doc_url: https://argo-cd.readthedocs.io/en/stable/operator-manual/metrics/
-            rules:
-              - name: ArgoCD service not synced
-                description: Service {{ $labels.name }} run by argo is currently not in sync.
-                query: 'argocd_app_info{sync_status!="Synced"} != 0'
-                severity: warning
-                for: 15m
-              - name: ArgoCD service unhealthy
-                description: Service {{ $labels.name }} run by argo is currently not healthy.
-                query: 'argocd_app_info{health_status!="Healthy"} != 0'
-                severity: warning
-                for: 15m
-
-      - name: FluxCD
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            doc_url: https://fluxcd.io/flux/monitoring/metrics/
-            rules:
-              - name: Flux Kustomization Failure
-                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.
-                query: 'gotk_resource_info{ready="False", customresource_kind="Kustomization"} > 0'
-                severity: warning
-                for: 15m
-              - name: Flux HelmRelease Failure
-                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.
-                query: 'gotk_resource_info{ready="False", customresource_kind="HelmRelease"} > 0'
-                severity: warning
-                for: 15m
-              - name: Flux Source Issue
-                description: Flux source {{ $labels.customresource_kind }} '{{ $labels.name }}' has issue(s).
-                query: 'gotk_resource_info{ready="False", customresource_kind=~"GitRepository|HelmRepository|Bucket|OCIRepository"} > 0'
-                severity: warning
-                for: 15m
-              - name: Flux Image Issue
-                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' is marked as not ready.
-                query: 'gotk_resource_info{ready="False", customresource_kind=~"ImagePolicy|ImageRepository|ImageUpdateAutomation"} > 0'
-                severity: warning
-                for: 15m
-
       - name: OpenStack
         exporters:
           - name: openstack-exporter/openstack-exporter
@@ -3573,6 +3533,318 @@ groups:
                   This alert factors in the allocation ratio to compute effective capacity.
                   The threshold of 90% is a rough default. Adjust based on your allocation ratios and workload patterns.
 
+  - name: CI/CD
+    services:
+      - name: Jenkins
+        exporters:
+          - name: Metric plugin
+            slug: metric-plugin
+            doc_url: https://plugins.jenkins.io/prometheus/
+            rules:
+              - name: Jenkins node offline
+                description: "At least one Jenkins node offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: "jenkins_node_offline_value > 0"
+                severity: critical
+                for: 5m
+              - name: Jenkins no node online
+                description: "No Jenkins nodes are online: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: "jenkins_node_online_value == 0"
+                severity: critical
+              - name: Jenkins healthcheck
+                description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: "jenkins_health_check_score < 1"
+                severity: critical
+              - name: Jenkins outdated plugins
+                description: "{{ $value }} plugins need update"
+                query: "sum(jenkins_plugins_withUpdate) by (instance) > 3"
+                severity: warning
+                for: 1d
+              - name: Jenkins builds health score
+                description: "Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: "default_jenkins_builds_health_score < 1"
+                severity: critical
+              - name: Jenkins run failure total
+                description: "Job run failures: ({{$value}}) {{$labels.jenkins_job}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
+                query: "delta(jenkins_runs_failure_total[1h]) > 100"
+                severity: warning
+              - name: Jenkins build tests failing
+                description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
+                query: "default_jenkins_builds_last_build_tests_failing > 0"
+                severity: warning
+              - name: Jenkins last build failed
+                description: "Last build failed: {{$labels.jenkins_job}}. Failed build for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
+                query: "default_jenkins_builds_last_build_result_ordinal == 2"
+                severity: warning
+                comments: |
+                  * RUNNING  -1 true  - The build had no errors.
+                  * SUCCESS   0 true  - The build had no errors.
+                  * UNSTABLE  1 true  - The build had some errors but they were not fatal. For example, some tests failed.
+                  * FAILURE   2 false - The build had a fatal error.
+                  * NOT_BUILT 3 false - The module was not built.
+                  * ABORTED   4 false - The build was manually aborted.
+
+      - name: ArgoCD
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://argo-cd.readthedocs.io/en/stable/operator-manual/metrics/
+            rules:
+              - name: ArgoCD service not synced
+                description: Service {{ $labels.name }} run by argo is currently not in sync.
+                query: 'argocd_app_info{sync_status!="Synced"} != 0'
+                severity: warning
+                for: 15m
+              - name: ArgoCD service unhealthy
+                description: Service {{ $labels.name }} run by argo is currently not healthy.
+                query: 'argocd_app_info{health_status!="Healthy"} != 0'
+                severity: warning
+                for: 15m
+
+      - name: FluxCD
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://fluxcd.io/flux/monitoring/metrics/
+            rules:
+              - name: Flux Kustomization Failure
+                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.
+                query: 'gotk_resource_info{ready="False", customresource_kind="Kustomization"} > 0'
+                severity: warning
+                for: 15m
+              - name: Flux HelmRelease Failure
+                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' in namespace {{ $labels.exported_namespace }} is marked as not ready.
+                query: 'gotk_resource_info{ready="False", customresource_kind="HelmRelease"} > 0'
+                severity: warning
+                for: 15m
+              - name: Flux Source Issue
+                description: Flux source {{ $labels.customresource_kind }} '{{ $labels.name }}' has issue(s).
+                query: 'gotk_resource_info{ready="False", customresource_kind=~"GitRepository|HelmRepository|Bucket|OCIRepository"} > 0'
+                severity: warning
+                for: 15m
+              - name: Flux Image Issue
+                description: The {{ $labels.customresource_kind }} '{{ $labels.name }}' is marked as not ready.
+                query: 'gotk_resource_info{ready="False", customresource_kind=~"ImagePolicy|ImageRepository|ImageUpdateAutomation"} > 0'
+                severity: warning
+                for: 15m
+
+      - name: GitLab CI
+        exporters:
+          - name: GitLab built-in exporter
+            slug: gitlab-built-in-exporter
+            doc_url: https://docs.gitlab.com/administration/monitoring/prometheus/gitlab_metrics/
+            rules:
+              # Puma web server
+              - name: GitLab Puma high queued connections
+                description: "GitLab Puma has {{ $value }} queued connections on {{ $labels.instance }}. Requests are waiting for an available worker thread."
+                query: "avg_over_time(puma_queued_connections[5m]) > 5"
+                severity: warning
+                for: 5m
+                comments: |
+                  Queued connections indicate Puma workers are saturated.
+                  Consider increasing puma['worker_processes'] or puma['max_threads'] in gitlab.rb.
+              - name: GitLab Puma no available pool capacity
+                description: "GitLab Puma pool capacity on {{ $labels.instance }} has been at 0 for 5 minutes. All threads are busy."
+                query: "puma_pool_capacity == 0"
+                severity: critical
+                for: 5m
+              - name: GitLab Puma workers not running
+                description: "GitLab Puma on {{ $labels.instance }} has {{ $value }} running workers out of expected total."
+                query: "puma_running_workers < puma_workers"
+                severity: warning
+                for: 5m
+              # HTTP request handling
+              - name: GitLab high HTTP error rate
+                description: "GitLab is returning more than 5% HTTP 5xx errors on {{ $labels.instance }}."
+                query: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5'
+                severity: critical
+                for: 5m
+                comments: |
+                  Threshold is 5% of all requests returning server errors.
+                  Check GitLab logs at /var/log/gitlab/ for root cause.
+              - name: GitLab high HTTP request latency
+                description: "GitLab p95 HTTP request latency on {{ $labels.instance }} is above 10 seconds."
+                query: "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 10"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 10s may need adjustment based on your instance size and workload.
+              # Sidekiq background jobs
+              - name: GitLab Sidekiq jobs failing
+                description: "GitLab Sidekiq jobs are failing at a rate of {{ $value }} per second on {{ $labels.instance }}."
+                query: "rate(sidekiq_jobs_failed_total[5m]) > 0"
+                severity: warning
+                for: 10m
+                comments: |
+                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+                  A sustained failure rate indicates background processing issues.
+              - name: GitLab Sidekiq queue too large
+                description: "GitLab Sidekiq has {{ $value }} running jobs, approaching concurrency limit on {{ $labels.instance }}."
+                query: "sum(sidekiq_running_jobs) >= sum(sidekiq_concurrency) * 0.9"
+                severity: warning
+                for: 10m
+                comments: |
+                  When running jobs approach the concurrency limit, new jobs will queue up.
+                  Consider scaling Sidekiq workers or increasing concurrency.
+              - name: GitLab Sidekiq high job completion time
+                description: "GitLab Sidekiq job average completion time on {{ $labels.instance }} is above 5 minutes."
+                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_completion_seconds_bucket[5m])) by (le, worker)) > 300"
+                severity: warning
+                for: 10m
+                comments: |
+                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+              - name: GitLab Sidekiq high queue latency
+                description: "GitLab Sidekiq jobs on {{ $labels.instance }} are waiting more than 60 seconds before being processed."
+                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_queue_duration_seconds_bucket[5m])) by (le)) > 60"
+                severity: warning
+                for: 5m
+                comments: |
+                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+                  High queue latency means jobs are stuck waiting. Check Sidekiq concurrency and queue sizes.
+              # Database connection pool
+              - name: GitLab database connection pool saturation
+                description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) is {{ $value }}% busy."
+                query: "gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90"
+                severity: warning
+                for: 5m
+                comments: |
+                  When the pool is near saturation, requests may block waiting for a connection.
+                  Increase db_pool_size in gitlab.rb or investigate slow queries.
+              - name: GitLab database connection pool dead connections
+                description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) has {{ $value }} dead connections."
+                query: "gitlab_database_connection_pool_dead > 0"
+                severity: warning
+                for: 5m
+              - name: GitLab database connection pool waiting
+                description: "GitLab on {{ $labels.instance }} has {{ $value }} threads waiting for a database connection."
+                query: "gitlab_database_connection_pool_waiting > 0"
+                severity: warning
+                for: 5m
+              # CI/CD pipelines
+              - name: GitLab CI pipeline creation slow
+                description: "GitLab CI pipeline creation p95 latency on {{ $labels.instance }} is above 30 seconds."
+                query: "histogram_quantile(0.95, sum(rate(gitlab_ci_pipeline_creation_duration_seconds_bucket[5m])) by (le)) > 30"
+                severity: warning
+                for: 5m
+              - name: GitLab CI pipeline failures increasing
+                description: "GitLab CI pipeline failures are increasing on {{ $labels.instance }} ({{ $value }}/s)."
+                query: "rate(gitlab_ci_pipeline_failure_reasons[5m]) > 0"
+                severity: warning
+                for: 10m
+              - name: GitLab CI runner authentication failures
+                description: "GitLab CI runners are experiencing authentication failures on {{ $labels.instance }} ({{ $value }} failures)."
+                query: "increase(gitlab_ci_runner_authentication_failure_total[5m]) > 5"
+                severity: warning
+                for: 5m
+                comments: |
+                  Frequent runner auth failures may indicate expired tokens or misconfigured runners.
+              # Ruby process health
+              - name: GitLab high memory usage
+                description: "GitLab process on {{ $labels.instance }} is using {{ $value | humanize1024 }}B of RSS memory."
+                query: "process_resident_memory_bytes{job=~\".*gitlab.*\"} > 2e+9"
+                severity: warning
+                for: 10m
+                comments: |
+                  Threshold of 2GB may need adjustment based on your instance size.
+                  High memory usage can lead to OOM kills and service disruptions.
+              - name: GitLab Ruby heap fragmentation
+                description: "GitLab Ruby heap fragmentation on {{ $labels.instance }} is {{ $value }}. High fragmentation wastes memory."
+                query: "ruby_gc_stat_ext_heap_fragmentation{job=~\".*gitlab.*\"} > 0.5"
+                severity: warning
+                for: 15m
+                comments: |
+                  Heap fragmentation above 50% means a significant amount of memory is wasted.
+                  A Puma worker restart may help reclaim memory.
+              # Uncaught errors
+              - name: GitLab rack uncaught errors
+                description: "GitLab is experiencing uncaught errors in the Rack layer on {{ $labels.instance }} ({{ $value }}/s)."
+                query: "rate(rack_uncaught_errors_total[5m]) > 0"
+                severity: warning
+                for: 5m
+              # Application version / deployment
+              - name: GitLab version mismatch
+                description: "Multiple GitLab versions are running across the fleet."
+                query: 'count(count by (version) (deployments{version!=""})) > 1'
+                severity: warning
+                comments: |
+                  This may happen during a rolling deployment. If it persists, investigate incomplete upgrades.
+              # File descriptors
+              - name: GitLab high file descriptor usage
+                description: "GitLab on {{ $labels.instance }} is using {{ $value }}% of available file descriptors."
+                query: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80'
+                severity: warning
+                for: 5m
+              # Ruby threads
+              - name: GitLab Ruby threads saturated
+                description: "GitLab running threads on {{ $labels.instance }} have exceeded the expected maximum ({{ $value }})."
+                query: "sum by (instance) (gitlab_ruby_threads_running_threads) > on(instance) gitlab_ruby_threads_max_expected_threads * 1.5"
+                severity: warning
+                for: 10m
+
+          - name: Workhorse
+            slug: workhorse
+            doc_url: https://docs.gitlab.com/administration/monitoring/prometheus/gitlab_metrics/#gitlab-workhorse
+            rules:
+              - name: GitLab Workhorse high error rate
+                description: "GitLab Workhorse on {{ $labels.instance }} is returning more than 10% HTTP 5xx errors."
+                query: 'sum(rate(gitlab_workhorse_http_request_duration_seconds_count{code=~"5.."}[5m])) / sum(rate(gitlab_workhorse_http_request_duration_seconds_count[5m])) * 100 > 10'
+                severity: critical
+                for: 5m
+                comments: |
+                  Workhorse sits in front of Puma and handles Git HTTP, file uploads, and proxying.
+                  Threshold from GitLab Omnibus default rules: 10% for high-traffic instances.
+              - name: GitLab Workhorse high latency
+                description: "GitLab Workhorse on {{ $labels.instance }} p95 request latency is above 10 seconds."
+                query: "histogram_quantile(0.95, sum(rate(gitlab_workhorse_http_request_duration_seconds_bucket[5m])) by (le)) > 10"
+                severity: warning
+                for: 5m
+              - name: GitLab Workhorse high in-flight requests
+                description: "GitLab Workhorse on {{ $labels.instance }} has {{ $value }} in-flight requests."
+                query: "gitlab_workhorse_http_in_flight_requests > 100"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 100 may need adjustment based on instance size.
+
+          - name: Gitaly
+            slug: gitaly
+            doc_url: https://docs.gitlab.com/administration/gitaly/monitoring/
+            rules:
+              - name: GitLab Gitaly high gRPC error rate
+                description: "Gitaly on {{ $labels.instance }} is returning more than 5% gRPC errors."
+                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code!="OK"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5'
+                severity: warning
+                for: 5m
+              - name: GitLab Gitaly resource exhausted
+                description: "Gitaly on {{ $labels.instance }} is returning ResourceExhausted errors, indicating overload ({{ $value }}%)."
+                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1'
+                severity: critical
+                for: 5m
+                comments: |
+                  ResourceExhausted errors from Gitaly mean Git operations are being rejected due to
+                  concurrency limits. This directly impacts users trying to push, pull, or clone.
+                  This alert is derived from the GitLab Omnibus default rules.
+              - name: GitLab Gitaly high RPC latency
+                description: "Gitaly on {{ $labels.instance }} p95 unary RPC latency exceeds 1 second ({{ $value }}s)."
+                query: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
+                severity: warning
+                for: 5m
+              - name: GitLab Gitaly CPU throttled
+                description: "Gitaly processes on {{ $labels.instance }} are being CPU throttled by cgroups."
+                query: "rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0"
+                severity: warning
+                for: 5m
+              - name: GitLab Gitaly authentication failures
+                description: "Gitaly on {{ $labels.instance }} has authentication failures ({{ $value }})."
+                query: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 0'
+                severity: warning
+              - name: GitLab Gitaly circuit breaker tripped
+                description: "Gitaly circuit breaker has tripped on {{ $labels.instance }}. Git operations are failing."
+                query: 'increase(gitaly_circuit_breaker_transitions_total{to_state="open"}[5m]) > 0'
+                severity: critical
+                comments: |
+                  When the circuit breaker trips to "open" state, Git operations (push, pull, clone) will fail.
+                  Check Gitaly service health and logs.
+
       - name: Spinnaker
         exporters:
           - name: Embedded exporter
@@ -3656,74 +3928,8 @@ groups:
                   This metric is specific to AWS cloud providers in Clouddriver.
                   The 1000ms threshold is a rough default. Adjust based on your AWS usage patterns.
 
-  - name: Network, security and storage
+  - name: Network and security
     services:
-      - name: Ceph
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            doc_url: https://docs.ceph.com/en/quincy/mgr/prometheus/
-            rules:
-              - name: Ceph State
-                description: Ceph instance unhealthy
-                query: "ceph_health_status != 0"
-                severity: critical
-              - name: Ceph monitor clock skew
-                description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
-                query: "abs(ceph_monitor_clock_skew_seconds) > 0.2"
-                severity: warning
-                for: 2m
-              - name: Ceph monitor low space
-                description: Ceph monitor storage is low.
-                query: "ceph_monitor_avail_percent < 10"
-                severity: warning
-                for: 2m
-              - name: Ceph OSD Down
-                description: Ceph Object Storage Daemon Down
-                query: "ceph_osd_up == 0"
-                severity: critical
-              - name: Ceph high OSD latency
-                description: "Ceph Object Storage Daemon latency is high. Please check if it doesn't stuck in weird state."
-                query: "ceph_osd_perf_apply_latency_seconds > 5"
-                severity: warning
-                for: 1m
-              - name: Ceph OSD low space
-                description: Ceph Object Storage Daemon is going out of space. Please add more disks.
-                query: ceph_osd_utilization > 90
-                severity: warning
-                for: 2m
-              - name: Ceph OSD reweighted
-                description: Ceph Object Storage Daemon takes too much time to resize.
-                query: "ceph_osd_weight < 1"
-                severity: warning
-                for: 2m
-              - name: Ceph PG down
-                description: Some Ceph placement groups are down. Please ensure that all the data are available.
-                query: "ceph_pg_down > 0"
-                severity: critical
-              - name: Ceph PG incomplete
-                description: Some Ceph placement groups are incomplete. Please ensure that all the data are available.
-                query: "ceph_pg_incomplete > 0"
-                severity: critical
-              - name: Ceph PG inconsistent
-                description: Some Ceph placement groups are inconsistent. Data is available but inconsistent across nodes.
-                query: ceph_pg_inconsistent > 0
-                severity: warning
-              - name: Ceph PG activation long
-                description: Some Ceph placement groups are too long to activate.
-                query: "ceph_pg_activating > 0"
-                severity: warning
-                for: 2m
-              - name: Ceph PG backfill full
-                description: Some Ceph placement groups are located on full Object Storage Daemon on cluster. Those PGs can be unavailable shortly. Please check OSDs, change weight or reconfigure CRUSH rules.
-                query: "ceph_pg_backfill_toofull > 0"
-                severity: warning
-                for: 2m
-              - name: Ceph PG unavailable
-                description: Some Ceph placement groups are unavailable.
-                query: "ceph_pg_total - ceph_pg_active > 0"
-                severity: critical
-
       - name: SpeedTest
         exporters:
           - name: Speedtest exporter
@@ -3737,71 +3943,6 @@ groups:
               - name: SpeedTest Slow Internet Upload
                 description: Internet upload speed is currently {{humanize $value}} Mbps.
                 query: "avg_over_time(speedtest_upload[10m]) < 20"
-                severity: warning
-
-      - name: ZFS
-        exporters:
-          - name: node-exporter
-            slug: node-exporter
-            doc_url: https://github.com/prometheus/node_exporter
-            rules:
-              - name: ZFS offline pool
-                description: "A ZFS zpool is in a unexpected state: {{ $labels.state }}."
-                query: 'node_zfs_zpool_state{state!="online"} > 0'
-                severity: critical
-                for: 1m
-          - name: ZFS exporter
-            slug: zfs_exporter
-            doc_url: https://github.com/pdf/zfs_exporter
-            rules:
-              - name: ZFS pool out of space
-                description: Disk is almost full (< 10% left)
-                query: "zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and ON (instance, device, mountpoint) zfs_pool_readonly == 0"
-                severity: warning
-              - name: ZFS pool unhealthy
-                description: ZFS pool state is {{ $value }}. See comments for more information.
-                query: "zfs_pool_health > 0"
-                severity: critical
-                comments: |
-                  0: ONLINE
-                  1: DEGRADED
-                  2: FAULTED
-                  3: OFFLINE
-                  4: UNAVAIL
-                  5: REMOVED
-                  6: SUSPENDED
-              - name: ZFS collector failed
-                description: ZFS collector for {{ $labels.instance }} has failed to collect information
-                query: "zfs_scrape_collector_success != 1"
-                severity: warning
-
-      - name: OpenEBS
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            rules:
-              - name: OpenEBS used pool capacity
-                description: "OpenEBS Pool use more than 80% of his capacity"
-                query: "openebs_used_pool_capacity_percent > 80"
-                severity: warning
-                for: 2m
-
-      - name: Minio
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            rules:
-              - name: Minio cluster disk offline
-                description: "Minio cluster disk is offline"
-                query: "minio_cluster_drive_offline_total > 0"
-                severity: critical
-              - name: Minio node disk offline
-                description: "Minio cluster node disk is offline"
-                query: "minio_cluster_nodes_offline_total > 0"
-                severity: critical
-              - name: Minio disk space usage
-                description: "Minio available free space is low (< 10%)"
-                query: minio_cluster_capacity_raw_free_bytes / minio_cluster_capacity_raw_total_bytes * 100 < 10
                 severity: warning
 
       - name: SSL/TLS
@@ -4252,6 +4393,139 @@ groups:
                   May indicate routing issues or a misconfigured allowed-ips.
                   Only useful if you expect continuous traffic on all peers.
 
+  - name: Storage
+    services:
+      - name: Ceph
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://docs.ceph.com/en/quincy/mgr/prometheus/
+            rules:
+              - name: Ceph State
+                description: Ceph instance unhealthy
+                query: "ceph_health_status != 0"
+                severity: critical
+              - name: Ceph monitor clock skew
+                description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
+                query: "abs(ceph_monitor_clock_skew_seconds) > 0.2"
+                severity: warning
+                for: 2m
+              - name: Ceph monitor low space
+                description: Ceph monitor storage is low.
+                query: "ceph_monitor_avail_percent < 10"
+                severity: warning
+                for: 2m
+              - name: Ceph OSD Down
+                description: Ceph Object Storage Daemon Down
+                query: "ceph_osd_up == 0"
+                severity: critical
+              - name: Ceph high OSD latency
+                description: "Ceph Object Storage Daemon latency is high. Please check if it doesn't stuck in weird state."
+                query: "ceph_osd_perf_apply_latency_seconds > 5"
+                severity: warning
+                for: 1m
+              - name: Ceph OSD low space
+                description: Ceph Object Storage Daemon is going out of space. Please add more disks.
+                query: ceph_osd_utilization > 90
+                severity: warning
+                for: 2m
+              - name: Ceph OSD reweighted
+                description: Ceph Object Storage Daemon takes too much time to resize.
+                query: "ceph_osd_weight < 1"
+                severity: warning
+                for: 2m
+              - name: Ceph PG down
+                description: Some Ceph placement groups are down. Please ensure that all the data are available.
+                query: "ceph_pg_down > 0"
+                severity: critical
+              - name: Ceph PG incomplete
+                description: Some Ceph placement groups are incomplete. Please ensure that all the data are available.
+                query: "ceph_pg_incomplete > 0"
+                severity: critical
+              - name: Ceph PG inconsistent
+                description: Some Ceph placement groups are inconsistent. Data is available but inconsistent across nodes.
+                query: ceph_pg_inconsistent > 0
+                severity: warning
+              - name: Ceph PG activation long
+                description: Some Ceph placement groups are too long to activate.
+                query: "ceph_pg_activating > 0"
+                severity: warning
+                for: 2m
+              - name: Ceph PG backfill full
+                description: Some Ceph placement groups are located on full Object Storage Daemon on cluster. Those PGs can be unavailable shortly. Please check OSDs, change weight or reconfigure CRUSH rules.
+                query: "ceph_pg_backfill_toofull > 0"
+                severity: warning
+                for: 2m
+              - name: Ceph PG unavailable
+                description: Some Ceph placement groups are unavailable.
+                query: "ceph_pg_total - ceph_pg_active > 0"
+                severity: critical
+
+      - name: ZFS
+        exporters:
+          - name: node-exporter
+            slug: node-exporter
+            doc_url: https://github.com/prometheus/node_exporter
+            rules:
+              - name: ZFS offline pool
+                description: "A ZFS zpool is in a unexpected state: {{ $labels.state }}."
+                query: 'node_zfs_zpool_state{state!="online"} > 0'
+                severity: critical
+                for: 1m
+          - name: ZFS exporter
+            slug: zfs_exporter
+            doc_url: https://github.com/pdf/zfs_exporter
+            rules:
+              - name: ZFS pool out of space
+                description: Disk is almost full (< 10% left)
+                query: "zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and ON (instance, device, mountpoint) zfs_pool_readonly == 0"
+                severity: warning
+              - name: ZFS pool unhealthy
+                description: ZFS pool state is {{ $value }}. See comments for more information.
+                query: "zfs_pool_health > 0"
+                severity: critical
+                comments: |
+                  0: ONLINE
+                  1: DEGRADED
+                  2: FAULTED
+                  3: OFFLINE
+                  4: UNAVAIL
+                  5: REMOVED
+                  6: SUSPENDED
+              - name: ZFS collector failed
+                description: ZFS collector for {{ $labels.instance }} has failed to collect information
+                query: "zfs_scrape_collector_success != 1"
+                severity: warning
+
+      - name: OpenEBS
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            rules:
+              - name: OpenEBS used pool capacity
+                description: "OpenEBS Pool use more than 80% of his capacity"
+                query: "openebs_used_pool_capacity_percent > 80"
+                severity: warning
+                for: 2m
+
+      - name: Minio
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            rules:
+              - name: Minio cluster disk offline
+                description: "Minio cluster disk is offline"
+                query: "minio_cluster_drive_offline_total > 0"
+                severity: critical
+              - name: Minio node disk offline
+                description: "Minio cluster node disk is offline"
+                query: "minio_cluster_nodes_offline_total > 0"
+                severity: critical
+              - name: Minio disk space usage
+                description: "Minio available free space is low (< 10%)"
+                query: minio_cluster_capacity_raw_free_bytes / minio_cluster_capacity_raw_total_bytes * 100 < 10
+                severity: warning
+
   - name: Cloud providers
     services:
       - name: AWS CloudWatch
@@ -4469,7 +4743,7 @@ groups:
                 for: 5m
 
 
-  - name: Other
+  - name: Observability
     services:
       - name: Thanos
         exporters:
@@ -5232,54 +5506,55 @@ groups:
                 severity: critical
                 for: 2m
 
-      - name: Jenkins
+      - name: Jaeger
         exporters:
-          - name: Metric plugin
-            slug: metric-plugin
-            doc_url: https://plugins.jenkins.io/prometheus/
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://www.jaegertracing.io/docs/latest/monitoring/
             rules:
-              - name: Jenkins node offline
-                description: "At least one Jenkins node offline: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                query: "jenkins_node_offline_value > 0"
-                severity: critical
-                for: 5m
-              - name: Jenkins no node online
-                description: "No Jenkins nodes are online: `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                query: "jenkins_node_online_value == 0"
-                severity: critical
-              - name: Jenkins healthcheck
-                description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                query: "jenkins_health_check_score < 1"
-                severity: critical
-              - name: Jenkins outdated plugins
-                description: "{{ $value }} plugins need update"
-                query: "sum(jenkins_plugins_withUpdate) by (instance) > 3"
+              - name: Jaeger agent HTTP server errors
+                description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors."
+                query: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1'
                 severity: warning
-                for: 1d
-              - name: Jenkins builds health score
-                description: "Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                query: "default_jenkins_builds_health_score < 1"
-                severity: critical
-              - name: Jenkins run failure total
-                description: "Job run failures: ({{$value}}) {{$labels.jenkins_job}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                query: "delta(jenkins_runs_failure_total[1h]) > 100"
+                for: 15m
+              - name: Jaeger client RPC request errors
+                description: "Jaeger client on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors."
+                query: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1'
                 severity: warning
-              - name: Jenkins build tests failing
-                description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
-                query: "default_jenkins_builds_last_build_tests_failing > 0"
+                for: 15m
+              - name: Jaeger client spans dropped
+                description: "Jaeger client on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
+                query: '100 * sum(rate(jaeger_reporter_spans{result=~"dropped|err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 1'
                 severity: warning
-              - name: Jenkins last build failed
-                description: "Last build failed: {{$labels.jenkins_job}}. Failed build for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
-                query: "default_jenkins_builds_last_build_result_ordinal == 2"
+                for: 15m
+              - name: Jaeger agent spans dropped
+                description: "Jaeger agent on {{ $labels.instance }} is dropping {{ $value | humanize }}% of span batches."
+                query: '100 * sum(rate(jaeger_agent_reporter_batches_failures_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 1'
                 severity: warning
-                comments: |
-                  * RUNNING  -1 true  - The build had no errors.
-                  * SUCCESS   0 true  - The build had no errors.
-                  * UNSTABLE  1 true  - The build had some errors but they were not fatal. For example, some tests failed.
-                  * FAILURE   2 false - The build had a fatal error.
-                  * NOT_BUILT 3 false - The module was not built.
-                  * ABORTED   4 false - The build was manually aborted.
+                for: 15m
+              - name: Jaeger collector dropping spans
+                description: "Jaeger collector on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
+                query: '100 * sum(rate(jaeger_collector_spans_dropped_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger sampling update failing
+                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of sampling policy updates."
+                query: '100 * sum(rate(jaeger_sampler_queries{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger throttling update failing
+                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of throttling policy updates."
+                query: '100 * sum(rate(jaeger_throttler_updates{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
+              - name: Jaeger query request failures
+                description: "Jaeger query on {{ $labels.instance }} is failing {{ $value | humanize }}% of requests."
+                query: '100 * sum(rate(jaeger_query_requests_total{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 1'
+                severity: warning
+                for: 15m
 
+  - name: Other
+    services:
       - name: APC UPS
         exporters:
           - name: mdlayher/apcupsd_exporter
@@ -5341,268 +5616,3 @@ groups:
                 description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`"
                 query: "store_connection_wait_time_ms > 20"
                 severity: critical
-
-      - name: GitLab
-        exporters:
-          - name: GitLab built-in exporter
-            slug: gitlab-built-in-exporter
-            doc_url: https://docs.gitlab.com/administration/monitoring/prometheus/gitlab_metrics/
-            rules:
-              # Puma web server
-              - name: GitLab Puma high queued connections
-                description: "GitLab Puma has {{ $value }} queued connections on {{ $labels.instance }}. Requests are waiting for an available worker thread."
-                query: "avg_over_time(puma_queued_connections[5m]) > 5"
-                severity: warning
-                for: 5m
-                comments: |
-                  Queued connections indicate Puma workers are saturated.
-                  Consider increasing puma['worker_processes'] or puma['max_threads'] in gitlab.rb.
-              - name: GitLab Puma no available pool capacity
-                description: "GitLab Puma pool capacity on {{ $labels.instance }} has been at 0 for 5 minutes. All threads are busy."
-                query: "puma_pool_capacity == 0"
-                severity: critical
-                for: 5m
-              - name: GitLab Puma workers not running
-                description: "GitLab Puma on {{ $labels.instance }} has {{ $value }} running workers out of expected total."
-                query: "puma_running_workers < puma_workers"
-                severity: warning
-                for: 5m
-              # HTTP request handling
-              - name: GitLab high HTTP error rate
-                description: "GitLab is returning more than 5% HTTP 5xx errors on {{ $labels.instance }}."
-                query: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5'
-                severity: critical
-                for: 5m
-                comments: |
-                  Threshold is 5% of all requests returning server errors.
-                  Check GitLab logs at /var/log/gitlab/ for root cause.
-              - name: GitLab high HTTP request latency
-                description: "GitLab p95 HTTP request latency on {{ $labels.instance }} is above 10 seconds."
-                query: "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 10"
-                severity: warning
-                for: 5m
-                comments: |
-                  Threshold of 10s may need adjustment based on your instance size and workload.
-              # Sidekiq background jobs
-              - name: GitLab Sidekiq jobs failing
-                description: "GitLab Sidekiq jobs are failing at a rate of {{ $value }} per second on {{ $labels.instance }}."
-                query: "rate(sidekiq_jobs_failed_total[5m]) > 0"
-                severity: warning
-                for: 10m
-                comments: |
-                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
-                  A sustained failure rate indicates background processing issues.
-              - name: GitLab Sidekiq queue too large
-                description: "GitLab Sidekiq has {{ $value }} running jobs, approaching concurrency limit on {{ $labels.instance }}."
-                query: "sum(sidekiq_running_jobs) >= sum(sidekiq_concurrency) * 0.9"
-                severity: warning
-                for: 10m
-                comments: |
-                  When running jobs approach the concurrency limit, new jobs will queue up.
-                  Consider scaling Sidekiq workers or increasing concurrency.
-              - name: GitLab Sidekiq high job completion time
-                description: "GitLab Sidekiq job average completion time on {{ $labels.instance }} is above 5 minutes."
-                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_completion_seconds_bucket[5m])) by (le, worker)) > 300"
-                severity: warning
-                for: 10m
-                comments: |
-                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
-              - name: GitLab Sidekiq high queue latency
-                description: "GitLab Sidekiq jobs on {{ $labels.instance }} are waiting more than 60 seconds before being processed."
-                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_queue_duration_seconds_bucket[5m])) by (le)) > 60"
-                severity: warning
-                for: 5m
-                comments: |
-                  This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
-                  High queue latency means jobs are stuck waiting. Check Sidekiq concurrency and queue sizes.
-              # Database connection pool
-              - name: GitLab database connection pool saturation
-                description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) is {{ $value }}% busy."
-                query: "gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90"
-                severity: warning
-                for: 5m
-                comments: |
-                  When the pool is near saturation, requests may block waiting for a connection.
-                  Increase db_pool_size in gitlab.rb or investigate slow queries.
-              - name: GitLab database connection pool dead connections
-                description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) has {{ $value }} dead connections."
-                query: "gitlab_database_connection_pool_dead > 0"
-                severity: warning
-                for: 5m
-              - name: GitLab database connection pool waiting
-                description: "GitLab on {{ $labels.instance }} has {{ $value }} threads waiting for a database connection."
-                query: "gitlab_database_connection_pool_waiting > 0"
-                severity: warning
-                for: 5m
-              # CI/CD pipelines
-              - name: GitLab CI pipeline creation slow
-                description: "GitLab CI pipeline creation p95 latency on {{ $labels.instance }} is above 30 seconds."
-                query: "histogram_quantile(0.95, sum(rate(gitlab_ci_pipeline_creation_duration_seconds_bucket[5m])) by (le)) > 30"
-                severity: warning
-                for: 5m
-              - name: GitLab CI pipeline failures increasing
-                description: "GitLab CI pipeline failures are increasing on {{ $labels.instance }} ({{ $value }}/s)."
-                query: "rate(gitlab_ci_pipeline_failure_reasons[5m]) > 0"
-                severity: warning
-                for: 10m
-              - name: GitLab CI runner authentication failures
-                description: "GitLab CI runners are experiencing authentication failures on {{ $labels.instance }} ({{ $value }} failures)."
-                query: "increase(gitlab_ci_runner_authentication_failure_total[5m]) > 5"
-                severity: warning
-                for: 5m
-                comments: |
-                  Frequent runner auth failures may indicate expired tokens or misconfigured runners.
-              # Ruby process health
-              - name: GitLab high memory usage
-                description: "GitLab process on {{ $labels.instance }} is using {{ $value | humanize1024 }}B of RSS memory."
-                query: "process_resident_memory_bytes{job=~\".*gitlab.*\"} > 2e+9"
-                severity: warning
-                for: 10m
-                comments: |
-                  Threshold of 2GB may need adjustment based on your instance size.
-                  High memory usage can lead to OOM kills and service disruptions.
-              - name: GitLab Ruby heap fragmentation
-                description: "GitLab Ruby heap fragmentation on {{ $labels.instance }} is {{ $value }}. High fragmentation wastes memory."
-                query: "ruby_gc_stat_ext_heap_fragmentation{job=~\".*gitlab.*\"} > 0.5"
-                severity: warning
-                for: 15m
-                comments: |
-                  Heap fragmentation above 50% means a significant amount of memory is wasted.
-                  A Puma worker restart may help reclaim memory.
-              # Uncaught errors
-              - name: GitLab rack uncaught errors
-                description: "GitLab is experiencing uncaught errors in the Rack layer on {{ $labels.instance }} ({{ $value }}/s)."
-                query: "rate(rack_uncaught_errors_total[5m]) > 0"
-                severity: warning
-                for: 5m
-              # Application version / deployment
-              - name: GitLab version mismatch
-                description: "Multiple GitLab versions are running across the fleet."
-                query: 'count(count by (version) (deployments{version!=""})) > 1'
-                severity: warning
-                comments: |
-                  This may happen during a rolling deployment. If it persists, investigate incomplete upgrades.
-              # File descriptors
-              - name: GitLab high file descriptor usage
-                description: "GitLab on {{ $labels.instance }} is using {{ $value }}% of available file descriptors."
-                query: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80'
-                severity: warning
-                for: 5m
-              # Ruby threads
-              - name: GitLab Ruby threads saturated
-                description: "GitLab running threads on {{ $labels.instance }} have exceeded the expected maximum ({{ $value }})."
-                query: "sum by (instance) (gitlab_ruby_threads_running_threads) > on(instance) gitlab_ruby_threads_max_expected_threads * 1.5"
-                severity: warning
-                for: 10m
-
-          - name: Workhorse
-            slug: workhorse
-            doc_url: https://docs.gitlab.com/administration/monitoring/prometheus/gitlab_metrics/#gitlab-workhorse
-            rules:
-              - name: GitLab Workhorse high error rate
-                description: "GitLab Workhorse on {{ $labels.instance }} is returning more than 10% HTTP 5xx errors."
-                query: 'sum(rate(gitlab_workhorse_http_request_duration_seconds_count{code=~"5.."}[5m])) / sum(rate(gitlab_workhorse_http_request_duration_seconds_count[5m])) * 100 > 10'
-                severity: critical
-                for: 5m
-                comments: |
-                  Workhorse sits in front of Puma and handles Git HTTP, file uploads, and proxying.
-                  Threshold from GitLab Omnibus default rules: 10% for high-traffic instances.
-              - name: GitLab Workhorse high latency
-                description: "GitLab Workhorse on {{ $labels.instance }} p95 request latency is above 10 seconds."
-                query: "histogram_quantile(0.95, sum(rate(gitlab_workhorse_http_request_duration_seconds_bucket[5m])) by (le)) > 10"
-                severity: warning
-                for: 5m
-              - name: GitLab Workhorse high in-flight requests
-                description: "GitLab Workhorse on {{ $labels.instance }} has {{ $value }} in-flight requests."
-                query: "gitlab_workhorse_http_in_flight_requests > 100"
-                severity: warning
-                for: 5m
-                comments: |
-                  Threshold of 100 may need adjustment based on instance size.
-
-          - name: Gitaly
-            slug: gitaly
-            doc_url: https://docs.gitlab.com/administration/gitaly/monitoring/
-            rules:
-              - name: GitLab Gitaly high gRPC error rate
-                description: "Gitaly on {{ $labels.instance }} is returning more than 5% gRPC errors."
-                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code!="OK"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5'
-                severity: warning
-                for: 5m
-              - name: GitLab Gitaly resource exhausted
-                description: "Gitaly on {{ $labels.instance }} is returning ResourceExhausted errors, indicating overload ({{ $value }}%)."
-                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1'
-                severity: critical
-                for: 5m
-                comments: |
-                  ResourceExhausted errors from Gitaly mean Git operations are being rejected due to
-                  concurrency limits. This directly impacts users trying to push, pull, or clone.
-                  This alert is derived from the GitLab Omnibus default rules.
-              - name: GitLab Gitaly high RPC latency
-                description: "Gitaly on {{ $labels.instance }} p95 unary RPC latency exceeds 1 second ({{ $value }}s)."
-                query: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
-                severity: warning
-                for: 5m
-              - name: GitLab Gitaly CPU throttled
-                description: "Gitaly processes on {{ $labels.instance }} are being CPU throttled by cgroups."
-                query: "rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0"
-                severity: warning
-                for: 5m
-              - name: GitLab Gitaly authentication failures
-                description: "Gitaly on {{ $labels.instance }} has authentication failures ({{ $value }})."
-                query: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 0'
-                severity: warning
-              - name: GitLab Gitaly circuit breaker tripped
-                description: "Gitaly circuit breaker has tripped on {{ $labels.instance }}. Git operations are failing."
-                query: 'increase(gitaly_circuit_breaker_transitions_total{to_state="open"}[5m]) > 0'
-                severity: critical
-                comments: |
-                  When the circuit breaker trips to "open" state, Git operations (push, pull, clone) will fail.
-                  Check Gitaly service health and logs.
-
-      - name: Jaeger
-        exporters:
-          - name: Embedded exporter
-            slug: embedded-exporter
-            doc_url: https://www.jaegertracing.io/docs/latest/monitoring/
-            rules:
-              - name: Jaeger agent HTTP server errors
-                description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors."
-                query: '100 * sum(rate(jaeger_agent_http_server_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_http_server_total[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m
-              - name: Jaeger client RPC request errors
-                description: "Jaeger client on {{ $labels.instance }} is experiencing {{ $value | humanize }}% RPC HTTP errors."
-                query: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m
-              - name: Jaeger client spans dropped
-                description: "Jaeger client on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
-                query: '100 * sum(rate(jaeger_reporter_spans{result=~"dropped|err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_reporter_spans[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m
-              - name: Jaeger agent spans dropped
-                description: "Jaeger agent on {{ $labels.instance }} is dropping {{ $value | humanize }}% of span batches."
-                query: '100 * sum(rate(jaeger_agent_reporter_batches_failures_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_agent_reporter_batches_submitted_total[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m
-              - name: Jaeger collector dropping spans
-                description: "Jaeger collector on {{ $labels.instance }} is dropping {{ $value | humanize }}% of spans."
-                query: '100 * sum(rate(jaeger_collector_spans_dropped_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_collector_spans_received_total[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m
-              - name: Jaeger sampling update failing
-                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of sampling policy updates."
-                query: '100 * sum(rate(jaeger_sampler_queries{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_sampler_queries[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m
-              - name: Jaeger throttling update failing
-                description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of throttling policy updates."
-                query: '100 * sum(rate(jaeger_throttler_updates{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_throttler_updates[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m
-              - name: Jaeger query request failures
-                description: "Jaeger query on {{ $labels.instance }} is failing {{ $value | humanize }}% of requests."
-                query: '100 * sum(rate(jaeger_query_requests_total{result="err"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_query_requests_total[1m])) by (instance, job, namespace) > 1'
-                severity: warning
-                for: 15m

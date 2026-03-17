@@ -54,7 +54,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Process Exporter](https://samber.github.io/awesome-prometheus-alerts/rules#process-exporter)
 - [Systemd](https://samber.github.io/awesome-prometheus-alerts/rules#systemd)
 
-#### Databases and brokers
+#### Databases
 
 - [MySQL](https://samber.github.io/awesome-prometheus-alerts/rules#mysql)
 - [PostgreSQL](https://samber.github.io/awesome-prometheus-alerts/rules#postgresql)
@@ -65,20 +65,22 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Redis](https://samber.github.io/awesome-prometheus-alerts/rules#redis)
 - [Memcached](https://samber.github.io/awesome-prometheus-alerts/rules#memcached)
 - [MongoDB](https://samber.github.io/awesome-prometheus-alerts/rules#mongodb)
-- [RabbitMQ](https://samber.github.io/awesome-prometheus-alerts/rules#rabbitmq)
 - [Elasticsearch](https://samber.github.io/awesome-prometheus-alerts/rules#elasticsearch)
 - [Meilisearch](https://samber.github.io/awesome-prometheus-alerts/rules#meilisearch)
 - [Cassandra](https://samber.github.io/awesome-prometheus-alerts/rules#cassandra)
 - [Clickhouse](https://samber.github.io/awesome-prometheus-alerts/rules#clickhouse)
 - [CouchDB](https://samber.github.io/awesome-prometheus-alerts/rules#couchdb)
+- [Solr](https://samber.github.io/awesome-prometheus-alerts/rules#solr)
+
+#### Message brokers
+
+- [RabbitMQ](https://samber.github.io/awesome-prometheus-alerts/rules#rabbitmq)
 - [Zookeeper](https://samber.github.io/awesome-prometheus-alerts/rules#zookeeper)
 - [Kafka](https://samber.github.io/awesome-prometheus-alerts/rules#kafka)
 - [Pulsar](https://samber.github.io/awesome-prometheus-alerts/rules#pulsar)
 - [Nats](https://samber.github.io/awesome-prometheus-alerts/rules#nats)
-- [Solr](https://samber.github.io/awesome-prometheus-alerts/rules#solr)
-- [Hadoop](https://samber.github.io/awesome-prometheus-alerts/rules#hadoop)
 
-#### Reverse proxies and load balancers
+#### Proxies, load balancers and service meshes
 
 - [Nginx](https://samber.github.io/awesome-prometheus-alerts/rules#nginx)
 - [Apache](https://samber.github.io/awesome-prometheus-alerts/rules#apache)
@@ -86,6 +88,8 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Traefik](https://samber.github.io/awesome-prometheus-alerts/rules#traefik)
 - [Caddy](https://samber.github.io/awesome-prometheus-alerts/rules#caddy)
 - [Envoy](https://samber.github.io/awesome-prometheus-alerts/rules#envoy)
+- [Linkerd](https://samber.github.io/awesome-prometheus-alerts/rules#linkerd)
+- [Istio](https://samber.github.io/awesome-prometheus-alerts/rules#istio)
 
 #### Runtimes
 
@@ -95,27 +99,32 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Ruby](https://samber.github.io/awesome-prometheus-alerts/rules#ruby)
 - [Python](https://samber.github.io/awesome-prometheus-alerts/rules#python)
 - [Sidekiq](https://samber.github.io/awesome-prometheus-alerts/rules#sidekiq)
+
+#### Data engineering
+
 - [Apache Flink](https://samber.github.io/awesome-prometheus-alerts/rules#apache-flink)
 - [Apache Spark](https://samber.github.io/awesome-prometheus-alerts/rules#apache-spark)
+- [Hadoop](https://samber.github.io/awesome-prometheus-alerts/rules#hadoop)
 
 #### Orchestrators
+
 - [Kubernetes](https://samber.github.io/awesome-prometheus-alerts/rules#kubernetes)
 - [Nomad](https://samber.github.io/awesome-prometheus-alerts/rules#nomad)
 - [Consul](https://samber.github.io/awesome-prometheus-alerts/rules#consul)
 - [Etcd](https://samber.github.io/awesome-prometheus-alerts/rules#etcd)
-- [Linkerd](https://samber.github.io/awesome-prometheus-alerts/rules#linkerd)
-- [Istio](https://samber.github.io/awesome-prometheus-alerts/rules#istio)
+- [OpenStack](https://samber.github.io/awesome-prometheus-alerts/rules#openstack)
+
+#### CI/CD
+
+- [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
 - [ArgoCD](https://samber.github.io/awesome-prometheus-alerts/rules#argocd)
 - [FluxCD](https://samber.github.io/awesome-prometheus-alerts/rules#fluxcd)
-- [OpenStack](https://samber.github.io/awesome-prometheus-alerts/rules#openstack)
+- [GitLab CI](https://samber.github.io/awesome-prometheus-alerts/rules#gitlab-ci)
 - [Spinnaker](https://samber.github.io/awesome-prometheus-alerts/rules#spinnaker)
 
-#### Network, security and storage
+#### Network and security
 
-- [Ceph](https://samber.github.io/awesome-prometheus-alerts/rules#ceph)
-- [ZFS](https://samber.github.io/awesome-prometheus-alerts/rules#zfs)
-- [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules#openebs)
-- [Minio](https://samber.github.io/awesome-prometheus-alerts/rules#minio)
+- [SpeedTest](https://samber.github.io/awesome-prometheus-alerts/rules#speedtest)
 - [SSL/TLS](https://samber.github.io/awesome-prometheus-alerts/rules#ssl/tls)
 - [cert-manager](https://samber.github.io/awesome-prometheus-alerts/rules#cert-manager)
 - [Juniper](https://samber.github.io/awesome-prometheus-alerts/rules#juniper)
@@ -128,6 +137,13 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Cilium](https://samber.github.io/awesome-prometheus-alerts/rules#cilium)
 - [WireGuard](https://samber.github.io/awesome-prometheus-alerts/rules#wireguard)
 
+#### Storage
+
+- [Ceph](https://samber.github.io/awesome-prometheus-alerts/rules#ceph)
+- [ZFS](https://samber.github.io/awesome-prometheus-alerts/rules#zfs)
+- [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules#openebs)
+- [Minio](https://samber.github.io/awesome-prometheus-alerts/rules#minio)
+
 #### Cloud providers
 
 - [AWS CloudWatch](https://samber.github.io/awesome-prometheus-alerts/rules#aws-cloudwatch)
@@ -135,7 +151,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [DigitalOcean](https://samber.github.io/awesome-prometheus-alerts/rules#digitalocean)
 - [Azure](https://samber.github.io/awesome-prometheus-alerts/rules#azure)
 
-#### Other
+#### Observability
 
 - [Thanos](https://samber.github.io/awesome-prometheus-alerts/rules#thanos)
 - [Loki](https://samber.github.io/awesome-prometheus-alerts/rules#loki)
@@ -145,10 +161,12 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [Grafana Mimir](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-mimir)
 - [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
 - [OpenTelemetry Collector](https://samber.github.io/awesome-prometheus-alerts/rules#opentelemetry-collector)
-- [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
-- [GitLab](https://samber.github.io/awesome-prometheus-alerts/rules#gitlab)
-- [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
 - [Jaeger](https://samber.github.io/awesome-prometheus-alerts/rules#jaeger)
+
+#### Other
+
+- [APC UPS](https://samber.github.io/awesome-prometheus-alerts/rules#apc-ups)
+- [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
 
 ## 🤝 Contributing
 
