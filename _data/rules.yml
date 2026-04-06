@@ -4582,7 +4582,7 @@ groups:
                 for: 5m
                 comments: |
                   Ceph internally triggers OSD_NEARFULL based on the nearfull_ratio (default 85%).
-                  The official mixin uses ceph_health_detail for OSD space alerts.
+                  ceph_health_detail exposes named health checks as individual time series.
               - name: Ceph OSD reweighted
                 description: Ceph Object Storage Daemon takes too much time to resize.
                 query: "ceph_osd_weight < 1"
