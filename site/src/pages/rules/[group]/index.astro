@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import ServiceCard from '../../../components/ServiceCard.astro';
+import { data, getGroupSlug, getServiceSlug, getRuleCount } from '../../../data/rules';
+
+export function getStaticPaths() {
+  return data.groups.map((group) => ({
+    params: { group: getGroupSlug(group) },
+    props: { group },
+  }));
+}
+
+const { group } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const groupSlug = getGroupSlug(group);
+const totalRules = group.services.reduce((sum, svc) => sum + getRuleCount(svc), 0);
+---
+
+<BaseLayout
+  title={`${group.name} — Prometheus Alert Rules | Awesome Prometheus Alerts`}
+  description={`${totalRules} Prometheus alerting rules for ${group.services.length} services in the ${group.name} category.`}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumbs
+      items={[
+        { label: 'Rules', href: `${base}/rules/` },
+        { label: group.name },
+      ]}
+      base={base}
+    />
+
+    <div class="mt-6 mb-8">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{group.name}</h1>
+      <p class="text-slate-500 dark:text-slate-400">
+        {group.services.length} service{group.services.length !== 1 ? 's' : ''} · {totalRules} rules
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {group.services.map((service) => (
+        <ServiceCard service={service} group={group} base={base} />
+      ))}
+    </div>
+  </div>
+</BaseLayout>

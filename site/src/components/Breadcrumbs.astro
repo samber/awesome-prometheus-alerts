@@ -1,0 +1,52 @@
+---
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  items: BreadcrumbItem[];
+  base: string;
+}
+
+const { items, base } = Astro.props;
+const siteUrl = 'https://samber.github.io';
+
+const allItems = [{ label: 'Home', href: `${base}/` }, ...items];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: allItems.map((item, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: item.label,
+    ...(item.href ? { item: `${siteUrl}${item.href}` } : {}),
+  })),
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+<nav aria-label="Breadcrumb" class="text-sm text-slate-500 dark:text-slate-400">
+  <ol class="flex items-center flex-wrap gap-1">
+    {allItems.map((item, i) => (
+      <li class="flex items-center gap-1">
+        {i > 0 && (
+          <svg class="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        )}
+        {item.href && i < allItems.length - 1 ? (
+          <a href={item.href} class="hover:text-brand dark:hover:text-brand-dark transition-colors">
+            {item.label}
+          </a>
+        ) : (
+          <span class={i === allItems.length - 1 ? 'text-slate-700 dark:text-slate-200 font-medium' : ''}>
+            {item.label}
+          </span>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>

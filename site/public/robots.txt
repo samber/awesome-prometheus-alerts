@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://samber.github.io/awesome-prometheus-alerts/sitemap-index.xml

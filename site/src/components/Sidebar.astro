@@ -1,0 +1,52 @@
+---
+import type { Group } from '../data/rules';
+import { getGroupSlug, getServiceSlug } from '../data/rules';
+
+interface Props {
+  groups: Group[];
+  currentGroupSlug?: string;
+  currentServiceSlug?: string;
+  base: string;
+}
+
+const { groups, currentGroupSlug, currentServiceSlug, base } = Astro.props;
+---
+
+<aside class="hidden lg:block w-60 flex-shrink-0" aria-label="Rules navigation">
+  <nav class="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 pb-8">
+    <ul class="space-y-4">
+      {groups.map((group) => {
+        const groupSlug = getGroupSlug(group);
+        const isGroupActive = groupSlug === currentGroupSlug;
+
+        return (
+          <li>
+            <p class={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isGroupActive ? 'text-brand dark:text-brand-dark' : 'text-slate-400 dark:text-slate-500'}`}>
+              {group.name}
+            </p>
+            <ul class="space-y-0.5">
+              {group.services.map((service) => {
+                const serviceSlug = getServiceSlug(service);
+                const isActive = isGroupActive && serviceSlug === currentServiceSlug;
+                return (
+                  <li>
+                    <a
+                      href={`${base}/rules/${groupSlug}/${serviceSlug}/`}
+                      class={`block text-sm py-0.5 px-2 rounded transition-colors truncate ${
+                        isActive
+                          ? 'text-brand dark:text-brand-dark bg-brand/5 dark:bg-brand-dark/10 font-medium'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      {service.name}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        );
+      })}
+    </ul>
+  </nav>
+</aside>

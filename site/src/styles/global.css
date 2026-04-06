@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-brand: #E6522C;
+    --color-brand-dark: #f06840;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-slate-900 antialiased;
+  }
+
+  .dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
+
+  /* Code block base styles */
+  pre {
+    @apply overflow-x-auto rounded-lg text-sm leading-relaxed;
+  }
+
+  code {
+    @apply font-mono text-sm;
+  }
+
+  /* Inline code */
+  :not(pre) > code {
+    @apply bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded text-xs;
+  }
+}
+
+@layer components {
+  /* Rule YAML code block — always dark */
+  .rule-code {
+    @apply bg-slate-900 text-slate-100 rounded-lg p-4 text-xs font-mono leading-relaxed overflow-x-auto;
+  }
+
+  /* Severity badge */
+  .badge-critical {
+    @apply bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800;
+  }
+
+  .badge-warning {
+    @apply bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800;
+  }
+
+  .badge-info {
+    @apply bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800;
+  }
+
+  /* Navigation links */
+  .nav-link {
+    @apply text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand-dark transition-colors duration-150 text-sm font-medium;
+  }
+
+  .nav-link-active {
+    @apply text-brand dark:text-brand-dark;
+  }
+}
+
+/* Pagefind UI overrides */
+#search {
+  --pagefind-ui-scale: 0.9;
+  --pagefind-ui-primary: #E6522C;
+  --pagefind-ui-text: #1e293b;
+  --pagefind-ui-background: #ffffff;
+  --pagefind-ui-border: #e2e8f0;
+  --pagefind-ui-tag: #f1f5f9;
+  --pagefind-ui-border-width: 1px;
+  --pagefind-ui-border-radius: 8px;
+  --pagefind-ui-font: inherit;
+}
+
+.dark #search {
+  --pagefind-ui-text: #e2e8f0;
+  --pagefind-ui-background: #0f172a;
+  --pagefind-ui-border: #334155;
+  --pagefind-ui-tag: #1e293b;
+}

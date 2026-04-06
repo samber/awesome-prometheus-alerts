@@ -1,0 +1,113 @@
+---
+import GuideLayout from '../layouts/GuideLayout.astro';
+---
+
+<GuideLayout
+  title="Sleep Peacefully"
+  description="Time-based alert suppression with PromQL. Prevent alert fatigue using day-of-week, hour-of-day filters, and timezone-aware recording rules."
+  breadcrumbs={[{ label: 'Guides' }, { label: 'Sleep Peacefully' }]}
+>
+  <h2 id="alerting-time-window">Alerting time window</h2>
+
+  <p>
+    In some applications, load and activity can vary over the day, week, or year.
+    To prevent alarm fatigue and busy pager, alerts can be disabled during certain periods
+    (such as nights or weekends).
+  </p>
+
+  <p>Examples:</p>
+  <ul>
+    <li>Weekday: <code>node_load5 &gt; 10 and ON() (0 &lt; day_of_week() &lt; 6)</code></li>
+    <li>Day time: <code>node_load5 &gt; 10 and ON() (8 &lt; hour() &lt; 18)</code></li>
+    <li>Exclude December: <code>node_load5 &gt; 10 and ON() (month() != 12)</code></li>
+  </ul>
+
+  <h2 id="advanced-timezones">Advanced time windows and timezones</h2>
+
+  <pre class="rule-code"><code>{`# rules.yml
+
+groups:
+  - name: timezones
+    rules:
+    - record: european_summer_time_offset
+      expr: |
+          (vector(1) and (month() > 3 and month() < 10))
+          or
+          (vector(1) and (month() == 3 and (day_of_month() - day_of_week()) >= 25) and absent((day_of_month() >= 25) and (day_of_week() == 0)))
+          or
+          (vector(1) and (month() == 10 and (day_of_month() - day_of_week()) < 25) and absent((day_of_month() >= 25) and (day_of_week() == 0)))
+          or
+          (vector(1) and ((month() == 10 and hour() < 1) or (month() == 3 and hour() > 0)) and ((day_of_month() >= 25) and (day_of_week() == 0)))
+          or
+          vector(0)
+
+    - record: europe_london_time
+      expr: time() + 3600 * european_summer_time_offset
+    - record: europe_paris_time
+      expr: time() + 3600 * (1 + european_summer_time_offset)
+
+    - record: europe_london_hour
+      expr: hour(europe_london_time)
+    - record: europe_paris_hour
+      expr: hour(europe_paris_time)
+
+    - record: europe_london_weekday
+      expr: 0 < day_of_week(europe_london_time) < 6
+    - record: europe_paris_weekday
+      expr: 0 < day_of_week(europe_paris_time) < 6
+    # opposite
+    - record: not_europe_london_weekday
+      expr: absent(europe_london_weekday)
+    - record: not_europe_paris_weekday
+      expr: absent(europe_paris_weekday)
+
+    - record: europe_london_business_hours
+      expr: 9 <= europe_london_hour < 18
+    - record: europe_paris_business_hours
+      expr: 9 <= europe_paris_hour < 18
+    # opposite
+    - record: not_europe_london_business_hours
+      expr: absent(europe_london_business_hours)
+    - record: not_europe_paris_business_hours
+      expr: absent(europe_paris_business_hours)
+
+    # new year's day / xmas / labor day / all saints' day / ...
+    - record: europe_french_public_holidays
+      expr: |
+          (vector(1) and month(europe_paris_time) == 1 and day_of_month(europe_paris_time) == 1)
+          or
+          (vector(1) and month(europe_paris_time) == 12 and day_of_month(europe_paris_time) == 25)
+          or
+          (vector(1) and month(europe_paris_time) == 5 and day_of_month(europe_paris_time) == 1)
+          or
+          (vector(1) and month(europe_paris_time) == 11 and day_of_month(europe_paris_time) == 1)
+          or
+          vector(0)
+    # opposite
+    - record: not_europe_french_public_holidays
+      expr: absent(europe_french_public_holidays)`}</code></pre>
+
+  <pre class="rule-code"><code>{`# alerts.yml
+
+groups:
+  - name: CPU Load
+    rules:
+      - alert: HighLoadQuietDuringWeekendAndNight
+        expr: node_load5 > 10 and ON() (europe_london_weekday and europe_paris_weekday)
+
+      - alert: HighLoadQuietDuringBackup
+        expr: node_load5 > 10 and ON() absent(hour() == 2)
+
+      - alert: HighLoad
+        expr: |
+            node_load5 > 20 and ON() (europe_london_weekday and europe_paris_weekday)
+            or
+            node_load5 > 10`}</code></pre>
+
+  <h2 id="sources">Sources</h2>
+
+  <ul>
+    <li><a href="https://medium.com/@tom.fawcett/time-of-day-based-notifications-with-prometheus-and-alertmanager-1bf7a23b7695" target="_blank" rel="noopener noreferrer">Time of day based notifications with Prometheus and AlertManager</a></li>
+    <li><a href="https://promcon.io/2019-munich/slides/improved-alerting-with-prometheus-and-alertmanager.pdf" target="_blank" rel="noopener noreferrer">Improved alerting with Prometheus and AlertManager (PromCon 2019)</a></li>
+  </ul>
+</GuideLayout>

@@ -1,0 +1,137 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import Sidebar from '../../../components/Sidebar.astro';
+import ExporterSection from '../../../components/ExporterSection.astro';
+import { data, getGroupSlug, getServiceSlug, getRuleCount, getAllServices } from '../../../data/rules';
+
+export function getStaticPaths() {
+  return getAllServices().map(({ group, service, groupSlug, serviceSlug }) => ({
+    params: { group: groupSlug, service: serviceSlug },
+    props: { group, service },
+  }));
+}
+
+const { group, service } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const groupSlug = getGroupSlug(group);
+const serviceSlug = getServiceSlug(service);
+const ruleCount = getRuleCount(service);
+const groupIndex = data.groups.findIndex((g) => getGroupSlug(g) === groupSlug) + 1;
+const serviceIndex = group.services.findIndex((s) => getServiceSlug(s) === serviceSlug) + 1;
+
+// Build exporters summary for meta description
+const exporterNames = service.exporters.map((e) => e.name).filter(Boolean).join(', ');
+const metaDesc = `${ruleCount} Prometheus alerting rules for ${service.name}${exporterNames ? ` via ${exporterNames}` : ''}. Copy-paste ready YAML configurations for critical and warning alerts.`;
+
+// FAQ JSON-LD for GEO (AI search engines)
+const faqItems = service.exporters.flatMap((exp) =>
+  (exp.rules ?? []).map((rule) => ({
+    '@type': 'Question',
+    name: `What is the Prometheus alert rule for "${rule.name}"?`,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: `${rule.description} PromQL expression: ${rule.query}. Severity: ${rule.severity}${rule.for ? `. Duration: ${rule.for}` : ''}.`,
+    },
+  }))
+);
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: `${service.name} Prometheus Alert Rules`,
+    description: metaDesc,
+    about: `Prometheus monitoring for ${service.name}`,
+    url: `https://samber.github.io${base}/rules/${groupSlug}/${serviceSlug}/`,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'Awesome Prometheus Alerts',
+      url: 'https://samber.github.io/awesome-prometheus-alerts/',
+    },
+  },
+  ...(faqItems.length > 0 ? [{
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems,
+  }] : []),
+];
+---
+
+<BaseLayout
+  title={`${service.name} Prometheus Alert Rules | Awesome Prometheus Alerts`}
+  description={metaDesc}
+  jsonLd={jsonLd}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumbs
+      items={[
+        { label: 'Rules', href: `${base}/rules/` },
+        { label: group.name, href: `${base}/rules/${groupSlug}/` },
+        { label: service.name },
+      ]}
+      base={base}
+    />
+
+    <div class="flex gap-10 mt-6">
+      <!-- Left sidebar -->
+      <Sidebar
+        groups={data.groups}
+        currentGroupSlug={groupSlug}
+        currentServiceSlug={serviceSlug}
+        base={base}
+      />
+
+      <!-- Main content -->
+      <div class="flex-1 min-w-0">
+        <!-- Page header -->
+        <div class="mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+          <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{service.name}</h1>
+          <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+            {ruleCount} Prometheus alerting rule{ruleCount !== 1 ? 's' : ''} for {service.name}.
+            {exporterNames && `Exported via ${exporterNames}.`}
+            These rules cover critical and warning conditions — copy and paste the YAML into your Prometheus configuration.
+          </p>
+        </div>
+
+        <!-- Exporters -->
+        {service.exporters.map((exporter, expIdx) => (
+          <ExporterSection
+            exporter={exporter}
+            service={service}
+            groupIndex={groupIndex}
+            serviceIndex={serviceIndex}
+            exporterIndex={expIdx + 1}
+            showExporterNumber={service.exporters.length > 1}
+          />
+        ))}
+
+        <!-- Prev/Next navigation -->
+        <nav class="mt-10 pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-between gap-4" aria-label="Service navigation">
+          {(() => {
+            const allSvcs = getAllServices();
+            const idx = allSvcs.findIndex(s => s.groupSlug === groupSlug && s.serviceSlug === serviceSlug);
+            const prev = idx > 0 ? allSvcs[idx - 1] : null;
+            const next = idx < allSvcs.length - 1 ? allSvcs[idx + 1] : null;
+            return (
+              <>
+                {prev ? (
+                  <a href={`${base}/rules/${prev.groupSlug}/${prev.serviceSlug}/`} class="group flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-brand dark:hover:text-brand-dark transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    <span>{prev.service.name}</span>
+                  </a>
+                ) : <div />}
+                {next ? (
+                  <a href={`${base}/rules/${next.groupSlug}/${next.serviceSlug}/`} class="group flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-brand dark:hover:text-brand-dark transition-colors">
+                    <span>{next.service.name}</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                  </a>
+                ) : <div />}
+              </>
+            );
+          })()}
+        </nav>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

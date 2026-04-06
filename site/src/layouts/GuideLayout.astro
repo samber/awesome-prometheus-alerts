@@ -1,0 +1,65 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  title: string;
+  description?: string;
+  breadcrumbs?: BreadcrumbItem[];
+  headings?: Array<{ depth: number; text: string; slug: string }>;
+}
+
+const { title, description, breadcrumbs = [], headings = [] } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<BaseLayout title={`${title} | Awesome Prometheus Alerts`} description={description}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} base={base} />}
+
+    <div class="flex gap-12 mt-6">
+      <!-- TOC sidebar -->
+      {headings.length > 0 && (
+        <aside class="hidden xl:block w-56 flex-shrink-0">
+          <div class="sticky top-20">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">On this page</p>
+            <nav>
+              <ul class="space-y-1.5">
+                {headings.filter(h => h.depth <= 3).map(h => (
+                  <li class={h.depth === 3 ? 'pl-3' : ''}>
+                    <a
+                      href={`#${h.slug}`}
+                      class="text-sm text-slate-500 dark:text-slate-400 hover:text-brand dark:hover:text-brand-dark transition-colors block"
+                    >
+                      {h.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        </aside>
+      )}
+
+      <!-- Content -->
+      <article class="flex-1 min-w-0 max-w-3xl prose prose-slate dark:prose-invert prose-code:before:content-none prose-code:after:content-none">
+        <h1>{title}</h1>
+        <slot />
+      </article>
+    </div>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .prose pre {
+    @apply bg-slate-900 text-slate-100;
+  }
+  .prose code {
+    @apply bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded text-xs;
+  }
+</style>

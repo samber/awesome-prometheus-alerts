@@ -1,0 +1,31 @@
+{
+  "name": "awesome-prometheus-alerts-site",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.0.0",
+    "@astrojs/tailwind": "^5.0.0",
+    "@iconify-json/lucide": "^1.0.0",
+    "@rollup/plugin-yaml": "^4.0.0",
+    "astro": "^5.0.0",
+    "astro-icon": "^1.0.0",
+    "js-yaml": "^4.1.0",
+    "pagefind": "^1.0.0",
+    "tailwindcss": "^3.4.0",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.0"
+  },
+  "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

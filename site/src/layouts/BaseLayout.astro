@@ -1,0 +1,82 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import SEO from '../components/SEO.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  jsonLd?: object | object[];
+  noIndex?: boolean;
+}
+
+const {
+  title,
+  description = 'Collection of alerting rules for Prometheus. Copy-pasteable Prometheus alert configurations for 90+ services.',
+  canonicalUrl,
+  ogImage,
+  jsonLd,
+  noIndex = false,
+} = Astro.props;
+
+const base = import.meta.env.BASE_URL;
+const siteUrl = 'https://samber.github.io';
+const canonical = canonicalUrl ?? `${siteUrl}${base}${Astro.url.pathname.replace(base, '')}`;
+---
+
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#E6522C" />
+  {noIndex && <meta name="robots" content="noindex" />}
+
+  <SEO
+    title={title}
+    description={description}
+    canonicalUrl={canonical}
+    ogImage={ogImage}
+    jsonLd={jsonLd}
+    base={base}
+    siteUrl={siteUrl}
+  />
+
+  <link rel="icon" type="image/x-icon" href={`${base}/favicon.ico`} />
+
+  <!-- Dark mode: set class before paint to avoid flash -->
+  <script is:inline>
+    (function() {
+      var theme = localStorage.getItem('theme');
+      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script is:inline>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
+</head>
+<body class="min-h-screen flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-150">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-brand text-white px-3 py-1 rounded z-50">
+    Skip to main content
+  </a>
+
+  <Header base={base} />
+
+  <main id="main-content" class="flex-1">
+    <slot />
+  </main>
+
+  <Footer base={base} />
+</body>
+</html>

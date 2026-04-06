@@ -1,0 +1,45 @@
+---
+// Pagefind search widget
+// The pagefind bundle is generated after `astro build` with: npx pagefind --site dist
+interface Props {
+  class?: string;
+}
+const { class: extraClass = '' } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<div id="search" class={extraClass}></div>
+
+<link rel="stylesheet" href={`${base}/pagefind/pagefind-ui.css`} />
+<script>
+  // Load Pagefind UI lazily (only when the search div is visible/focused)
+  function initPagefind() {
+    const base = import.meta.env.BASE_URL;
+    // @ts-ignore
+    import(`${base}/pagefind/pagefind-ui.js`).then((module) => {
+      const PagefindUI = module.PagefindUI;
+      new PagefindUI({
+        element: '#search',
+        showSubResults: true,
+        highlightParam: 'highlight',
+        baseUrl: base,
+      });
+    });
+  }
+
+  const searchEl = document.getElementById('search');
+  if (searchEl) {
+    // Load when visible via Intersection Observer
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          initPagefind();
+          observer.disconnect();
+        }
+      }, { rootMargin: '200px' });
+      observer.observe(searchEl);
+    } else {
+      initPagefind();
+    }
+  }
+</script>

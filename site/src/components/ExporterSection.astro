@@ -1,0 +1,122 @@
+---
+import type { Exporter, Service } from '../data/rules';
+import { formatExporterAsYaml, getDistUrl } from '../data/rules';
+import RuleCard from './RuleCard.astro';
+import CopyButton from './CopyButton.astro';
+
+interface Props {
+  exporter: Exporter;
+  service: Service;
+  groupIndex: number;
+  serviceIndex: number;
+  exporterIndex: number;
+  showExporterNumber: boolean;
+}
+
+const {
+  exporter,
+  service,
+  groupIndex,
+  serviceIndex,
+  exporterIndex,
+  showExporterNumber,
+} = Astro.props;
+
+const distUrl = getDistUrl(service.name, exporter.slug);
+const allRulesId = `exporter-all-${groupIndex}-${serviceIndex}-${exporterIndex}`;
+const allRulesYaml = formatExporterAsYaml(exporter);
+const wgetCommand = `wget ${distUrl}`;
+const wgetId = `wget-${groupIndex}-${serviceIndex}-${exporterIndex}`;
+
+const exporterPrefix = showExporterNumber
+  ? `${groupIndex}.${serviceIndex}.${exporterIndex}.`
+  : `${groupIndex}.${serviceIndex}.`;
+---
+
+<section class="mb-10">
+  <!-- Hidden pre for copy-all -->
+  <pre id={allRulesId} class="hidden">{allRulesYaml}</pre>
+
+  <!-- Exporter header -->
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+    <div class="min-w-0">
+      {exporter.name ? (
+        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 flex-wrap">
+          <span class="text-slate-400 dark:text-slate-500 font-normal text-sm">
+            {exporterPrefix}
+          </span>
+          {exporter.doc_url ? (
+            <a href={exporter.doc_url} target="_blank" rel="noopener noreferrer" class="text-brand dark:text-brand-dark hover:underline">
+              {exporter.name}
+            </a>
+          ) : (
+            <span>{exporter.name}</span>
+          )}
+          <span class="text-xs font-normal text-slate-400 dark:text-slate-500">
+            ({exporter.rules?.length ?? 0} rules)
+          </span>
+        </h2>
+      ) : (
+        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">
+          <span class="text-slate-400 dark:text-slate-500 font-normal text-sm mr-1">{exporterPrefix}</span>
+          {service.name}
+          <span class="text-xs font-normal text-slate-400 dark:text-slate-500 ml-2">
+            ({exporter.rules?.length ?? 0} rules)
+          </span>
+        </h2>
+      )}
+    </div>
+
+    <div class="flex items-center gap-2">
+      <CopyButton targetId={allRulesId} label="Copy all" variant="text" />
+    </div>
+  </div>
+
+  <!-- Exporter comments -->
+  {exporter.comments && (
+    <div class="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-sm text-amber-800 dark:text-amber-200">
+      <pre class="whitespace-pre-wrap font-sans text-sm">{exporter.comments.trim()}</pre>
+    </div>
+  )}
+
+  <!-- wget download command -->
+  {(exporter.rules?.length ?? 0) > 0 && (
+    <div class="mb-4 flex items-center gap-2">
+      <div class="flex-1 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 min-w-0">
+        <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <pre id={wgetId} class="text-xs font-mono text-slate-600 dark:text-slate-300 overflow-x-auto whitespace-pre">{wgetCommand}</pre>
+      </div>
+      <CopyButton targetId={wgetId} variant="icon" />
+    </div>
+  )}
+
+  <!-- Rules list -->
+  {(exporter.rules?.length ?? 0) === 0 ? (
+    <div class="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 p-6 text-center">
+      <p class="text-sm text-slate-400 dark:text-slate-500">
+        No rules yet —{' '}
+        <a href="https://github.com/samber/awesome-prometheus-alerts" target="_blank" rel="noopener noreferrer" class="text-brand dark:text-brand-dark hover:underline">
+          contribute on GitHub 👋
+        </a>
+      </p>
+    </div>
+  ) : (
+    <div>
+      {exporter.rules.map((rule, ruleIdx) => {
+        const anchorId = `rule-${groupIndex}-${serviceIndex}-${exporterIndex}-${ruleIdx + 1}`;
+        const ruleNumber = showExporterNumber
+          ? `${groupIndex}.${serviceIndex}.${exporterIndex}.${ruleIdx + 1}.`
+          : `${groupIndex}.${serviceIndex}.${ruleIdx + 1}.`;
+        return (
+          <RuleCard
+            rule={rule}
+            anchorId={anchorId}
+            ruleNumber={ruleNumber}
+          />
+        );
+      })}
+    </div>
+  )}
+</section>

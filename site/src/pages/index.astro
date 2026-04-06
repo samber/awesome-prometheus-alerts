@@ -1,0 +1,152 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatsBar from '../components/StatsBar.astro';
+import ServiceCard from '../components/ServiceCard.astro';
+import SearchWidget from '../components/SearchWidget.astro';
+import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount } from '../data/rules';
+
+const base = import.meta.env.BASE_URL;
+const totalRules = getTotalRuleCount();
+const totalServices = getTotalServiceCount();
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Awesome Prometheus Alerts',
+  url: 'https://samber.github.io/awesome-prometheus-alerts/',
+  description: `Collection of ${totalRules} copy-pasteable Prometheus alerting rules for ${totalServices} services.`,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://samber.github.io/awesome-prometheus-alerts/rules/?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+---
+
+<BaseLayout
+  title="Awesome Prometheus Alerts | Copy-pasteable Prometheus alerting rules"
+  description={`Collection of ${totalRules} copy-pasteable Prometheus alerting rules for ${totalServices} services — covering databases, Kubernetes, cloud providers, message brokers, and more.`}
+  jsonLd={jsonLd}
+>
+  <!-- Hero -->
+  <section class="bg-gradient-to-b from-slate-50 dark:from-slate-900/50 to-white dark:to-slate-950 border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+      <div class="flex justify-center mb-6">
+        <img
+          src={`${base}/images/prometheus-logo.png`}
+          alt="Prometheus"
+          class="h-16 w-auto"
+          width="64"
+          height="64"
+        />
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+        Awesome Prometheus Alerts
+      </h1>
+      <p class="text-lg text-slate-500 dark:text-slate-400 mb-8 max-w-2xl mx-auto">
+        {totalRules} copy-pasteable Prometheus alerting rules for {totalServices} services.
+        Find, copy, and deploy alerts in seconds.
+      </p>
+
+      <!-- Search -->
+      <div class="max-w-xl mx-auto mb-8">
+        <SearchWidget />
+      </div>
+
+      <!-- CTA buttons -->
+      <div class="flex flex-wrap justify-center gap-3">
+        <a
+          href={`${base}/rules/`}
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand/90 text-white font-medium rounded-lg transition-colors"
+        >
+          Browse all rules
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+        <a
+          href="https://github.com/samber/awesome-prometheus-alerts"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-medium rounded-lg hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+        >
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <StatsBar />
+    </div>
+  </section>
+
+  <!-- Categories grid -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-8">Browse by category</h2>
+
+    <div class="space-y-10">
+      {data.groups.map((group) => {
+        const groupSlug = getGroupSlug(group);
+        const groupRuleCount = group.services.reduce((sum, svc) => sum + getRuleCount(svc), 0);
+        return (
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-base font-semibold text-slate-700 dark:text-slate-300">
+                <a href={`${base}/rules/${groupSlug}/`} class="hover:text-brand dark:hover:text-brand-dark transition-colors">
+                  {group.name}
+                </a>
+              </h3>
+              <span class="text-xs text-slate-400 dark:text-slate-500">
+                {group.services.length} services · {groupRuleCount} rules
+              </span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {group.services.map((service) => (
+                <ServiceCard service={service} group={group} base={base} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </section>
+
+  <!-- Guides section -->
+  <section class="bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Guides</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <a href={`${base}/alertmanager/`} class="group block p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 hover:border-brand/40 dark:hover:border-brand-dark/40 hover:shadow-sm transition-all">
+          <div class="text-brand dark:text-brand-dark mb-2">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </div>
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-brand dark:group-hover:text-brand-dark transition-colors mb-1">AlertManager Config</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Prometheus and AlertManager configuration examples and troubleshooting.</p>
+        </a>
+
+        <a href={`${base}/blackbox-exporter/`} class="group block p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 hover:border-brand/40 dark:hover:border-brand-dark/40 hover:shadow-sm transition-all">
+          <div class="text-brand dark:text-brand-dark mb-2">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-brand dark:group-hover:text-brand-dark transition-colors mb-1">Blackbox Exporter</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Worldwide probes, Prometheus config, geohash/Grafana map setup.</p>
+        </a>
+
+        <a href={`${base}/sleep-peacefully/`} class="group block p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 hover:border-brand/40 dark:hover:border-brand-dark/40 hover:shadow-sm transition-all">
+          <div class="text-brand dark:text-brand-dark mb-2">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+          </div>
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-brand dark:group-hover:text-brand-dark transition-colors mb-1">Sleep Peacefully</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Time-based alert suppression and timezone-aware PromQL patterns.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

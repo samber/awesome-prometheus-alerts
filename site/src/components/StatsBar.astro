@@ -1,0 +1,27 @@
+---
+import { getTotalRuleCount, getTotalServiceCount, getTotalExporterCount, data } from '../data/rules';
+
+const totalRules = getTotalRuleCount();
+const totalServices = getTotalServiceCount();
+const totalExporters = getTotalExporterCount();
+const totalGroups = data.groups.length;
+---
+
+<div class="flex flex-wrap justify-center gap-6 sm:gap-10 py-4 text-center">
+  <div>
+    <div class="text-2xl font-bold text-brand dark:text-brand-dark">{totalRules}</div>
+    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">alert rules</div>
+  </div>
+  <div>
+    <div class="text-2xl font-bold text-brand dark:text-brand-dark">{totalServices}</div>
+    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">services</div>
+  </div>
+  <div>
+    <div class="text-2xl font-bold text-brand dark:text-brand-dark">{totalExporters}</div>
+    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">exporters</div>
+  </div>
+  <div>
+    <div class="text-2xl font-bold text-brand dark:text-brand-dark">{totalGroups}</div>
+    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">categories</div>
+  </div>
+</div>

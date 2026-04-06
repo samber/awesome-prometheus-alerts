@@ -1,0 +1,41 @@
+---
+import type { Service, Group } from '../data/rules';
+import { getRuleCount, getGroupSlug, getServiceSlug } from '../data/rules';
+
+interface Props {
+  service: Service;
+  group: Group;
+  base: string;
+}
+
+const { service, group, base } = Astro.props;
+const ruleCount = getRuleCount(service);
+const groupSlug = getGroupSlug(group);
+const serviceSlug = getServiceSlug(service);
+const href = `${base}/rules/${groupSlug}/${serviceSlug}/`;
+
+const exporterNames = service.exporters
+  .map((e) => e.name)
+  .filter(Boolean)
+  .slice(0, 3);
+---
+
+<a
+  href={href}
+  class="group block p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 hover:border-brand/40 dark:hover:border-brand-dark/40 hover:shadow-sm transition-all duration-150"
+>
+  <div class="flex items-start justify-between gap-2 mb-2">
+    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-brand dark:group-hover:text-brand-dark transition-colors leading-snug">
+      {service.name}
+    </h3>
+    <span class="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+      {ruleCount} rule{ruleCount !== 1 ? 's' : ''}
+    </span>
+  </div>
+
+  {exporterNames.length > 0 && (
+    <p class="text-xs text-slate-400 dark:text-slate-500 truncate">
+      {exporterNames.join(' · ')}{service.exporters.length > 3 ? ` +${service.exporters.length - 3}` : ''}
+    </p>
+  )}
+</a>
