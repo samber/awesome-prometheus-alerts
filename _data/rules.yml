@@ -4551,8 +4551,7 @@ groups:
                 for: 1m
                 comments: |
                   ceph_health_status: 0=HEALTH_OK, 1=HEALTH_WARN, 2=HEALTH_ERR.
-                  The official Ceph mixin splits this into separate warning (==1) and critical (==2) alerts.
-                  This rule fires on any non-OK state. Adjust severity or split as needed.
+                  This rule fires on any non-OK state. Split into ==1 (warning) and ==2 (critical) if you want separate severity levels.
               - name: Ceph monitor clock skew
                 description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
                 query: "abs(ceph_monitor_clock_skew_seconds) > 0.2"
