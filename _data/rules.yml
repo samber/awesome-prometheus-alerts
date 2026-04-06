@@ -82,7 +82,7 @@ groups:
                 severity: warning
               - name: Prometheus AlertManager notification failing
                 description: "Alertmanager is failing sending notifications ({{ $value }} notifications/s)"
-                query: "rate(alertmanager_notifications_failed_total[1m]) > 0"
+                query: "rate(alertmanager_notifications_failed_total[3m]) > 0.05"
                 severity: critical
               - name: Prometheus target empty
                 description: Prometheus has no target in service discovery
@@ -232,7 +232,7 @@ groups:
                 query: 'avg without (cpu) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) > .10'
                 severity: warning
               - name: Host unusual disk IO
-                description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities. Check storage for issues."
+                description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities."
                 query: "rate(node_disk_io_time_seconds_total[5m]) > 0.8"
                 severity: warning
                 for: 5m
@@ -279,16 +279,18 @@ groups:
                 severity: info
               - name: Host OOM kill detected
                 description: OOM kill detected
-                query: "(increase(node_vmstat_oom_kill[30m]) > 0)"
+                query: "(delta(node_vmstat_oom_kill[30m]) > 0)"
+                comments: |
+                  node_vmstat_oom_kill is exposed as untyped/gauge by node_exporter (from /proc/vmstat), so delta() is used instead of increase().
                 severity: warning
                 comments: |
                   When a machine runs out of memory, the node exporter can become unresponsive for several minutes. Even if the system takes 15–20 minutes to recover, the alert should still trigger.
               - name: Host EDAC Correctable Errors detected
-                description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 5 minutes.'
+                description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 1 minute.'
                 query: "(increase(node_edac_correctable_errors_total[1m]) > 0)"
                 severity: info
               - name: Host EDAC Uncorrectable Errors detected
-                description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} uncorrectable memory errors reported by EDAC in the last 5 minutes.'
+                description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} uncorrectable memory errors reported by EDAC.'
                 query: "(node_edac_uncorrectable_errors_total > 0)"
                 severity: warning
               - name: Host Network Receive Errors
@@ -337,27 +339,27 @@ groups:
                 query: '(max_over_time(smartctl_device_temperature{temperature_type="current"} [5m]) unless on (instance, device) smartctl_device_temperature{temperature_type="drive_trip"}) > 70'
                 severity: critical
               - name: SMART device temperature over trip value
-                description: Device temperature over trip value on {{ $labels.instance }} drive {{ $labels.device }})
+                description: Device temperature over trip value on {{ $labels.instance }} drive {{ $labels.device }}
                 query: 'max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) smartctl_device_temperature{temperature_type="drive_trip"}'
                 severity: critical
               - name: SMART device temperature nearing trip value
-                description: Device temperature at 80% of trip value on {{ $labels.instance }} drive {{ $labels.device }})
+                description: Device temperature at 80% of trip value on {{ $labels.instance }} drive {{ $labels.device }}
                 query: 'max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) (smartctl_device_temperature{temperature_type="drive_trip"} * .80)'
                 severity: warning
               - name: SMART status
-                description: Device has a SMART status failure on {{ $labels.instance }} drive {{ $labels.device }})
+                description: Device has a SMART status failure on {{ $labels.instance }} drive {{ $labels.device }}
                 query: "smartctl_device_smart_status != 1"
                 severity: critical
               - name: SMART critical warning
-                description: Disk controller has critical warning on {{ $labels.instance }} drive {{ $labels.device }})
+                description: Disk controller has critical warning on {{ $labels.instance }} drive {{ $labels.device }}
                 query: "smartctl_device_critical_warning > 0"
                 severity: critical
               - name: SMART media errors
-                description: Disk controller detected media errors on {{ $labels.instance }} drive {{ $labels.device }})
+                description: Disk controller detected media errors on {{ $labels.instance }} drive {{ $labels.device }}
                 query: "smartctl_device_media_errors > 0"
                 severity: critical
               - name: SMART Wearout Indicator
-                description: Device is wearing out on {{ $labels.instance }} drive {{ $labels.device }})
+                description: Device is wearing out on {{ $labels.instance }} drive {{ $labels.device }}
                 query: "smartctl_device_available_spare < smartctl_device_available_spare_threshold"
                 severity: critical
 
@@ -505,7 +507,7 @@ groups:
                 severity: info
               - name: Container Low CPU utilization
                 description: 'Container CPU utilization is under 20% for 1 week. Consider reducing the allocated CPU. (current: {{ $value | printf "%.2f" }}%)'
-                query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) < 20'
+                query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) < 20 and sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) > 0'
                 severity: info
                 for: 7d
               - name: Container Low Memory usage
@@ -524,6 +526,7 @@ groups:
                 description: Probe failed
                 query: probe_success == 0
                 severity: critical
+                for: 1m
               - name: Blackbox configuration reload failure
                 description: Blackbox configuration reload failure
                 query: "blackbox_exporter_config_last_reload_successful != 1"
@@ -537,6 +540,7 @@ groups:
                 description: HTTP status code is not 200-399
                 query: "probe_http_status_code <= 199 OR probe_http_status_code >= 400"
                 severity: critical
+                for: 1m
               - name: Blackbox SSL certificate will expire soon
                 description: SSL certificate expires in less than 20 days
                 query: "3 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 20"
@@ -743,7 +747,7 @@ groups:
                   The exporter uses loose attachment: if a program fails to load (missing BTF, kernel incompatibility), it sets this metric to 0 and continues running.
               - name: eBPF exporter decoder errors
                 description: "eBPF exporter is experiencing decoder errors for config {{ $labels.config }}. Kernel data is not being correctly transformed into labels. (instance {{ $labels.instance }})"
-                query: 'rate(ebpf_exporter_decoder_errors_total[5m]) > 0'
+                query: 'rate(ebpf_exporter_decoder_errors_total[5m]) > 0.05'
                 severity: warning
                 for: 5m
               - name: eBPF exporter no enabled configs
@@ -850,7 +854,9 @@ groups:
                 for: 5m
               - name: Systemd socket refused connections
                 description: "Systemd socket {{ $labels.name }} is refusing connections. ({{ $value }} refused in last 5m, instance {{ $labels.instance }})"
-                query: 'increase(systemd_socket_refused_connections_total[5m]) > 0'
+                query: 'delta(systemd_socket_refused_connections_total[5m]) > 3'
+                comments: |
+                  systemd_socket_refused_connections_total is declared as Gauge by the exporter despite the _total suffix, so delta() is used instead of increase().
                 severity: warning
                 for: 2m
               - name: Systemd socket high connections
@@ -918,13 +924,17 @@ groups:
                 severity: critical
                 for: 1m
               - name: MySQL slow queries
-                description: "MySQL server mysql has some new slow query ({{ $value }} in the last minute)."
-                query: increase(mysql_global_status_slow_queries[1m]) > 0
+                description: "MySQL server has some new slow queries ({{ $value }} in the last minute)."
+                query: delta(mysql_global_status_slow_queries[1m]) > 0
+                comments: |
+                  mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so delta() is used instead of increase().
                 severity: warning
                 for: 2m
               - name: MySQL InnoDB log waits
                 description: "MySQL innodb log writes stalling ({{ $value }} waits/s)"
-                query: rate(mysql_global_status_innodb_log_waits[15m]) > 10
+                query: deriv(mysql_global_status_innodb_log_waits[15m]) > 10
+                comments: |
+                  mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so deriv() is used instead of rate().
                 severity: warning
               - name: MySQL restarted
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
@@ -932,7 +942,9 @@ groups:
                 severity: info
               - name: MySQL High QPS
                 description: MySQL is being overload with unusual QPS (> 10k QPS).
-                query: "irate(mysql_global_status_questions[1m]) > 10000"
+                query: "deriv(mysql_global_status_questions[1m]) > 10000"
+                comments: |
+                  mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so deriv() is used instead of irate().
                 severity: info
                 for: 2m
               - name: MySQL too many open files
@@ -992,11 +1004,11 @@ groups:
                 for: 2m
               - name: Postgresql dead locks
                 description: "PostgreSQL has dead-locks ({{ $value }} in the last minute)"
-                query: 'increase(pg_stat_database_deadlocks{datname!~"template.*|postgres"}[1m]) > 5'
+                query: 'increase(pg_stat_database_deadlocks{datname!~"template.*|postgres",datid!="0"}[1m]) > 5'
                 severity: warning
               - name: Postgresql high rollback rate
                 description: Ratio of transactions being aborted compared to committed is > 2 %
-                query: 'sum by (namespace,datname) ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) / ((rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m])))) > 0.02'
+                query: 'sum by (namespace,datname,instance) (rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) / (sum by (namespace,datname,instance) (rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + sum by (namespace,datname,instance) (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m]))) > 0.02 and (sum by (namespace,datname,instance) (rate(pg_stat_database_xact_rollback{datname!~"template.*|postgres",datid!="0"}[3m])) + sum by (namespace,datname,instance) (rate(pg_stat_database_xact_commit{datname!~"template.*|postgres",datid!="0"}[3m]))) > 0'
                 severity: warning
               - name: Postgresql commit rate low
                 description: Postgresql seems to be processing very few transactions
@@ -1008,6 +1020,8 @@ groups:
                 query: "rate(pg_txid_current[1m]) < 5"
                 severity: warning
                 for: 2m
+                comments: |
+                  pg_txid_current is not a default postgres_exporter metric. You need to define a custom query. See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
               - name: Postgresql unused replication slot
                 description: Unused Replication Slots
                 query: "(pg_replication_slots_active == 0) and (pg_replication_is_replica == 0)"
@@ -1026,6 +1040,8 @@ groups:
                 description: Database allows connections with SSL compression enabled. This may add significant jitter in replication delay. Replicas should turn off SSL compression via `sslcompression=0` in `recovery.conf`.
                 query: "sum by (instance) (pg_stat_ssl_compression) > 0"
                 severity: warning
+                comments: |
+                  pg_stat_ssl_compression is not a default postgres_exporter metric and is only available on PostgreSQL 9.5-13 (removed in PG 14). See https://github.com/samber/awesome-prometheus-alerts/issues/289#issuecomment-1164842737
               - name: Postgresql too many locks acquired
                 description: Too many locks acquired on the database. If this alert happens frequently, we may need to increase the postgres setting max_locks_per_transaction.
                 query: "((sum by (instance) (pg_locks_count)) / (pg_settings_max_locks_per_transaction * pg_settings_max_connections)) > 0.20 and (pg_settings_max_locks_per_transaction * pg_settings_max_connections) > 0"
@@ -1262,8 +1278,8 @@ groups:
                 severity: critical
                 for: 2m
               - name: Memcached out of memory errors
-                description: "Memcached is returning out-of-memory errors on {{ $labels.instance }}"
-                query: "sum without (slab) (rate(memcached_slab_items_outofmemory_total[5m])) > 0"
+                description: "Memcached is returning out-of-memory errors on {{ $labels.instance }} ({{ $value }} errors/s)"
+                query: "sum without (slab) (rate(memcached_slab_items_outofmemory_total[5m])) > 0.05"
                 severity: warning
                 for: 5m
               - name: Memcached memory usage high (> 90%)
@@ -1289,12 +1305,12 @@ groups:
                   A low hit rate may indicate poor cache utilization, incorrect cache keys, or TTLs that are too short. Threshold of 80% is a rough default — adjust based on your workload and access patterns.
               - name: Memcached connections rejected
                 description: "Memcached is rejecting connections on {{ $labels.instance }} ({{ $value }} rejections in the last 5m)"
-                query: "increase(memcached_connections_rejected_total[5m]) > 0"
+                query: "increase(memcached_connections_rejected_total[5m]) > 3"
                 severity: warning
                 for: 5m
               - name: Memcached items too large
                 description: "Memcached is rejecting items exceeding max-item-size on {{ $labels.instance }} ({{ $value }} rejections in the last 5m)"
-                query: "increase(memcached_item_too_large_total[5m]) > 0"
+                query: "increase(memcached_item_too_large_total[5m]) > 3"
                 severity: info
                 for: 5m
 
@@ -1477,19 +1493,25 @@ groups:
                 severity: warning
               - name: Elasticsearch High Indexing Latency
                 description: "The indexing latency on Elasticsearch cluster is higher than the threshold (current value: {{ $value }}s)."
-                query: "rate(elasticsearch_indices_indexing_index_time_seconds_total[1m]) / rate(elasticsearch_indices_indexing_index_total[1m]) > 0.0005 and rate(elasticsearch_indices_indexing_index_total[1m]) > 0"
+                query: "rate(elasticsearch_indices_indexing_index_time_seconds_total[5m]) / rate(elasticsearch_indices_indexing_index_total[5m]) > 0.01 and rate(elasticsearch_indices_indexing_index_total[5m]) > 0"
                 severity: warning
                 for: 10m
+                comments: |
+                  Threshold of 10ms (0.01s) per indexing operation is a rough default. Adjust based on your document size and cluster performance.
               - name: Elasticsearch High Indexing Rate
                 description: "The indexing rate on Elasticsearch cluster is higher than the threshold."
                 query: "sum(rate(elasticsearch_indices_indexing_index_total[1m]))> 10000"
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold of 10000 ops/s is a rough default. Adjust based on your cluster capacity and expected workload.
               - name: Elasticsearch High Query Rate
                 description: "The query rate on Elasticsearch cluster is higher than the threshold."
                 query: "sum(rate(elasticsearch_indices_search_query_total[1m])) > 100"
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold of 100 queries/s is very low for most production clusters. Adjust based on your expected query volume.
               - name: Elasticsearch High Query Latency
                 description: "The query latency on Elasticsearch cluster is higher than the threshold (current value: {{ $value }}s)."
                 query: "rate(elasticsearch_indices_search_query_time_seconds[1m]) / rate(elasticsearch_indices_search_query_total[1m]) > 1 and rate(elasticsearch_indices_search_query_total[1m]) > 0"
@@ -1569,12 +1591,12 @@ groups:
                 severity: critical
               - name: "Cassandra client request write failure (Instaclustr)"
                 description: "Write failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
-                query: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 0'
+                query: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 5'
                 for: 2m
                 severity: critical
               - name: "Cassandra client request read failure (Instaclustr)"
                 description: "Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
-                query: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 0'
+                query: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 5'
                 for: 2m
                 severity: critical
 
@@ -1656,17 +1678,19 @@ groups:
                 severity: critical
               - name: Cassandra client request write failure (Criteo)
                 description: A lot of write failures encountered. A write failure is a non-timeout exception encountered during a write request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
-                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"} > 0'
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:failures:oneminuterate"} > 0.05'
                 severity: critical
               - name: Cassandra client request read failure (Criteo)
                 description: A lot of read failures encountered. A read failure is a non-timeout exception encountered during a read request. Examine the reason map to find to the root cause. The most common cause for this type of error is when batch sizes are too large.
-                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"} > 0'
+                query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:read:failures:oneminuterate"} > 0.05'
                 severity: critical
               - name: Cassandra cache hit rate key cache
                 description: Key cache hit rate is below 85%
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:cache:keycache:hitrate:value"} < .85'
-                severity: critical
+                severity: warning
                 for: 2m
+                comments: |
+                  A low key cache hit rate increases disk I/O. Threshold is workload-dependent — adjust based on your data access patterns.
 
       - name: Clickhouse
         exporters:
@@ -1774,7 +1798,7 @@ groups:
                   Please replace the threshold with an appropriate value
               - name: ClickHouse distributed rejected inserts
                 description: "INSERTs into Distributed tables rejected due to pending bytes limit."
-                query: "increase(ClickHouseProfileEvents_DistributedRejectedInserts[5m]) > 0"
+                query: "increase(ClickHouseProfileEvents_DistributedRejectedInserts[5m]) > 3"
                 severity: critical
                 for: 2m
 
@@ -1799,11 +1823,15 @@ groups:
                 query: "couchdb_httpd_open_databases > 0.9 * 1000"
                 severity: critical
                 for: 5m
+                comments: |
+                  The default max_dbs_open is 500. Adjust the threshold (currently 0.9 * 1000) to match your max_dbs_open setting.
               - name: CouchDB open OS files critical
                 description: CouchDB is using more than 90% of allowed OS file descriptors, may fail to open new files
                 query: "couchdb_httpd_open_os_files > 0.9 * 65535"
                 severity: critical
                 for: 5m
+                comments: |
+                  Adjust 65535 to match your system's file descriptor limit (ulimit -n).
               - name: CouchDB 5xx error ratio high
                 description: More than 5% of HTTP requests are returning 5xx errors
                 query: "rate(couchdb_httpd_status_codes{code=~\"5..\"}[5m]) / rate(couchdb_httpd_requests[5m]) > 0.05 and rate(couchdb_httpd_requests[5m]) > 0"
@@ -1871,7 +1899,7 @@ groups:
                 for: 1m
               - name: CouchDB critical log entries
                 description: Critical or error log entries detected in the last 5 minutes
-                query: "increase(couchdb_server_couch_log{level=~\"error|critical\"}[5m]) > 0"
+                query: "increase(couchdb_server_couch_log{level=~\"error|critical\"}[5m]) > 5"
                 severity: critical
                 for: 1m
 
@@ -1915,7 +1943,7 @@ groups:
                 comments: |
                   1m delay allows a restart without triggering an alert.
               - name: RabbitMQ node not distributed
-                description: Distribution link state is not 'up'
+                description: Distribution link to peer {{ $labels.peer }} is not 'up' (state {{ $value }})
                 query: "erlang_vm_dist_node_state < 3"
                 severity: critical
                 for: 1m
@@ -1937,12 +1965,12 @@ groups:
                 severity: warning
                 for: 2m
               - name: RabbitMQ too many ready messages
-                description: RabbitMQ too many ready messages on {{ $labels.instance }}
+                description: RabbitMQ too many ready messages on queue {{ $labels.queue }} ({{ $value }})
                 query: "sum(rabbitmq_queue_messages_ready) BY (queue) > 1000"
                 severity: warning
                 for: 1m
               - name: RabbitMQ too many unack messages
-                description: Too many unacknowledged messages
+                description: Too many unacknowledged messages on queue {{ $labels.queue }} ({{ $value }})
                 query: "sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000"
                 severity: warning
                 for: 1m
@@ -1957,10 +1985,12 @@ groups:
                 severity: warning
                 for: 1m # allows a short service restart
               - name: RabbitMQ unroutable messages
-                description: A queue has unroutable messages ({{ $value }} in the last 1m)
-                query: "increase(rabbitmq_channel_messages_unroutable_returned_total[1m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[1m]) > 0"
+                description: A queue has unroutable messages ({{ $value }} in the last 5m)
+                query: "increase(rabbitmq_channel_messages_unroutable_returned_total[5m]) > 3 or increase(rabbitmq_channel_messages_unroutable_dropped_total[5m]) > 3"
                 severity: warning
                 for: 2m
+                comments: |
+                  Threshold of 3 avoids noise from occasional misroutes. Adjust based on your expected traffic patterns.
 
           - name: kbudde/rabbitmq-exporter
             slug: kbudde-rabbitmq-exporter
@@ -1981,7 +2011,7 @@ groups:
                 comments: |
                   1m delay allows a restart without triggering an alert.
               - name: RabbitMQ cluster partition
-                description: Cluster partition
+                description: RabbitMQ cluster has a network partition ({{ $value }} partitions detected). Messages may be lost or duplicated.
                 query: "rabbitmq_partitions > 0"
                 severity: critical
               - name: RabbitMQ out of memory
@@ -1991,7 +2021,7 @@ groups:
                 for: 2m
               - name: RabbitMQ instance too many connections
                 description: RabbitMQ instance has too many connections (> 1000)
-                query: "rabbitmq_connectionsTotal > 1000"
+                query: "rabbitmq_connections > 1000"
                 severity: warning
                 for: 2m
               - name: RabbitMQ dead letter queue filling up
@@ -2058,11 +2088,11 @@ groups:
                 query: "sum(zk_server_leader) == 0"
                 severity: critical
               - name: Zookeeper Too Many Leaders
-                description: "Zookeeper cluster has too many nodes marked as leader"
+                description: "Zookeeper cluster has {{ $value }} nodes marked as leader (expected 1), indicating a split-brain"
                 query: "sum(zk_server_leader) > 1"
                 severity: critical
               - name: Zookeeper Not Ok
-                description: "Zookeeper instance is not ok"
+                description: "Zookeeper instance {{ $labels.instance }} is not ok (ruok check failed)"
                 query: "zk_ruok == 0"
                 severity: warning
                 for: 3m
@@ -2074,7 +2104,7 @@ groups:
             doc_url: https://github.com/danielqsj/kafka_exporter
             rules:
               - name: Kafka topics replicas
-                description: Kafka topic in-sync partition
+                description: Kafka topic {{ $labels.topic }} has fewer than 3 in-sync replicas ({{ $value }}), data durability is at risk.
                 query: "min(kafka_topic_partition_in_sync_replica) by (topic) < 3"
                 severity: critical
               - name: Kafka consumer group lag
@@ -2123,32 +2153,41 @@ groups:
                 for: 1h
                 severity: critical
               - name: Pulsar high write latency
-                description: "Messages cannot be written in a timely fashion"
-                query: sum(pulsar_storage_write_latency_overflow > 0) by (topic)
+                description: "Pulsar topic {{ $labels.topic }} has {{ $value }} storage write operations exceeding the maximum latency bucket (> 1000ms)"
+                query: sum(pulsar_storage_write_latency_le_overflow > 0) by (topic)
                 for: 1h
                 severity: critical
+                comments: |
+                  pulsar_storage_write_latency_le_overflow is the overflow bucket of Pulsar's non-standard histogram.
+                  It counts write operations exceeding all defined latency bounds (> 1000ms).
               - name: Pulsar large message payload
-                description: "Observing large message payload (> 1MB)"
-                query: sum(pulsar_entry_size_overflow > 0) by (topic)
+                description: "Pulsar topic {{ $labels.topic }} has {{ $value }} message entries exceeding the maximum size bucket (> 1MB)"
+                query: sum(pulsar_entry_size_le_overflow > 0) by (topic)
                 for: 1h
                 severity: warning
+                comments: |
+                  pulsar_entry_size_le_overflow is the overflow bucket of Pulsar's non-standard histogram.
+                  It counts message entries exceeding all defined size bounds.
               - name: Pulsar high ledger disk usage
                 description: "Observing Ledger Disk Usage (> 75%)"
                 query: sum(bookie_ledger_dir__pulsar_data_bookkeeper_ledgers_usage) by (kubernetes_pod_name) > 75
                 for: 1h
                 severity: critical
+                comments: |
+                  This metric name is path-dependent and may differ based on your BookKeeper data directory configuration.
+                  Adjust the metric name to match your actual ledger directory path.
               - name: Pulsar read only bookies
                 description: "Observing Readonly Bookies"
                 query: count(bookie_SERVER_STATUS{} == 0) by (pod)
                 for: 5m
                 severity: critical
               - name: Pulsar high number of function errors
-                description: "Observing more than 10 Function errors per minute"
+                description: "Pulsar function {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)"
                 query: sum(rate(pulsar_function_user_exceptions_total[1m]) + rate(pulsar_function_system_exceptions_total[1m])) by (name) > 10
                 for: 1m
                 severity: critical
               - name: Pulsar high number of sink errors
-                description: "Observing more than 10 Sink errors per minute"
+                description: "Pulsar sink {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)"
                 query: sum(rate(pulsar_sink_sink_exceptions_total[1m])) by (name) > 10
                 for: 1m
                 severity: critical
@@ -2179,6 +2218,8 @@ groups:
                 query: 'absent(up{job="nats"})'
                 severity: critical
                 for: 5m
+                comments: |
+                  Replace job="nats" with the actual job name in your Prometheus configuration.
               - name: Nats high CPU usage
                 description: NATS server is using more than 80% CPU for the last 5 minutes
                 query: "gnatsd_varz_cpu > 80"
@@ -2203,7 +2244,7 @@ groups:
                 for: 5m
               - name: Nats high number of subscriptions
                 description: NATS server has more than 1000 active subscriptions
-                query: "gnatsd_connz_subscriptions > 1000"
+                query: "gnatsd_varz_subscriptions > 1000"
                 severity: warning
                 for: 5m
               - name: Nats high pending bytes
@@ -2213,7 +2254,7 @@ groups:
                 for: 5m
               - name: Nats too many errors
                 description: NATS server has encountered {{ $value }} JetStream API errors in the last 5 minutes
-                query: "increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 0"
+                query: "increase(gnatsd_varz_jetstream_stats_api_errors[5m]) > 5"
                 severity: warning
                 for: 5m
               - name: Nats JetStream accounts exceeded
@@ -2226,6 +2267,9 @@ groups:
                 query: "gnatsd_varz_leafnodes == 0"
                 severity: warning
                 for: 5m
+                comments: |
+                  Only enable this alert if your deployment requires leaf node connections.
+                  This will fire spuriously if leaf nodes are not configured.
 
   - name: Proxies, load balancers and service meshes
     services:
@@ -2269,7 +2313,7 @@ groups:
               - name: Apache restart
                 description: Apache has just been restarted.
                 query: "apache_uptime_seconds_total / 60 < 1"
-                severity: warning
+                severity: info
 
       - name: HaProxy
         exporters:
@@ -2278,12 +2322,12 @@ groups:
             doc_url: https://github.com/haproxy/haproxy/tree/master/contrib/prometheus-exporter
             rules:
               - name: HAProxy high HTTP 4xx error rate backend
-                description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
+                description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.proxy }}
                 query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (proxy) (rate(haproxy_server_http_responses_total[1m])) > 0
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate backend
-                description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
+                description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.proxy }}
                 query: ((sum by (proxy) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (proxy) (rate(haproxy_server_http_responses_total[1m]))) * 100) > 5 and sum by (proxy) (rate(haproxy_server_http_responses_total[1m])) > 0
                 severity: critical
                 for: 1m
@@ -2303,17 +2347,17 @@ groups:
                 severity: critical
                 for: 1m
               - name: HAProxy backend connection errors
-                description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 100 req/s). Request throughput may be too high.
+                description: Too many connection errors to {{ $labels.proxy }} backend (> 100 req/s). Request throughput may be too high.
                 query: (sum by (proxy) (rate(haproxy_backend_connection_errors_total[1m]))) > 100
                 severity: critical
                 for: 1m
               - name: HAProxy server connection errors
-                description: Too many connection errors to {{ $labels.server }} server (> 100 req/s). Request throughput may be too high.
+                description: Too many connection errors to {{ $labels.proxy }} (> 100 req/s). Request throughput may be too high.
                 query: (sum by (proxy) (rate(haproxy_server_connection_errors_total[1m]))) > 100
                 severity: critical
               - name: HAProxy backend max active session > 80%
                 description: Session limit from backend {{ $labels.proxy }} reached 80% of limit - {{ $value | printf "%.2f"}}%
-                query: ((haproxy_backend_current_sessions >0) * 100) / (haproxy_backend_limit_sessions > 0) > 80
+                query: (haproxy_backend_current_sessions / haproxy_backend_limit_sessions * 100) > 80 and haproxy_backend_limit_sessions > 0
                 severity: warning
                 for: 2m
               - name: HAProxy pending requests
@@ -2324,7 +2368,7 @@ groups:
                 severity: warning
                 for: 2m
               - name: HAProxy HTTP slowing down
-                description: Average request time is increasing - {{ $value | printf "%.2f"}}
+                description: HAProxy backend max total time is above 1s on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}s
                 query: avg by (instance, proxy) (haproxy_backend_max_total_time_seconds) > 1
                 severity: warning
                 for: 1m
@@ -2344,7 +2388,7 @@ groups:
                 for: 2m
               - name: HAProxy server healthcheck failure
                 description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
-                query: increase(haproxy_server_check_failures_total[1m]) > 0
+                query: increase(haproxy_server_check_failures_total[1m]) > 2
                 severity: warning
                 for: 1m
           - name: prometheus/haproxy_exporter (HAProxy < v2)
@@ -2356,13 +2400,13 @@ groups:
                 query: "haproxy_up == 0"
                 severity: critical
               - name: HAProxy high HTTP 4xx error rate backend (v1)
-                description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
+                description: Too many HTTP requests with status 4xx (> 5%) on backend {{ $labels.backend }}
+                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="4xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) * 100 > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 5xx error rate backend (v1)
-                description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.fqdn }}/{{ $labels.backend }}
-                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
+                description: Too many HTTP requests with status 5xx (> 5%) on backend {{ $labels.backend }}
+                query: 'sum by (backend) (rate(haproxy_server_http_responses_total{code="5xx"}[1m])) / sum by (backend) (rate(haproxy_server_http_responses_total[1m])) * 100 > 5 and sum by (backend) (rate(haproxy_server_http_responses_total[1m])) > 0'
                 severity: critical
                 for: 1m
               - name: HAProxy high HTTP 4xx error rate server (v1)
@@ -2381,7 +2425,7 @@ groups:
                 severity: critical
                 for: 1m
               - name: HAProxy backend connection errors (v1)
-                description: Too many connection errors to {{ $labels.fqdn }}/{{ $labels.backend }} backend (> 100 req/s). Request throughput may be too high.
+                description: Too many connection errors to {{ $labels.backend }} backend (> 100 req/s). Request throughput may be too high.
                 query: "sum by (backend) (rate(haproxy_backend_connection_errors_total[1m])) > 100"
                 severity: critical
                 for: 1m
@@ -2390,12 +2434,12 @@ groups:
                 query: "sum by (server) (rate(haproxy_server_connection_errors_total[1m])) > 100"
                 severity: critical
               - name: HAProxy backend max active session
-                description: HAproxy backend {{ $labels.fqdn }}/{{ $labels.backend }} is reaching session limit (> 80%).
+                description: HAProxy backend {{ $labels.backend }} is reaching session limit (> 80%).
                 query: "((sum by (backend) (haproxy_backend_current_sessions * 100) / sum by (backend) (haproxy_backend_limit_sessions))) > 80 and sum by (backend) (haproxy_backend_limit_sessions) > 0"
                 severity: warning
                 for: 2m
               - name: HAProxy pending requests (v1)
-                description: Some HAProxy requests are pending on {{ $labels.fqdn }}/{{ $labels.backend }} backend
+                description: Some HAProxy requests are pending on {{ $labels.backend }} backend
                 query: "sum by (backend) (haproxy_backend_current_queue) > 0"
                 severity: warning
                 for: 2m
@@ -2405,7 +2449,7 @@ groups:
                 severity: warning
                 for: 1m
               - name: HAProxy retry high (v1)
-                description: High rate of retry on {{ $labels.fqdn }}/{{ $labels.backend }} backend
+                description: High rate of retry on {{ $labels.backend }} backend
                 query: "sum by (backend) (rate(haproxy_backend_retry_warnings_total[1m])) > 10"
                 severity: warning
                 for: 2m
@@ -2424,7 +2468,7 @@ groups:
                 for: 2m
               - name: HAProxy server healthcheck failure (v1)
                 description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
-                query: "increase(haproxy_server_check_failures_total[1m]) > 0"
+                query: "increase(haproxy_server_check_failures_total[1m]) > 2"
                 severity: warning
                 for: 1m
 
@@ -2474,8 +2518,8 @@ groups:
             doc_url: https://caddyserver.com/docs/metrics
             rules:
               - name: Caddy Reverse Proxy Down
-                description: "All Caddy reverse proxies are down"
-                query: "count(caddy_reverse_proxy_upstreams_healthy) by (upstream) == 0"
+                description: "Caddy reverse proxy upstream {{ $labels.upstream }} is unhealthy"
+                query: "caddy_reverse_proxy_upstreams_healthy == 0"
                 severity: critical
 
               - name: Caddy high HTTP 4xx error rate service
@@ -2525,7 +2569,7 @@ groups:
                 severity: critical
                 for: 1m
               - name: Envoy cluster membership degraded
-                description: "More than 25% of members in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} are unhealthy"
+                description: "Only {{ $value | printf \"%.1f\" }}% of members in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} are healthy (threshold: 75%)"
                 query: "envoy_cluster_membership_healthy / envoy_cluster_membership_total * 100 < 75 and envoy_cluster_membership_total > 0"
                 severity: warning
                 for: 5m
@@ -2576,7 +2620,7 @@ groups:
                 severity: critical
               - name: Envoy no healthy upstream
                 description: "Upstream connection attempts failed because no healthy upstream was available in cluster {{ $labels.envoy_cluster_name }} on {{ $labels.instance }} ({{ $value }} in the last 5m)"
-                query: "increase(envoy_cluster_upstream_cx_none_healthy[5m]) > 0"
+                query: "increase(envoy_cluster_upstream_cx_none_healthy[5m]) > 3"
                 severity: critical
               - name: Envoy high downstream request timeout rate
                 description: "Downstream requests are timing out on {{ $labels.instance }} ({{ $value }} in the last 5m)"
@@ -2605,11 +2649,11 @@ groups:
             doc_url: https://istio.io/latest/docs/tasks/observability/metrics/querying-metrics/
             rules:
               - name: Istio Kubernetes gateway availability drop
-                description: Gateway pods have dropped. Inbound traffic will likely be affected.
+                description: Istio ingress gateway has only {{ $value }} available pod(s). Inbound traffic will likely be affected.
                 query: 'min(kube_deployment_status_replicas_available{deployment="istio-ingressgateway", namespace="istio-system"}) without (instance, pod) < 2'
                 severity: warning
                 for: 1m
-              - name: Istio Pilot high total request rate
+              - name: Istio Pilot high push error rate
                 description: Number of Istio Pilot push errors is too high (> 5%). Envoy sidecars might have outdated configuration.
                 query: "sum(rate(pilot_xds_push_errors[1m])) / sum(rate(pilot_xds_pushes[1m])) * 100 > 5 and sum(rate(pilot_xds_pushes[1m])) > 0"
                 severity: warning
@@ -2619,39 +2663,45 @@ groups:
                 query: 'sum(rate(mixer_runtime_dispatches_total{adapter=~"prometheus"}[1m])) < 180'
                 severity: warning
                 for: 1m
+                comments: |
+                  Mixer was deprecated in Istio 1.5 and removed in Istio 1.8+. This alert only applies to Istio < 1.8.
               - name: Istio high total request rate
-                description: Global request rate in the service mesh is unusually high.
+                description: Global request rate in the service mesh is unusually high ({{ $value | printf "%.2f" }} req/s).
                 query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) > 1000'
                 severity: warning
                 for: 2m
+                comments: |
+                  Threshold of 1000 req/s is a rough default. Adjust to your expected peak traffic.
               - name: Istio low total request rate
-                description: Global request rate in the service mesh is unusually low.
+                description: Global request rate in the service mesh is unusually low ({{ $value | printf "%.2f" }} req/s).
                 query: 'sum(rate(istio_requests_total{reporter="destination"}[5m])) < 100'
                 severity: warning
                 for: 2m
+                comments: |
+                  Threshold of 100 req/s is a rough default. Adjust to your expected baseline traffic. This alert may fire on startup or low-traffic environments.
               - name: Istio high 4xx error rate
-                description: High percentage of HTTP 4xx responses in Istio (> 5%).
+                description: High percentage of HTTP 4xx responses in Istio ({{ $value | printf "%.1f" }}% > 5%).
                 query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5 and sum(rate(istio_requests_total{reporter="destination"}[5m])) > 0'
                 severity: warning
                 for: 1m
               - name: Istio high 5xx error rate
-                description: High percentage of HTTP 5xx responses in Istio (> 5%).
+                description: High percentage of HTTP 5xx responses in Istio ({{ $value | printf "%.1f" }}% > 5%).
                 query: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"5.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5 and sum(rate(istio_requests_total{reporter="destination"}[5m])) > 0'
                 severity: warning
                 for: 1m
               - name: Istio high request latency
-                description: Istio average requests execution is longer than 100ms.
+                description: Istio average request duration is {{ $value }}ms (> 100ms).
                 query: 'rate(istio_request_duration_milliseconds_sum{reporter="destination"}[1m]) / rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 100 and rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 0'
                 severity: warning
                 for: 1m
               - name: Istio latency 99 percentile
-                description: Istio 1% slowest requests are longer than 1000ms.
+                description: "Istio p99 request latency is {{ $value }}ms (threshold: 1000ms)."
                 query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1000"
                 severity: warning
                 for: 1m
               - name: Istio Pilot Duplicate Entry
-                description: Istio pilot duplicate entry error.
-                query: "sum(rate(pilot_duplicate_envoy_clusters{}[5m])) > 0"
+                description: Istio Pilot has detected {{ $value }} duplicate Envoy cluster(s), indicating misconfigured DestinationRules or ServiceEntries.
+                query: "sum(pilot_duplicate_envoy_clusters{}) > 0"
                 severity: critical
 
   - name: Runtimes
@@ -2788,22 +2838,27 @@ groups:
                   Threshold is a rough default. Adjust based on your application's normal object count.
               - name: Go GC CPU fraction high
                 description: Go GC is consuming too much CPU (> 5%)
-                query: 'go_memstats_gc_cpu_fraction > 0.05'
+                query: 'rate(go_gc_duration_seconds_sum[5m]) > 0.05'
                 severity: warning
                 for: 5m
                 comments: |
-                  go_memstats_gc_cpu_fraction is deprecated since Go 1.20 and may return 0 in newer versions.
-                  Consider using runtime/metrics-based alternatives if running Go >= 1.20.
+                  rate(go_gc_duration_seconds_sum) approximates the fraction of wall-clock time spent in GC.
+                  This replaces go_memstats_gc_cpu_fraction which was removed in client_golang v1.12+.
               - name: Go goroutine spike
-                description: Go goroutine count is growing rapidly
-                query: 'deriv(go_goroutines[5m]) > 100'
+                description: Go goroutine count is growing rapidly ({{ $value | printf "%.0f" }} goroutines/s)
+                query: 'deriv(go_goroutines[5m]) > 10'
                 severity: warning
                 for: 5m
-              - name: Go heap fragmentation
-                description: Go heap has high idle ratio (> 90%), indicating memory fragmentation
-                query: 'go_memstats_heap_idle_bytes / go_memstats_heap_sys_bytes > 0.9'
+                comments: |
+                  A threshold of 100/s only catches catastrophic leaks (30k goroutines in 5m). 10/s catches gradual leaks (~3k in 5m).
+                  Adjust based on your application's expected concurrency patterns.
+              - name: Go heap in-use growing
+                description: Go heap in-use memory is growing steadily, potential memory leak or under-sized heap
+                query: 'deriv(go_memstats_heap_inuse_bytes[10m]) > 1e7'
                 severity: warning
-                for: 5m
+                comments: |
+                  Alerts when heap in-use grows by more than 10MB/s sustained over 10 minutes.
+                  Adjust threshold based on your workload.
               - name: Go memory leak
                 description: Go application has sustained high allocation rate (> 1GB/s), potential memory leak
                 query: 'rate(go_memstats_alloc_bytes_total[5m]) > 1e9'
@@ -2835,11 +2890,11 @@ groups:
                 for: 5m
               - name: Ruby major GC rate high
                 description: Ruby is performing too many major GC cycles, indicating memory pressure
-                query: 'rate(ruby_major_gc_ops_total[5m]) > 5'
+                query: 'rate(ruby_major_gc_ops_total[5m]) > 2'
                 severity: warning
                 for: 5m
                 comments: |
-                  Major GC rate > 5/s is extremely high. Consider lowering to > 1 or > 2 for earlier detection.
+                  Major GC rate > 5/s only fires if the app is essentially non-functional. Threshold of 2/s provides earlier detection.
               - name: Ruby RSS high
                 description: Ruby process RSS is high (> 1GB)
                 query: 'ruby_rss > 1e9'
@@ -2858,8 +2913,8 @@ groups:
             doc_url: https://github.com/prometheus/client_python
             rules:
               - name: Python GC objects uncollectable
-                description: Python has uncollectable objects, potential memory leak via reference cycles
-                query: 'increase(python_gc_objects_uncollectable_total[5m]) > 0'
+                description: Python has uncollectable objects ({{ $value }}), potential memory leak via reference cycles
+                query: 'increase(python_gc_objects_uncollectable_total[5m]) > 1'
                 severity: warning
                 for: 5m
               - name: Python GC collections high
@@ -2896,13 +2951,13 @@ groups:
             doc_url: https://github.com/Strech/sidekiq-prometheus-exporter
             rules:
               - name: Sidekiq queue size
-                description: Sidekiq queue {{ $labels.name }} is growing
-                query: "sidekiq_queue_size > 100"
+                description: Sidekiq queue {{ $labels.name }} is growing ({{ $value }} enqueued jobs)
+                query: "sidekiq_queue_enqueued_jobs > 100"
                 severity: warning
                 for: 1m
               - name: Sidekiq scheduling latency too high
                 description: Sidekiq jobs are taking more than 1min to be picked up. Users may be seeing delays in background processing.
-                query: "max(sidekiq_queue_latency) > 60"
+                query: "max(sidekiq_queue_latency_seconds) > 60"
                 severity: critical
 
   - name: Data engineering
@@ -2932,14 +2987,16 @@ groups:
                   This alert fires when there are no available task slots. Adjust the threshold if your cluster is expected to run at full capacity.
               - name: Flink job restart increasing
                 description: "Flink job {{ $labels.job_name }} has restarted {{ $value }} times in the last 5 minutes."
-                query: "increase(flink_jobmanager_job_numRestarts[5m]) > 1"
+                query: "delta(flink_jobmanager_job_numRestarts[5m]) > 1"
+                comments: |
+                  Flink exposes numRestarts as a gauge (cumulative count), so delta() is used instead of increase().
                 severity: warning
                 for: 5m
                 comments: |
                   A single restart may be normal during deployments. Adjust threshold based on restart tolerance.
               - name: Flink checkpoint failures
                 description: "Flink job {{ $labels.job_name }} has {{ $value }} failed checkpoints in the last 10 minutes."
-                query: "increase(flink_jobmanager_job_numberOfFailedCheckpoints[10m]) > 1"
+                query: "delta(flink_jobmanager_job_numberOfFailedCheckpoints[10m]) > 1"
                 severity: warning
                 for: 5m
               - name: Flink checkpoint duration high
@@ -2964,20 +3021,23 @@ groups:
                   Fires when a task spends more than 500ms/sec backpressured. This indicates the task cannot keep up with upstream data rate.
               - name: Flink TaskManager heap memory high
                 description: "Flink TaskManager {{ $labels.instance }} heap memory usage is above 90%."
-                query: "flink_taskmanager_Status_JVM_Memory_Heap_Used / flink_taskmanager_Status_JVM_Memory_Heap_Max > 0.9"
+                query: "flink_taskmanager_Status_JVM_Memory_Heap_Used / flink_taskmanager_Status_JVM_Memory_Heap_Max > 0.9 and flink_taskmanager_Status_JVM_Memory_Heap_Max > 0"
                 severity: warning
                 for: 5m
+                comments: |
+                  Flink TaskManagers manage their own memory pool. High JVM heap usage (outside managed memory) may indicate memory leaks or misconfiguration.
               - name: Flink JobManager heap memory high
                 description: "Flink JobManager {{ $labels.instance }} heap memory usage is above 90%."
-                query: "flink_jobmanager_Status_JVM_Memory_Heap_Used / flink_jobmanager_Status_JVM_Memory_Heap_Max > 0.9"
+                query: "flink_jobmanager_Status_JVM_Memory_Heap_Used / flink_jobmanager_Status_JVM_Memory_Heap_Max > 0.9 and flink_jobmanager_Status_JVM_Memory_Heap_Max > 0"
                 severity: warning
                 for: 5m
               - name: Flink TaskManager GC time high
                 description: "Flink TaskManager {{ $labels.instance }} is spending more than 10% of time in garbage collection."
-                query: "rate(flink_taskmanager_Status_JVM_GarbageCollector_All_Time[5m]) > 100"
+                query: "deriv(flink_taskmanager_Status_JVM_GarbageCollector_All_Time[5m]) > 100"
                 severity: warning
                 for: 5m
                 comments: |
+                  Flink exposes GC time as a gauge (cumulative milliseconds), so deriv() is used instead of rate().
                   Threshold: more than 100ms/sec of GC time (10% of wall clock). Adjust based on your workload.
               - name: Flink no records processed
                 description: "Flink task {{ $labels.task_name }} has not processed any records in the last 5 minutes."
@@ -3062,6 +3122,9 @@ groups:
                 for: 5m
                 severity: critical
                 description: "The Hadoop NameNode service is unavailable."
+                comments: |
+                  When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
+                  so this alert may not fire. Prefer application-level availability metrics if available.
 
               # Alert rule for ResourceManager availability
               - name: Hadoop Resource Manager Down
@@ -3069,6 +3132,9 @@ groups:
                 for: 5m
                 severity: critical
                 description: "The Hadoop ResourceManager service is unavailable."
+                comments: |
+                  When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
+                  so this alert may not fire. Prefer application-level availability metrics if available.
 
               # Alert rule for DataNode status
               - name: Hadoop Data Node Out Of Service
@@ -3093,7 +3159,7 @@ groups:
 
               # Alert rule for high ResourceManager memory usage
               - name: Hadoop Resource Manager Memory High
-                query: hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8
+                query: hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8 and hadoop_resourcemanager_memory_max_bytes > 0
                 for: 15m
                 severity: warning
                 description: "The Hadoop ResourceManager is approaching its memory limit."
@@ -3114,7 +3180,7 @@ groups:
 
               # Alert rule for low HBase region server heap space
               - name: Hadoop HBase Region Server Heap Low
-                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8
+                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8 and hadoop_hbase_region_server_max_heap_bytes > 0
                 for: 10m
                 severity: warning
                 description: "HBase Region Servers are running low on heap space."
@@ -3319,20 +3385,20 @@ groups:
             slug: embedded-exporter
             rules:
               - name: Nomad job failed
-                description: Nomad job failed
+                description: "Nomad job {{ $labels.job }} has {{ $value }} failed allocations."
                 query: "nomad_nomad_job_summary_failed > 0"
                 severity: warning
               - name: Nomad job lost
-                description: Nomad job lost
+                description: "Nomad job {{ $labels.job }} has {{ $value }} lost allocations."
                 query: "nomad_nomad_job_summary_lost > 0"
                 severity: warning
               - name: Nomad job queued
-                description: Nomad job queued
+                description: "Nomad job {{ $labels.job }} has {{ $value }} queued allocations."
                 query: "nomad_nomad_job_summary_queued > 0"
                 severity: warning
                 for: 2m
               - name: Nomad blocked evaluation
-                description: Nomad blocked evaluation
+                description: "Nomad has {{ $value }} blocked evaluations. The cluster may lack resources to place allocations."
                 query: "nomad_nomad_blocked_evals_total_blocked > 0"
                 severity: warning
 
@@ -3392,24 +3458,29 @@ groups:
                 query: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
                 severity: warning
                 for: 2m
+              # etcd_http_* metrics are from the v2 API and were removed in etcd 3.x.
+              # These rules only apply if you are running etcd 2.x.
               - name: Etcd high number of failed HTTP requests warning
                 description: More than 1% HTTP failure detected in Etcd
                 query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.01 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0"
                 severity: warning
                 for: 2m
+                comments: "These etcd_http_* metrics are from the etcd v2 API and do not exist in etcd 3.x. Remove these rules if running etcd 3.x."
               - name: Etcd high number of failed HTTP requests critical
                 description: More than 5% HTTP failure detected in Etcd
                 query: "sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0"
                 severity: critical
                 for: 2m
+                comments: "These etcd_http_* metrics are from the etcd v2 API and do not exist in etcd 3.x. Remove these rules if running etcd 3.x."
               - name: Etcd HTTP requests slow
                 description: HTTP requests slowing down, 99th percentile is over 0.15s
                 query: "histogram_quantile(0.99, rate(etcd_http_successful_duration_seconds_bucket[1m])) > 0.15"
                 severity: warning
                 for: 2m
+                comments: "This etcd_http_* metric is from the etcd v2 API and does not exist in etcd 3.x. Remove this rule if running etcd 3.x."
               - name: Etcd member communication slow
                 description: Etcd member communication slowing down, 99th percentile is over 0.15s
-                query: "histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[1m])) > 0.15"
+                query: "histogram_quantile(0.99, sum(rate(etcd_network_peer_round_trip_time_seconds_bucket[5m])) by (instance, le)) > 0.15"
                 severity: warning
                 for: 2m
               - name: Etcd high number of failed proposals
@@ -3419,12 +3490,12 @@ groups:
                 for: 2m
               - name: Etcd high fsync durations
                 description: Etcd WAL fsync duration increasing, 99th percentile is over 0.5s
-                query: "histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[1m])) > 0.5"
+                query: "histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le)) > 0.5"
                 severity: warning
                 for: 2m
               - name: Etcd high commit durations
                 description: Etcd commit duration increasing, 99th percentile is over 0.25s
-                query: "histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[1m])) > 0.25"
+                query: "histogram_quantile(0.99, sum(rate(etcd_disk_backend_commit_duration_seconds_bucket[5m])) by (instance, le)) > 0.25"
                 severity: warning
                 for: 2m
 
@@ -3571,7 +3642,7 @@ groups:
                 severity: critical
               - name: Jenkins run failure total
                 description: "Job run failures: ({{$value}}) {{$labels.jenkins_job}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})"
-                query: "delta(jenkins_runs_failure_total[1h]) > 100"
+                query: "increase(jenkins_runs_failure_total[1h]) > 100"
                 severity: warning
               - name: Jenkins build tests failing
                 description: "Last build tests failed: {{$labels.jenkins_job}}. Failed build Tests for job `{{$labels.jenkins_job}}` on {{$labels.instance}}/{{$labels.env}} ({{$labels.region}})"
@@ -3733,7 +3804,7 @@ groups:
                 for: 5m
               - name: GitLab CI pipeline failures increasing
                 description: "GitLab CI pipeline failures are increasing on {{ $labels.instance }} ({{ $value }}/s)."
-                query: "rate(gitlab_ci_pipeline_failure_reasons[5m]) > 0"
+                query: "rate(gitlab_ci_pipeline_failure_reasons[5m]) > 0.05"
                 severity: warning
                 for: 10m
                 comments: |
@@ -3765,7 +3836,7 @@ groups:
               # Uncaught errors
               - name: GitLab rack uncaught errors
                 description: "GitLab is experiencing uncaught errors in the Rack layer on {{ $labels.instance }} ({{ $value }}/s)."
-                query: "rate(rack_uncaught_errors_total[5m]) > 0"
+                query: "rate(rack_uncaught_errors_total[5m]) > 0.05"
                 severity: warning
                 for: 5m
               # Application version / deployment
@@ -3819,11 +3890,11 @@ groups:
             rules:
               - name: GitLab Gitaly high gRPC error rate
                 description: "Gitaly on {{ $labels.instance }} is returning more than 5% gRPC errors."
-                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code!="OK"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
+                query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown|DataLoss"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
                 severity: warning
                 for: 5m
                 comments: |
-                  grpc_code!="OK" includes non-error codes like NotFound, AlreadyExists. Consider filtering to specific error codes for less noise.
+                  Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
               - name: GitLab Gitaly resource exhausted
                 description: "Gitaly on {{ $labels.instance }} is returning ResourceExhausted errors, indicating overload ({{ $value }}%)."
                 query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
@@ -3840,12 +3911,14 @@ groups:
                 for: 5m
               - name: GitLab Gitaly CPU throttled
                 description: "Gitaly processes on {{ $labels.instance }} are being CPU throttled by cgroups."
-                query: "rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0"
+                query: "rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0.1"
                 severity: warning
                 for: 5m
+                comments: |
+                  Brief throttling spikes are normal. Threshold of 0.1s/s (10% of CPU time throttled) filters out transient noise.
               - name: GitLab Gitaly authentication failures
                 description: "Gitaly on {{ $labels.instance }} has authentication failures ({{ $value }})."
-                query: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 0'
+                query: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 3'
                 severity: warning
               - name: GitLab Gitaly circuit breaker tripped
                 description: "Gitaly circuit breaker has tripped on {{ $labels.instance }}. Git operations are failing."
@@ -3882,13 +3955,13 @@ groups:
                 comments: |
                   The 30s threshold is a rough default. Adjust based on your pipeline SLOs.
               - name: Spinnaker dead messages
-                description: "Orca is producing dead-lettered messages ({{ $value }} per second). These are tasks that exhausted all retries and will not be executed."
-                query: 'rate(queue_dead_messages_total[5m]) > 0'
+                description: "Orca is producing dead-lettered messages ({{ $value | humanize }}/s). These are tasks that exhausted all retries and will not be executed."
+                query: 'rate(queue_dead_messages_total[5m]) > 0.05'
                 severity: critical
                 for: 2m
               - name: Spinnaker zombie executions
-                description: "{{ $value }} zombie pipeline executions detected. These are executions with no corresponding queue messages."
-                query: 'rate(queue_zombies_total[5m]) > 0'
+                description: "Zombie pipeline executions rate is {{ $value | humanize }}/s. These are executions with no corresponding queue messages."
+                query: 'rate(queue_zombies_total[5m]) > 0.05'
                 severity: warning
                 for: 5m
                 comments: |
@@ -3909,7 +3982,7 @@ groups:
                   See https://kb.armory.io/s/article/Hitting-Igor-s-caching-thresholds
               - name: Spinnaker polling monitor failures
                 description: "Igor polling monitor is experiencing failures ({{ $value }} per second). CI/SCM integrations may not trigger pipelines."
-                query: 'rate(pollingMonitor_failed_total[5m]) > 0'
+                query: 'rate(pollingMonitor_failed_total[5m]) > 0.05'
                 severity: warning
                 for: 5m
               - name: Spinnaker high API error rate
@@ -3921,7 +3994,7 @@ groups:
                   The 5% threshold is a rough default. Adjust based on your traffic patterns.
               - name: Spinnaker API rate limit throttling
                 description: "Gate is actively throttling API requests on {{ $labels.instance }} ({{ $value }} throttled requests per second)."
-                query: 'rate(rateLimitThrottling_total[5m]) > 0'
+                query: 'rate(rateLimitThrottling_total[5m]) > 0.05'
                 severity: warning
                 for: 2m
               - name: Spinnaker Clouddriver high error rate
@@ -3965,8 +4038,9 @@ groups:
                 description: Failed to fetch SSL information {{ $labels.instance }}
                 query: ssl_probe_success == 0
                 severity: critical
-              - name: SSL certificate OSCP status unknown
-                description: Failed to get the OSCP status {{ $labels.instance }}
+                for: 1m
+              - name: SSL certificate OCSP status unknown
+                description: Failed to get the OCSP status for {{ $labels.instance }}
                 query: ssl_ocsp_response_status == 2
                 severity: warning
               - name: SSL certificate revoked
@@ -4003,11 +4077,12 @@ groups:
                 for: 10m
               - name: Cert-Manager hitting ACME rate limits
                 description: Cert-Manager is being rate-limited by the ACME provider. Certificate issuance and renewal may be blocked for up to a week.
-                query: 'sum by (host) (rate(certmanager_http_acme_client_request_count{status="429"}[5m])) > 0'
+                query: 'sum by (host) (rate(certmanager_acme_client_request_count{status="429"}[5m])) > 0'
                 severity: critical
                 for: 5m
                 comments: |
-                  In cert-manager 1.19+, the metric was renamed (dropped http_ prefix). Verify metric name against your version.
+                  Metric renamed in cert-manager v1.19+ (dropped the http_ prefix): certmanager_acme_client_request_count.
+                  For cert-manager < v1.19, use: certmanager_http_acme_client_request_count.
 
       - name: Juniper
         exporters:
@@ -4047,9 +4122,10 @@ groups:
             doc_url: https://pypi.org/project/prometheus-freeswitch-exporter
             rules:
               - name: Freeswitch down
-                description: Freeswitch is unresponsive
+                description: "Freeswitch {{ $labels.instance }} is unresponsive."
                 query: "freeswitch_up == 0"
                 severity: critical
+                for: 1m
               - name: Freeswitch Sessions Warning
                 description: 'High sessions usage on {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
                 query: "(freeswitch_session_active * 100 / freeswitch_session_limit) > 80 and freeswitch_session_limit > 0"
@@ -4071,19 +4147,20 @@ groups:
                 description: "Vault instance is sealed on {{ $labels.instance }}"
                 query: "vault_core_unsealed == 0"
                 severity: critical
+                for: 1m
               - name: Vault too many pending tokens
-                description: 'Too many pending tokens {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                description: "Too many pending tokens on {{ $labels.instance }}: {{ $value }} tokens created but not yet stored."
                 query: "avg(vault_token_create_count - vault_token_store_count) > 0"
                 severity: warning
                 for: 5m
               - name: Vault too many infinity tokens
-                description: 'Too many infinity tokens {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
+                description: "Too many non-expiring tokens on {{ $labels.instance }}: {{ $value }} tokens with infinite TTL."
                 query: 'vault_token_count_by_ttl{creation_ttl="+Inf"} > 3'
                 severity: warning
                 for: 5m
               - name: Vault cluster health
-                description: 'Vault cluster is not healthy {{ $labels.instance }}: {{ $value | printf "%.2f"}}%'
-                query: "sum(vault_core_active) / count(vault_core_active) <= 0.5"
+                description: "Vault cluster is not healthy: only {{ $value | humanizePercentage }} of nodes are active."
+                query: "sum(vault_core_active) / count(vault_core_active) <= 0.5 and count(vault_core_active) > 0"
                 severity: critical
 
       - name: Keycloak
@@ -4235,23 +4312,23 @@ groups:
                 for: 5m
               - name: Cilium agent endpoint regeneration failures
                 description: "Cilium agent {{ $labels.pod }} is failing to regenerate endpoints. Network policy enforcement may be stale."
-                query: 'sum(rate(cilium_endpoint_regenerations_total{outcome="fail"}[5m])) by (pod) > 0'
+                query: 'sum(rate(cilium_endpoint_regenerations_total{outcome="fail"}[5m])) by (pod) > 0.05'
                 severity: warning
                 for: 5m
               - name: Cilium agent endpoint update failure
                 description: "Cilium agent {{ $labels.pod }} is failing K8s endpoint update API calls ({{ $labels.method }} {{ $labels.return_code }})."
-                query: 'sum(rate(cilium_k8s_client_api_calls_total{method=~"(PUT|POST|PATCH)", endpoint="endpoint", return_code!~"2[0-9][0-9]"}[5m])) by (pod, method, return_code) > 0'
+                query: 'sum(rate(cilium_k8s_client_api_calls_total{method=~"(PUT|POST|PATCH)", endpoint="endpoint", return_code!~"2[0-9][0-9]"}[5m])) by (pod, method, return_code) > 0.05'
                 severity: warning
                 for: 5m
               - name: Cilium agent endpoint create failure
                 description: "Cilium agent {{ $labels.pod }} is failing CNI endpoint-create calls. New pods may fail to get networking."
-                query: 'sum(rate(cilium_api_limiter_processed_requests_total{api_call=~"endpoint-create", outcome="fail"}[1m])) by (pod, api_call) > 0'
+                query: 'sum(rate(cilium_api_limiter_processed_requests_total{api_call=~"endpoint-create", outcome="fail"}[1m])) by (pod, api_call) > 0.05'
                 severity: info
                 for: 5m
               # BPF maps
               - name: Cilium agent map operation failures
                 description: "Cilium agent {{ $labels.pod }} has eBPF map operation failures on {{ $labels.map_name }}. Datapath may be degraded."
-                query: 'sum(rate(cilium_bpf_map_ops_total{outcome="fail"}[5m])) by (map_name, pod) > 0'
+                query: 'sum(rate(cilium_bpf_map_ops_total{outcome="fail"}[5m])) by (map_name, pod) > 0.05'
                 severity: warning
                 for: 5m
               - name: Cilium agent BPF map pressure
@@ -4268,7 +4345,7 @@ groups:
                 for: 5m
               - name: Cilium agent conntrack failed garbage collection
                 description: "Cilium agent {{ $labels.pod }} conntrack garbage collection is failing. Stale entries may accumulate."
-                query: 'sum(rate(cilium_datapath_conntrack_gc_runs_total{status="uncompleted"}[5m])) by (pod) > 0'
+                query: 'sum(rate(cilium_datapath_conntrack_gc_runs_total{status="uncompleted"}[5m])) by (pod) > 0.05'
                 severity: warning
                 for: 5m
               - name: Cilium agent NAT table full
@@ -4285,7 +4362,7 @@ groups:
                 comments: Policy denials may be expected behavior. Investigate only if unexpected traffic is being blocked.
               - name: Cilium agent high drop rate
                 description: "Cilium agent {{ $labels.pod }} is dropping packets for reason {{ $labels.reason }}. This indicates infrastructure issues."
-                query: 'sum(rate(cilium_drop_count_total{reason!~"Policy denied"}[5m])) by (pod, reason) > 0'
+                query: 'sum(rate(cilium_drop_count_total{reason!~"Policy denied"}[5m])) by (pod, reason) > 0.05'
                 severity: warning
                 for: 5m
               # Policy
@@ -4296,7 +4373,7 @@ groups:
                 for: 5m
               - name: Cilium agent policy import errors
                 description: "Cilium agent {{ $labels.pod }} is failing to import network policies. Policy enforcement may be incomplete."
-                query: 'sum(rate(cilium_policy_change_total{outcome="fail"}[5m])) by (pod) > 0'
+                query: 'sum(rate(cilium_policy_change_total{outcome="fail"}[5m])) by (pod) > 0.05'
                 severity: warning
                 for: 5m
               - name: Cilium agent policy implementation delay
@@ -4330,7 +4407,7 @@ groups:
                 comments: Threshold of 90% is a rough default. Adjust based on your pod churn rate and IP pool size.
               - name: Cilium operator IPAM interface creation failures
                 description: "Cilium operator is failing to create IPAM network interfaces. IP allocation may be impacted."
-                query: 'sum(rate(cilium_operator_ipam_interface_creation_ops{status!="success"}[5m])) by () > 0'
+                query: 'sum(rate(cilium_operator_ipam_interface_creation_ops{status!="success"}[5m])) by () > 0.05'
                 severity: warning
                 for: 10m
                 comments: |
@@ -4338,12 +4415,12 @@ groups:
               # API and K8s client
               - name: Cilium agent API errors
                 description: "Cilium agent {{ $labels.pod }} API is returning 5xx errors ({{ $labels.return_code }}). Agent may be unhealthy."
-                query: 'sum(rate(cilium_agent_api_process_time_seconds_count{return_code=~"5[0-9][0-9]"}[5m])) by (pod, return_code) > 0'
+                query: 'sum(rate(cilium_agent_api_process_time_seconds_count{return_code=~"5[0-9][0-9]"}[5m])) by (pod, return_code) > 0.05'
                 severity: warning
                 for: 5m
               - name: Cilium agent Kubernetes client errors
                 description: "Cilium agent {{ $labels.pod }} is receiving errors from K8s API for endpoint {{ $labels.endpoint }} ({{ $labels.return_code }})."
-                query: 'sum(rate(cilium_k8s_client_api_calls_total{endpoint!="metrics", return_code!~"2[0-9][0-9]"}[5m])) by (pod, endpoint, return_code) > 0'
+                query: 'sum(rate(cilium_k8s_client_api_calls_total{endpoint!="metrics", return_code!~"2[0-9][0-9]"}[5m])) by (pod, endpoint, return_code) > 0.05'
                 severity: info
                 for: 5m
               # ClusterMesh
@@ -4353,8 +4430,8 @@ groups:
                 severity: critical
                 for: 5m
               - name: Cilium ClusterMesh remote cluster failing
-                description: "Cilium ClusterMesh connectivity to remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is failing."
-                query: "sum(rate(cilium_clustermesh_remote_cluster_failures[5m])) by (source_cluster, target_cluster) > 0"
+                description: "Cilium ClusterMesh connectivity to remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is failing ({{ $value }} failures)."
+                query: "sum(cilium_clustermesh_remote_cluster_failures) by (source_cluster, target_cluster) > 0"
                 severity: critical
                 for: 5m
               # KVStoreMesh
@@ -4364,19 +4441,19 @@ groups:
                 severity: critical
                 for: 5m
               - name: Cilium KVStoreMesh remote cluster failing
-                description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is experiencing failures."
-                query: "sum(rate(cilium_kvstoremesh_remote_cluster_failures[5m])) by (source_cluster, target_cluster) > 0"
+                description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is experiencing failures ({{ $value }} failures)."
+                query: "sum(cilium_kvstoremesh_remote_cluster_failures) by (source_cluster, target_cluster) > 0"
                 severity: critical
                 for: 5m
               - name: Cilium KVStoreMesh sync errors
                 description: "Cilium KVStoreMesh from {{ $labels.source_cluster }} is experiencing kvstore sync errors."
-                query: "sum(rate(cilium_kvstoremesh_kvstore_sync_errors_total[5m])) by (source_cluster) > 0"
+                query: "sum(rate(cilium_kvstoremesh_kvstore_sync_errors_total[5m])) by (source_cluster) > 0.05"
                 severity: critical
                 for: 5m
               # Hubble
               - name: Cilium Hubble lost events
                 description: "Cilium Hubble on {{ $labels.pod }} is losing flow events. Observability data may be incomplete."
-                query: "sum(rate(hubble_lost_events_total[5m])) by (pod) > 0"
+                query: "sum(rate(hubble_lost_events_total[5m])) by (pod) > 0.05"
                 severity: warning
                 for: 5m
               - name: Cilium Hubble high DNS error rate
@@ -4430,6 +4507,11 @@ groups:
                 description: Ceph instance unhealthy
                 query: "ceph_health_status != 0"
                 severity: critical
+                for: 1m
+                comments: |
+                  ceph_health_status: 0=HEALTH_OK, 1=HEALTH_WARN, 2=HEALTH_ERR.
+                  The official Ceph mixin splits this into separate warning (==1) and critical (==2) alerts.
+                  This rule fires on any non-OK state. Adjust severity or split as needed.
               - name: Ceph monitor clock skew
                 description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
                 query: "abs(ceph_monitor_clock_skew_seconds) > 0.2"
@@ -4444,16 +4526,22 @@ groups:
                 description: Ceph Object Storage Daemon Down
                 query: "ceph_osd_up == 0"
                 severity: critical
+                for: 1m
               - name: Ceph high OSD latency
                 description: "Ceph Object Storage Daemon latency is high. Please check if it doesn't stuck in weird state."
-                query: "ceph_osd_perf_apply_latency_seconds > 5"
+                query: "ceph_osd_apply_latency_ms > 5000"
                 severity: warning
                 for: 1m
-              - name: Ceph OSD low space
-                description: Ceph Object Storage Daemon is going out of space. Please add more disks.
-                query: ceph_osd_utilization > 90
+                comments: |
+                  Threshold of 5000ms (5 seconds). Adjust based on your expected OSD performance.
+              - name: Ceph OSD near full
+                description: A Ceph OSD is dangerously full. Please add more disks.
+                query: 'ceph_health_detail{name="OSD_NEARFULL"} == 1'
                 severity: warning
-                for: 2m
+                for: 5m
+                comments: |
+                  Ceph internally triggers OSD_NEARFULL based on the nearfull_ratio (default 85%).
+                  The official mixin uses ceph_health_detail for OSD space alerts.
               - name: Ceph OSD reweighted
                 description: Ceph Object Storage Daemon takes too much time to resize.
                 query: "ceph_osd_weight < 1"
@@ -4485,6 +4573,7 @@ groups:
                 description: Some Ceph placement groups are unavailable.
                 query: "ceph_pg_total - ceph_pg_active > 0"
                 severity: critical
+                for: 1m
 
       - name: ZFS
         exporters:
@@ -4502,8 +4591,8 @@ groups:
             doc_url: https://github.com/pdf/zfs_exporter
             rules:
               - name: ZFS pool out of space
-                description: Disk is almost full (< 10% left)
-                query: "zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and ON (instance, device, mountpoint) zfs_pool_readonly == 0 and zfs_pool_size_bytes > 0"
+                description: "ZFS pool {{ $labels.pool }} is almost full (< 10% left)."
+                query: "zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and zfs_pool_readonly == 0 and zfs_pool_size_bytes > 0"
                 severity: warning
               - name: ZFS pool unhealthy
                 description: ZFS pool state is {{ $value }}. See comments for more information.
@@ -4724,7 +4813,7 @@ groups:
                 severity: warning
               - name: DigitalOcean exporter collection errors
                 description: "DigitalOcean exporter {{ $labels.collector }} collector has {{ $value }} errors."
-                query: "increase(digitalocean_errors_total[5m]) > 0"
+                query: "increase(digitalocean_errors_total[5m]) > 3"
                 severity: warning
                 for: 5m
               - name: DigitalOcean droplet limit approaching
@@ -4823,9 +4912,11 @@ groups:
                 for: 5m
               - name: Thanos Query Grpc Client Error Rate
                 description: "Thanos Query {{$labels.job}} is failing to send {{$value | humanize}}% of requests."
-                query: '(sum by (job) (rate(grpc_client_handled_total{grpc_code!="OK", job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m]))) * 100 > 5 and sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m])) > 0'
+                query: '(sum by (job) (rate(grpc_client_handled_total{grpc_code=~"Unknown|Internal|Unavailable|DataLoss|DeadlineExceeded|ResourceExhausted", job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m]))) * 100 > 5 and sum by (job) (rate(grpc_client_started_total{job=~".*thanos-query.*"}[5m])) > 0'
                 severity: warning
                 for: 5m
+                comments: |
+                  Filters to actual error codes only. grpc_code!="OK" would include benign codes like NotFound, AlreadyExists, and Cancelled.
               - name: Thanos Query High D N S Failures
                 description: "Thanos Query {{$labels.job}} have {{$value | humanize}}% of failing DNS queries for store endpoints."
                 query: '(sum by (job) (rate(thanos_query_store_apis_dns_failures_total{job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m]))) * 100 > 1 and sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m])) > 0'
@@ -4896,7 +4987,7 @@ groups:
                 for: 5m
               - name: Thanos Sidecar No Connection To Started Prometheus
                 description: "Thanos Sidecar {{$labels.instance}} is unhealthy."
-                query: 'thanos_sidecar_prometheus_up{job=~".*thanos-sidecar.*"} == 0 and on (namespace, pod)prometheus_tsdb_data_replay_duration_seconds != 0'
+                query: 'thanos_sidecar_prometheus_up{job=~".*thanos-sidecar.*"} == 0 and on (namespace, pod) prometheus_tsdb_data_replay_duration_seconds != 0'
                 severity: critical
                 for: 5m
           - name: Thanos Store
@@ -5044,13 +5135,12 @@ groups:
                 severity: critical
                 for: 15m
               - name: Loki request panic
-                description: The {{ $labels.job }} is experiencing {{ printf "%.2f" $value }}% increase of panics
-                query: sum(increase(loki_panic_total[10m])) by (namespace, job) > 0
+                description: "{{ $labels.job }} is experiencing {{ $value | humanize }} panic(s) in the last 5 minutes."
+                query: sum(increase(loki_panic_total[5m])) by (namespace, job) > 0
                 severity: critical
-                for: 5m
               - name: Loki request latency
-                description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}s 99th percentile latency
-                query: (histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*"}[5m])) by (le)))  > 1
+                description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}s 99th percentile latency.
+                query: histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*"}[5m])) by (namespace, job, route, le)) > 1
                 severity: critical
                 for: 5m
       - name: Promtail
@@ -5065,7 +5155,7 @@ groups:
                 for: 5m
               - name: Promtail request latency
                 description: The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf "%.2f" $value }}s 99th percentile latency.
-                query: histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[5m])) by (le)) > 1
+                query: histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[5m])) by (namespace, job, route, le)) > 1
                 severity: critical
                 for: 5m
       - name: Cortex
@@ -5081,13 +5171,13 @@ groups:
                 description: Cortex not connected to Alertmanager (instance {{ $labels.instance }})
                 query: cortex_prometheus_notifications_alertmanagers_discovered < 1
                 severity: critical
-              - name: Cortex notification are being dropped
-                description: "Cortex notification are being dropped due to errors (instance {{ $labels.instance }}, {{ $value | humanize }}/s)."
+              - name: Cortex notifications are being dropped
+                description: "Cortex notifications are being dropped due to errors (instance {{ $labels.instance }}, {{ $value | humanize }}/s)."
                 query: rate(cortex_prometheus_notifications_dropped_total[5m]) > 0.05
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
-              - name: Cortex notification error
+              - name: Cortex notification errors
                 description: "Cortex is failing when sending alert notifications (instance {{ $labels.instance }}, {{ $value | humanize }}/s)."
                 query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0.05
                 comments: |
@@ -5183,12 +5273,14 @@ groups:
                   Official Tempo mixin normalizes by backend-worker count. Adjust threshold based on your compactor configuration.
               - name: Tempo distributor usage tracker errors
                 description: "Tempo distributor usage tracker errors for {{ $labels.job }} at {{ $value | humanize }}/s (reason {{ $labels.reason }})."
-                query: sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0
+                query: sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0.05
                 severity: critical
                 for: 30m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Tempo metrics generator processor updates failing
                 description: "Tempo metrics generator processor updates are failing for {{ $labels.job }} ({{ $value }} failures in 5m)."
-                query: sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 0
+                query: sum by (job) (increase(tempo_metrics_generator_active_processors_update_failed_total[5m])) > 2
                 severity: critical
                 for: 15m
               - name: Tempo metrics generator service graphs dropping spans
@@ -5319,32 +5411,46 @@ groups:
               # Blocks and TSDB
               - name: Mimir ingester TSDB head compaction failed
                 description: "Mimir ingester {{ $labels.instance }} is failing to compact TSDB head ({{ $value | humanize }}/s)."
-                query: rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0
+                query: rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0.05
                 severity: critical
                 for: 15m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir ingester TSDB head truncation failed
                 description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB head ({{ $value | humanize }}/s)."
-                query: rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0
+                query: rate(cortex_ingester_tsdb_head_truncations_failed_total[5m]) > 0.05
                 severity: critical
+                for: 15m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir ingester TSDB checkpoint creation failed
                 description: "Mimir ingester {{ $labels.instance }} is failing to create TSDB checkpoints ({{ $value | humanize }}/s)."
-                query: rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0
+                query: rate(cortex_ingester_tsdb_checkpoint_creations_failed_total[5m]) > 0.05
                 severity: critical
+                for: 15m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir ingester TSDB checkpoint deletion failed
                 description: "Mimir ingester {{ $labels.instance }} is failing to delete TSDB checkpoints ({{ $value | humanize }}/s)."
-                query: rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0
+                query: rate(cortex_ingester_tsdb_checkpoint_deletions_failed_total[5m]) > 0.05
                 severity: critical
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir ingester TSDB WAL truncation failed
                 description: "Mimir ingester {{ $labels.instance }} is failing to truncate TSDB WAL ({{ $value | humanize }}/s)."
-                query: rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0
+                query: rate(cortex_ingester_tsdb_wal_truncations_failed_total[5m]) > 0.05
                 severity: warning
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir ingester TSDB WAL writes failed
                 description: "Mimir ingester {{ $labels.instance }} is failing to write to TSDB WAL ({{ $value | humanize }}/s)."
-                query: rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0
+                query: rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0.05
                 severity: critical
                 for: 3m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir store gateway has not synced bucket
-                description: Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 10 minutes.
+                description: Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 30 minutes.
                 query: (time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 1800) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0
                 comments: |
                   Threshold aligned with official Mimir mixin (30 minutes).
@@ -5376,7 +5482,9 @@ groups:
                 severity: critical
               - name: Mimir compactor has run out of disk space
                 description: Mimir compactor {{ $labels.instance }} has run out of disk space.
-                query: increase(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1
+                query: delta(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1
+                comments: |
+                  cortex_compactor_disk_out_of_space_errors_total is declared as gauge by Mimir despite the _total suffix, so delta() is used instead of increase().
                 severity: critical
               - name: Mimir compactor has not uploaded blocks
                 description: Mimir compactor {{ $labels.instance }} has not uploaded any block in the last 24 hours.
@@ -5416,29 +5524,39 @@ groups:
               # Alertmanager
               - name: Mimir alertmanager sync configs failing
                 description: "Mimir alertmanager {{ $labels.job }} is failing to sync configs ({{ $value | humanize }}/s)."
-                query: rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0
+                query: rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0.05
                 severity: critical
                 for: 30m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir alertmanager ring check failing
                 description: "Mimir alertmanager {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s)."
-                query: rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0
+                query: rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0.05
                 severity: critical
                 for: 10m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir alertmanager state merge failing
                 description: "Mimir alertmanager {{ $labels.job }} is failing to merge state updates ({{ $value | humanize }}/s)."
-                query: rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0
+                query: rate(cortex_alertmanager_partial_state_merges_failed_total[5m]) > 0.05
                 severity: critical
                 for: 10m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir alertmanager replication failing
                 description: "Mimir alertmanager {{ $labels.job }} is failing to replicate state ({{ $value | humanize }}/s)."
-                query: rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0
+                query: rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0.05
                 severity: critical
                 for: 10m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir alertmanager persist state failing
                 description: "Mimir alertmanager {{ $labels.job }} is failing to persist state ({{ $value | humanize }}/s)."
-                query: rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0
+                query: rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0.05
                 severity: critical
                 for: 1h
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir alertmanager initial sync failed
                 description: Mimir alertmanager {{ $labels.job }} failed initial state sync.
                 query: increase(cortex_alertmanager_state_initial_sync_completed_total{outcome="failed"}[1m]) > 0
@@ -5475,7 +5593,8 @@ groups:
 
       - name: Grafana Alloy
         exporters:
-          - slug: embedded-exporter
+          - name: Embedded exporter
+            slug: embedded-exporter
             rules:
               - name: Grafana Alloy service down
                 description: "Alloy on instance {{ $labels.instance }} is not responding or has stopped running."
@@ -5499,17 +5618,23 @@ groups:
                 for: 1m
               - name: OpenTelemetry Collector receiver refused spans
                 description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s spans on {{ $labels.receiver }}."
-                query: 'rate(otelcol_receiver_refused_spans[5m]) > 0'
+                query: 'rate(otelcol_receiver_refused_spans[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
               - name: OpenTelemetry Collector receiver refused metric points
                 description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s metric points on {{ $labels.receiver }}."
-                query: 'rate(otelcol_receiver_refused_metric_points[5m]) > 0'
+                query: 'rate(otelcol_receiver_refused_metric_points[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
               - name: OpenTelemetry Collector receiver refused log records
                 description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s log records on {{ $labels.receiver }}."
-                query: 'rate(otelcol_receiver_refused_log_records[5m]) > 0'
+                query: 'rate(otelcol_receiver_refused_log_records[5m]) > 0.05'
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
               - name: OpenTelemetry Collector exporter failed spans
@@ -5542,6 +5667,7 @@ groups:
                 query: 'rate(otelcol_processor_refused_spans[5m]) > 0.05'
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
+                  These processor metrics are deprecated since collector v0.110.0.
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector processor refused metric points
@@ -5549,6 +5675,7 @@ groups:
                 query: 'rate(otelcol_processor_refused_metric_points[5m]) > 0.05'
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
+                  These processor metrics are deprecated since collector v0.110.0.
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector high memory usage
@@ -5631,7 +5758,7 @@ groups:
                 severity: warning
               - name: APC UPS low battery voltage
                 description: Battery voltage is lower than nominal (< 95%)
-                query: "(apcupsd_battery_volts / apcupsd_battery_nominal_volts) < 0.95"
+                query: "(apcupsd_battery_volts / apcupsd_battery_nominal_volts) < 0.95 and apcupsd_battery_nominal_volts > 0"
                 severity: warning
               - name: APC UPS high temperature
                 description: Internal temperature is high ({{$value}}°C)
@@ -5668,7 +5795,11 @@ groups:
                 description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`"
                 query: "store_connection_wait_time_ms > 10"
                 severity: warning
+                comments: |
+                  Threshold of 10ms. Adjust based on your expected database latency.
               - name: Store connection very slow
                 description: "Store connection is very slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`"
                 query: "store_connection_wait_time_ms > 20"
                 severity: critical
+                comments: |
+                  Threshold of 20ms. Adjust based on your expected database latency.
