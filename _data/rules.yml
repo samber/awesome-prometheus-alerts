@@ -148,8 +148,10 @@ groups:
                 for: 2m
               - name: Host memory under memory pressure
                 description: "The node is under heavy memory pressure. High rate of major page faults ({{ $value }}/s)."
-                query: "(rate(node_vmstat_pgmajfault[5m]) > 1000)"
+                query: "(deriv(node_vmstat_pgmajfault[5m]) > 1000)"
                 severity: warning
+                comments: |
+                  node_vmstat_pgmajfault is exposed as untyped/gauge by node_exporter (from /proc/vmstat), so deriv() is used instead of rate().
               - name: Host Memory is underutilized
                 description: "Node memory usage is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})"
                 query: "min_over_time(node_memory_MemFree_bytes[1w]) > node_memory_MemTotal_bytes * .8"
@@ -238,7 +240,7 @@ groups:
                 for: 5m
               - name: Host context switching high
                 description: Context switching is growing on the node (twice the daily average during the last 15m)
-                query: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) / (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2'
+                query: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) / (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2 and rate(node_context_switches_total[1d]) > 0'
                 severity: warning
                 comments: |
                   x2 context switches is an arbitrary number.
@@ -266,7 +268,7 @@ groups:
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining."
                 query: '((node_md_disks_required - ignoring(state) node_md_disks{state="active"}) > 0)'
                 comments: |
-                  Uses ignoring(state) to handle additional labels on node_md_disks. Matches the official node-exporter mixin.
+                  Uses ignoring(state) to handle additional labels on node_md_disks.
                 severity: critical
               - name: Host software RAID disk failure
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} needs attention."
@@ -1620,7 +1622,7 @@ groups:
                 for: 2m
               - name: Cassandra authentication failures
                 description: Increase of Cassandra authentication failures
-                query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
+                query: 'delta(cassandra_stats{name="org:apache:cassandra:metrics:client:authfailure:count"}[1m]) > 5'
                 severity: warning
                 for: 2m
               - name: Cassandra node down
@@ -1657,7 +1659,7 @@ groups:
                 for: 2m
               - name: Cassandra connection timeouts total (Criteo)
                 description: Some connection between nodes are ending in timeout
-                query: 'rate(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
+                query: 'delta(cassandra_stats{name="org:apache:cassandra:metrics:connection:totaltimeouts:count"}[1m]) > 5'
                 severity: critical
                 for: 2m
               - name: Cassandra storage exceptions (Criteo)
@@ -1776,12 +1778,12 @@ groups:
 
               - name: ClickHouse rejected insert queries
                 description: "INSERTs rejected due to too many active data parts. Reduce insert frequency."
-                query: "increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 0"
+                query: "increase(ClickHouseProfileEvents_RejectedInserts[1m]) > 2"
                 severity: warning
                 for: 1m
               - name: ClickHouse delayed insert queries
                 description: "INSERTs delayed due to high number of active parts."
-                query: "increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 0"
+                query: "increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 10"
                 severity: warning
                 for: 2m
               - name: ClickHouse zookeeper hardware exception
@@ -2390,7 +2392,6 @@ groups:
                 description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
                 query: increase(haproxy_server_check_failures_total[1m]) > 2
                 severity: warning
-                for: 1m
           - name: prometheus/haproxy_exporter (HAProxy < v2)
             slug: haproxy-exporter-v1
             doc_url: https://github.com/prometheus/haproxy_exporter
@@ -2470,7 +2471,6 @@ groups:
                 description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
                 query: "increase(haproxy_server_check_failures_total[1m]) > 2"
                 severity: warning
-                for: 1m
 
       - name: Traefik
         exporters:
@@ -2696,7 +2696,7 @@ groups:
                 for: 1m
               - name: Istio latency 99 percentile
                 description: "Istio p99 request latency is {{ $value }}ms (threshold: 1000ms)."
-                query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, source_canonical_service, source_workload_namespace, le)) > 1000"
+                query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, le)) > 1000"
                 severity: warning
                 for: 1m
               - name: Istio Pilot Duplicate Entry
@@ -3041,7 +3041,7 @@ groups:
                   Threshold: more than 100ms/sec of GC time (10% of wall clock). Adjust based on your workload.
               - name: Flink no records processed
                 description: "Flink task {{ $labels.task_name }} has not processed any records in the last 5 minutes."
-                query: "rate(flink_taskmanager_job_task_numRecordsIn[5m]) == 0 and flink_taskmanager_job_task_numRecordsIn > 0"
+                query: "delta(flink_taskmanager_job_task_numRecordsIn[5m]) == 0 and flink_taskmanager_job_task_numRecordsIn > 0"
                 severity: warning
                 for: 5m
                 comments: |
@@ -3125,6 +3125,7 @@ groups:
                 comments: |
                   When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
                   so this alert may not fire. Prefer application-level availability metrics if available.
+                  Rename job="hadoop-namenode" to match the actual job name in your Prometheus scrape config.
 
               # Alert rule for ResourceManager availability
               - name: Hadoop Resource Manager Down
@@ -3135,6 +3136,7 @@ groups:
                 comments: |
                   When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
                   so this alert may not fire. Prefer application-level availability metrics if available.
+                  Rename job="hadoop-resourcemanager" to match the actual job name in your Prometheus scrape config.
 
               # Alert rule for DataNode status
               - name: Hadoop Data Node Out Of Service
@@ -3269,7 +3271,7 @@ groups:
                 severity: critical
               - name: Kubernetes PersistentVolume error
                 description: "Persistent volume {{ $labels.persistentvolume }} is in bad state"
-                query: 'kube_persistentvolume_status_phase{phase=~"Failed|Pending", job="kube-state-metrics"} > 0'
+                query: 'kube_persistentvolume_status_phase{phase=~"Failed|Pending"} > 0'
                 severity: critical
               - name: Kubernetes StatefulSet down
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} went down
@@ -3510,6 +3512,8 @@ groups:
                 query: 'up{job=~".*openstack.*"} == 0'
                 severity: critical
                 for: 2m
+                comments: |
+                  Adjust the job label regex to match the actual job name in your Prometheus scrape config.
               - name: OpenStack Nova agent down
                 description: "Nova agent {{ $labels.hostname }} ({{ $labels.service }}) is down in zone {{ $labels.zone }}"
                 query: 'openstack_nova_agent_state{adminState="enabled"} == 0'
@@ -3804,7 +3808,7 @@ groups:
                 for: 5m
               - name: GitLab CI pipeline failures increasing
                 description: "GitLab CI pipeline failures are increasing on {{ $labels.instance }} ({{ $value }}/s)."
-                query: "rate(gitlab_ci_pipeline_failure_reasons[5m]) > 0.05"
+                query: "deriv(gitlab_ci_pipeline_failure_reasons[5m]) > 0.05"
                 severity: warning
                 for: 10m
                 comments: |
@@ -3903,7 +3907,6 @@ groups:
                 comments: |
                   ResourceExhausted errors from Gitaly mean Git operations are being rejected due to
                   concurrency limits. This directly impacts users trying to push, pull, or clone.
-                  This alert is derived from the GitLab Omnibus default rules.
               - name: GitLab Gitaly high RPC latency
                 description: "Gitaly on {{ $labels.instance }} p95 unary RPC latency exceeds 1 second ({{ $value }}s)."
                 query: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
@@ -4238,7 +4241,8 @@ groups:
                 query: 'up{job=~"snmp.*"} == 0'
                 severity: critical
                 for: 5m
-                comments: From the official snmp-mixin.
+                comments: |
+                  Rename job=~"snmp.*" to match the actual job name in your Prometheus scrape config.
               - name: SNMP interface down
                 description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} is operationally down while administratively up."
                 query: '(ifOperStatus{job=~"snmp.*"} == 2) and on(instance, job, ifIndex) (ifAdminStatus{job=~"snmp.*"} == 1)'
@@ -4378,7 +4382,7 @@ groups:
                 for: 5m
               - name: Cilium agent policy implementation delay
                 description: "Cilium agent {{ $labels.pod }} P99 policy deployment latency exceeds 60 seconds. Endpoints may run with stale policies."
-                query: "histogram_quantile(0.99, sum(rate(cilium_policy_implementation_delay[5m])) by (le, pod)) > 60"
+                query: "histogram_quantile(0.99, sum(rate(cilium_policy_implementation_delay_bucket[5m])) by (le, pod)) > 60"
                 severity: warning
                 for: 5m
                 comments: Threshold of 60s is a rough default. Adjust based on cluster size and policy complexity.
@@ -4510,8 +4514,7 @@ groups:
                 for: 1m
                 comments: |
                   ceph_health_status: 0=HEALTH_OK, 1=HEALTH_WARN, 2=HEALTH_ERR.
-                  The official Ceph mixin splits this into separate warning (==1) and critical (==2) alerts.
-                  This rule fires on any non-OK state. Adjust severity or split as needed.
+                  This rule fires on any non-OK state. Split into separate warning/critical rules by using ==1 and ==2 thresholds if needed.
               - name: Ceph monitor clock skew
                 description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
                 query: "abs(ceph_monitor_clock_skew_seconds) > 0.2"
@@ -4541,7 +4544,7 @@ groups:
                 for: 5m
                 comments: |
                   Ceph internally triggers OSD_NEARFULL based on the nearfull_ratio (default 85%).
-                  The official mixin uses ceph_health_detail for OSD space alerts.
+                  ceph_health_detail can also be used for more granular OSD space alerts.
               - name: Ceph OSD reweighted
                 description: Ceph Object Storage Daemon takes too much time to resize.
                 query: "ceph_osd_weight < 1"
@@ -4874,12 +4877,12 @@ groups:
                 for: 5m
               - name: Thanos Compactor Halted
                 description: "Thanos Compact {{$labels.job}} has failed to run and now is halted."
-                query: 'thanos_compact_halted{job=~".*thanos-compact.*"} == 1'
+                query: 'thanos_compact_halted == 1'
                 severity: warning
                 for: 5m
               - name: Thanos Compactor High Compaction Failures
                 description: "Thanos Compact {{$labels.job}} is failing to execute {{$value | humanize}}% of compactions."
-                query: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total{job=~".*thanos-compact.*"}[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) * 100 > 5) and sum by (job) (rate(thanos_compact_group_compactions_total{job=~".*thanos-compact.*"}[5m])) > 0'
+                query: '(sum by (job) (rate(thanos_compact_group_compactions_failures_total[5m])) / sum by (job) (rate(thanos_compact_group_compactions_total[5m])) * 100 > 5) and sum by (job) (rate(thanos_compact_group_compactions_total[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Compact Bucket High Operation Failures
@@ -4919,12 +4922,12 @@ groups:
                   Filters to actual error codes only. grpc_code!="OK" would include benign codes like NotFound, AlreadyExists, and Cancelled.
               - name: Thanos Query High D N S Failures
                 description: "Thanos Query {{$labels.job}} have {{$value | humanize}}% of failing DNS queries for store endpoints."
-                query: '(sum by (job) (rate(thanos_query_store_apis_dns_failures_total{job=~".*thanos-query.*"}[5m])) / sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m]))) * 100 > 1 and sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~".*thanos-query.*"}[5m])) > 0'
+                query: '(sum by (job) (rate(thanos_query_store_apis_dns_failures_total[5m])) / sum by (job) (rate(thanos_query_store_apis_dns_lookups_total[5m]))) * 100 > 1 and sum by (job) (rate(thanos_query_store_apis_dns_lookups_total[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Query Instant Latency High
                 description: "Thanos Query {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for instant queries."
-                query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query"}[5m]))) > 40 and sum by (job) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query"}[5m])) > 0)'
+                query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query"}[5m]))) > 40 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-query.*", handler="query"}[5m])) > 0)'
                 severity: critical
                 for: 10m
               - name: Thanos Query Range Latency High
@@ -4952,22 +4955,22 @@ groups:
                 for: 10m
               - name: Thanos Receive High Replication Failures
                 description: "Thanos Receive {{$labels.job}} is failing to replicate {{$value | humanize}}% of requests."
-                query: 'thanos_receive_replication_factor > 1 and ((sum by (job) (rate(thanos_receive_replications_total{result="error", job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_replications_total{job=~".*thanos-receive.*"}[5m]))) > (max by (job) (floor((thanos_receive_replication_factor{job=~".*thanos-receive.*"}+1)/ 2)) / max by (job) (thanos_receive_hashring_nodes{job=~".*thanos-receive.*"}))) * 100'
+                query: 'thanos_receive_replication_factor > 1 and ((sum by (job) (rate(thanos_receive_replications_total{result="error"}[5m])) / sum by (job) (rate(thanos_receive_replications_total[5m]))) > (max by (job) (floor((thanos_receive_replication_factor+1)/ 2)) / max by (job) (thanos_receive_hashring_nodes))) * 100'
                 severity: warning
                 for: 5m
               - name: Thanos Receive High Forward Request Failures
                 description: "Thanos Receive {{$labels.job}} is failing to forward {{$value | humanize}}% of requests."
-                query: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error", job=~".*thanos-receive.*"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m]))) * 100 > 20 and sum by (job) (rate(thanos_receive_forward_requests_total{job=~".*thanos-receive.*"}[5m])) > 0'
+                query: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total[5m]))) * 100 > 20 and sum by (job) (rate(thanos_receive_forward_requests_total[5m])) > 0'
                 severity: info
                 for: 5m
               - name: Thanos Receive High Hashring File Refresh Failures
                 description: "Thanos Receive {{$labels.job}} is failing to refresh hashring file, {{$value | humanize}} of attempts failed."
-                query: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~".*thanos-receive.*"}[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0) and sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~".*thanos-receive.*"}[5m])) > 0'
+                query: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total[5m])) > 0) and sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Receive Config Reload Failure
                 description: "Thanos Receive {{$labels.job}} has not been able to reload hashring configurations."
-                query: 'avg by (job) (thanos_receive_config_last_reload_successful{job=~".*thanos-receive.*"}) != 1'
+                query: 'avg by (job) (thanos_receive_config_last_reload_successful) != 1'
                 severity: warning
                 for: 5m
               - name: Thanos Receive No Upload
@@ -4987,7 +4990,7 @@ groups:
                 for: 5m
               - name: Thanos Sidecar No Connection To Started Prometheus
                 description: "Thanos Sidecar {{$labels.instance}} is unhealthy."
-                query: 'thanos_sidecar_prometheus_up{job=~".*thanos-sidecar.*"} == 0 and on (namespace, pod) prometheus_tsdb_data_replay_duration_seconds != 0'
+                query: 'thanos_sidecar_prometheus_up == 0 and on (namespace, pod) prometheus_tsdb_data_replay_duration_seconds != 0'
                 severity: critical
                 for: 5m
           - name: Thanos Store
@@ -5000,7 +5003,7 @@ groups:
                 for: 5m
               - name: Thanos Store Series Gate Latency High
                 description: "Thanos Store {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for store series gate requests."
-                query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_bucket_store_series_gate_duration_seconds_bucket{job=~".*thanos-store.*"}[5m]))) > 2 and sum by (job) (rate(thanos_bucket_store_series_gate_duration_seconds_count{job=~".*thanos-store.*"}[5m])) > 0)'
+                query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_bucket_store_series_gate_duration_seconds_bucket[5m]))) > 2 and sum by (job) (rate(thanos_bucket_store_series_gate_duration_seconds_count[5m])) > 0)'
                 severity: warning
                 for: 10m
               - name: Thanos Store Bucket High Operation Failures
@@ -5018,12 +5021,12 @@ groups:
             rules:
               - name: Thanos Rule Queue Is Dropping Alerts
                 description: "Thanos Rule {{$labels.instance}} is failing to queue alerts ({{ $value | humanize }}/s)."
-                query: 'sum by (job, instance) (rate(thanos_alert_queue_alerts_dropped_total{job=~".*thanos-rule.*"}[5m])) > 0'
+                query: 'sum by (job, instance) (rate(thanos_alert_queue_alerts_dropped_total[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Rule Sender Is Failing Alerts
                 description: "Thanos Rule {{$labels.instance}} is failing to send alerts to alertmanager ({{ $value | humanize }}/s)."
-                query: 'sum by (job, instance) (rate(thanos_alert_sender_alerts_dropped_total{job=~".*thanos-rule.*"}[5m])) > 0'
+                query: 'sum by (job, instance) (rate(thanos_alert_sender_alerts_dropped_total[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Rule High Rule Evaluation Failures
@@ -5033,7 +5036,7 @@ groups:
                 for: 5m
               - name: Thanos Rule High Rule Evaluation Warnings
                 description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings ({{ $value | humanize }}/s)."
-                query: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total{job=~".*thanos-rule.*"}[5m])) > 0.05'
+                query: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total[5m])) > 0.05'
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: info
@@ -5050,17 +5053,17 @@ groups:
                 for: 5m
               - name: Thanos Rule Config Reload Failure
                 description: "Thanos Rule {{$labels.job}} has not been able to reload its configuration."
-                query: 'avg by (job, instance) (thanos_rule_config_last_reload_successful{job=~".*thanos-rule.*"}) != 1'
+                query: 'avg by (job, instance) (thanos_rule_config_last_reload_successful) != 1'
                 severity: info
                 for: 5m
               - name: Thanos Rule Query High D N S Failures
                 description: "Thanos Rule {{$labels.job}} has {{$value | humanize}}% of failing DNS queries for query endpoints."
-                query: '(sum by (job, instance) (rate(thanos_rule_query_apis_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1) and sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) > 0'
+                query: '(sum by (job, instance) (rate(thanos_rule_query_apis_dns_failures_total[5m])) / sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total[5m])) * 100 > 1) and sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Rule Alertmanager High D N S Failures
                 description: "Thanos Rule {{$labels.instance}} has {{$value | humanize}}% of failing DNS queries for Alertmanager endpoints."
-                query: '(sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_failures_total{job=~".*thanos-rule.*"}[5m])) / sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) * 100 > 1) and sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total{job=~".*thanos-rule.*"}[5m])) > 0'
+                query: '(sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_failures_total[5m])) / sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total[5m])) * 100 > 1) and sum by (job, instance) (rate(thanos_rule_alertmanagers_dns_lookups_total[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Thanos Rule No Evaluation For10 Intervals
@@ -5070,7 +5073,7 @@ groups:
                 for: 5m
               - name: Thanos No Rule Evaluations
                 description: "Thanos Rule {{$labels.instance}} did not perform any rule evaluations in the past 10 minutes."
-                query: 'sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) <= 0  and sum by (job, instance) (thanos_rule_loaded_rules{job=~".*thanos-rule.*"}) > 0'
+                query: 'sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) <= 0  and sum by (job, instance) (thanos_rule_loaded_rules) > 0'
                 severity: critical
                 for: 5m
           - name: Thanos Bucket Replicate
@@ -5078,12 +5081,12 @@ groups:
             rules:
               - name: Thanos Bucket Replicate Error Rate
                 description: "Thanos Replicate is failing to run, {{$value | humanize}}% of attempts failed."
-                query: '(sum by (job) (rate(thanos_replicate_replication_runs_total{result="error", job=~".*thanos-bucket-replicate.*"}[5m])) / on (job) group_left sum by (job) (rate(thanos_replicate_replication_runs_total{job=~".*thanos-bucket-replicate.*"}[5m]))) * 100 >= 10 and sum by (job) (rate(thanos_replicate_replication_runs_total{job=~".*thanos-bucket-replicate.*"}[5m])) > 0'
+                query: '(sum by (job) (rate(thanos_replicate_replication_runs_total{result="error"}[5m])) / on (job) group_left sum by (job) (rate(thanos_replicate_replication_runs_total[5m]))) * 100 >= 10 and sum by (job) (rate(thanos_replicate_replication_runs_total[5m])) > 0'
                 severity: critical
                 for: 5m
               - name: Thanos Bucket Replicate Run Latency
                 description: "Thanos Replicate {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for the replicate operations."
-                query: '(histogram_quantile(0.99, sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_bucket{job=~".*thanos-bucket-replicate.*"}[5m]))) > 20 and  sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_bucket{job=~".*thanos-bucket-replicate.*"}[5m])) > 0)'
+                query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_replicate_replication_run_duration_seconds_bucket[5m]))) > 20 and  sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_count[5m])) > 0)'
                 severity: critical
                 for: 5m
           - name: Thanos Component Absent
@@ -5270,7 +5273,7 @@ groups:
                 severity: critical
                 for: 24h
                 comments: |
-                  Official Tempo mixin normalizes by backend-worker count. Adjust threshold based on your compactor configuration.
+                  Threshold of 100 blocks per compactor instance. Normalize by backend-worker count if needed. Adjust based on your environment.
               - name: Tempo distributor usage tracker errors
                 description: "Tempo distributor usage tracker errors for {{ $labels.job }} at {{ $value | humanize }}/s (reason {{ $labels.reason }})."
                 query: sum by (job, reason) (rate(tempo_distributor_usage_tracker_errors_total[5m])) > 0.05
@@ -5285,7 +5288,7 @@ groups:
                 for: 15m
               - name: Tempo metrics generator service graphs dropping spans
                 description: Tempo metrics generator is dropping {{ printf "%.2f" $value }}% of spans in service graphs for {{ $labels.job }}.
-                query: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
+                query: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans_total[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
                 severity: warning
                 for: 15m
               - name: Tempo metrics generator collections failing
@@ -5453,7 +5456,7 @@ groups:
                 description: Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 30 minutes.
                 query: (time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 1800) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0
                 comments: |
-                  Threshold aligned with official Mimir mixin (30 minutes).
+                  Threshold of 30 minutes. Adjust based on your sync interval.
                 severity: critical
                 for: 5m
               - name: Mimir store gateway no synced tenants
@@ -5495,7 +5498,7 @@ groups:
                 description: "Mimir compactor has found {{ $value }} blocks that cannot be compacted (reason {{ $labels.reason }})."
                 query: increase(cortex_compactor_blocks_marked_for_no_compaction_total[24h]) > 0
                 comments: |
-                  Using 24h window per official mixin — compaction skips are rare events.
+                  Using a 24h window as compaction skips are rare events.
                 severity: warning
                 for: 5m
               # Ruler
@@ -5616,6 +5619,8 @@ groups:
                 query: 'up{job=~".*otel.*collector.*"} == 0'
                 severity: critical
                 for: 1m
+                comments: |
+                  Adjust the job label regex to match the actual job name in your Prometheus scrape config.
               - name: OpenTelemetry Collector receiver refused spans
                 description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s spans on {{ $labels.receiver }}."
                 query: 'rate(otelcol_receiver_refused_spans[5m]) > 0.05'
@@ -5680,7 +5685,7 @@ groups:
                 for: 5m
               - name: OpenTelemetry Collector high memory usage
                 description: "OpenTelemetry Collector memory usage is above 90%"
-                query: '(otelcol_process_runtime_heap_alloc_bytes{job=~".*otel.*collector.*"} / on(instance, job) otelcol_process_runtime_total_sys_memory_bytes{job=~".*otel.*collector.*"}) > 0.9'
+                query: '(otelcol_process_runtime_heap_alloc_bytes / on(instance, job) otelcol_process_runtime_total_sys_memory_bytes) > 0.9'
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector OTLP receiver errors
