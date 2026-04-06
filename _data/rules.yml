@@ -4551,7 +4551,8 @@ groups:
                 for: 1m
                 comments: |
                   ceph_health_status: 0=HEALTH_OK, 1=HEALTH_WARN, 2=HEALTH_ERR.
-                  This rule fires on any non-OK state. Split into separate warning/critical rules by using ==1 and ==2 thresholds if needed.
+                  The official Ceph mixin splits this into separate warning (==1) and critical (==2) alerts.
+                  This rule fires on any non-OK state. Adjust severity or split as needed.
               - name: Ceph monitor clock skew
                 description: Ceph monitor clock skew detected. Please check ntp and hardware clock settings
                 query: "abs(ceph_monitor_clock_skew_seconds) > 0.2"
@@ -4581,7 +4582,7 @@ groups:
                 for: 5m
                 comments: |
                   Ceph internally triggers OSD_NEARFULL based on the nearfull_ratio (default 85%).
-                  ceph_health_detail can also be used for more granular OSD space alerts.
+                  The official mixin uses ceph_health_detail for OSD space alerts.
               - name: Ceph OSD reweighted
                 description: Ceph Object Storage Daemon takes too much time to resize.
                 query: "ceph_osd_weight < 1"
