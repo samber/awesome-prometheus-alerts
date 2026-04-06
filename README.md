@@ -28,6 +28,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
   <hr>
 </div>
 
+- [guardian-agent-prompts](https://github.com/milkomida77/guardian-agent-prompts) - 49 production-tested AI agent system prompts for Prometheus monitoring orchestration, automated alert management, and multi-agent observability coordination. MIT licensed.
 ## ✨ Contents
 
 - [Rules](#-rules)
