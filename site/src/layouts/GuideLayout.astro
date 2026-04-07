@@ -1,6 +1,9 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_ORIGIN, SITE_URL, AUTHOR_NAME, AUTHOR_GITHUB_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, SCHEMA_IN_LANGUAGE } from '../data/site';
+
+type IconName = 'bell' | 'globe' | 'moon' | 'book';
 
 interface BreadcrumbItem {
   label: string;
@@ -11,55 +14,407 @@ interface Props {
   title: string;
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
-  headings?: Array<{ depth: number; text: string; slug: string }>;
+  icon?: IconName;
+  badge?: string;
+  /** Additional JSON-LD schemas to include alongside the auto-generated TechArticle */
+  extraJsonLd?: object | object[];
+  /** ISO date string (YYYY-MM-DD) for when this guide was last meaningfully updated */
+  dateUpdated?: string;
+  /** Comma-separated keywords for SEO meta tag */
+  keywords?: string;
+  /** Approximate reading time in minutes (shown in hero) */
+  readingTime?: number;
 }
 
-const { title, description, breadcrumbs = [], headings = [] } = Astro.props;
+const { title, description, breadcrumbs = [], icon = 'book', badge = 'Guide', extraJsonLd, dateUpdated, keywords, readingTime } = Astro.props;
 const base = import.meta.env.BASE_URL;
+const canonicalUrl = `${SITE_ORIGIN}${base}${Astro.url.pathname.replace(base, '')}`;
+
+const dateModified = dateUpdated ?? new Date().toISOString().slice(0, 10);
+const displayDate = new Date(dateModified + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+const guideJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: title,
+  description: description ?? `${title} — Prometheus monitoring guide`,
+  url: canonicalUrl,
+  inLanguage: SCHEMA_IN_LANGUAGE,
+  image: `${SITE_URL}favicon.svg`,
+  datePublished: SITE_DATE_PUBLISHED,
+  dateModified,
+  author: schemaAuthor,
+  publisher: schemaPublisher,
+  isPartOf: schemaWebSite,
+};
+
+const allGuideJsonLd: object[] = [
+  guideJsonLd,
+  ...(extraJsonLd ? (Array.isArray(extraJsonLd) ? extraJsonLd : [extraJsonLd]) : []),
+];
+
+const iconPaths: Record<IconName, string> = {
+  bell: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+  globe: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9',
+  moon: 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z',
+  book: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+};
+
+const allGuides = [
+  {
+    title: 'AlertManager Configuration',
+    description: 'Configure Prometheus and AlertManager with routing, receivers, and notification timing.',
+    href: `${base}/alertmanager/`,
+    icon: 'bell' as IconName,
+    badge: 'Configuration',
+  },
+  {
+    title: 'Blackbox Exporter',
+    description: 'Monitor HTTP, DNS, TCP and ICMP endpoints from multiple worldwide PoPs.',
+    href: `${base}/blackbox-exporter/`,
+    icon: 'globe' as IconName,
+    badge: 'Monitoring',
+  },
+  {
+    title: 'Sleep Peacefully',
+    description: 'Suppress noisy alerts during nights and weekends with time-aware PromQL.',
+    href: `${base}/sleep-peacefully/`,
+    icon: 'moon' as IconName,
+    badge: 'PromQL Tips',
+  },
+];
+
+const relatedGuides = allGuides.filter(g => g.title !== title);
 ---
 
-<BaseLayout title={`${title} | Awesome Prometheus Alerts`} description={description}>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} base={base} />}
-
-    <div class="flex gap-12 mt-6">
-      <!-- TOC sidebar -->
-      {headings.length > 0 && (
-        <aside class="hidden xl:block w-56 flex-shrink-0">
-          <div class="sticky top-20">
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">On this page</p>
-            <nav>
-              <ul class="space-y-1.5">
-                {headings.filter(h => h.depth <= 3).map(h => (
-                  <li class={h.depth === 3 ? 'pl-3' : ''}>
-                    <a
-                      href={`#${h.slug}`}
-                      class="text-sm text-slate-500 dark:text-slate-400 hover:text-brand dark:hover:text-brand-dark transition-colors block"
-                    >
-                      {h.text}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        </aside>
+<BaseLayout title={`${title} | Awesome Prometheus Alerts`} description={description} jsonLd={allGuideJsonLd} ogType="article" keywords={keywords} datePublished={SITE_DATE_PUBLISHED} dateModified={dateModified}>
+  <!-- Hero banner -->
+  <div class="guide-hero border-b border-slate-200 dark:border-slate-800 py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:pl-[calc(theme(spacing.8)+14rem+3rem)]">
+      {breadcrumbs.length > 0 && (
+        <div class="mb-6">
+          <Breadcrumbs items={breadcrumbs} base={base} />
+        </div>
       )}
+      <div class="flex items-start gap-5">
+        <div class="flex-shrink-0 w-14 h-14 rounded-2xl guide-icon-bg flex items-center justify-center">
+          <svg class="w-7 h-7 text-brand dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[icon]} />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-3 flex-wrap">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide uppercase bg-brand/10 dark:bg-brand/20 text-brand dark:text-orange-400">
+              {badge}
+            </span>
+            <span class="text-xs text-slate-300 dark:text-slate-600">·</span>
+            <span class="text-xs text-slate-400 dark:text-slate-500">By <a href={AUTHOR_GITHUB_URL} target="_blank" rel="noopener noreferrer" class="hover:text-brand dark:hover:text-orange-400 transition-colors">{AUTHOR_NAME}</a></span>
+            <span class="text-xs text-slate-300 dark:text-slate-600">·</span>
+            <time datetime={dateModified} class="text-xs text-slate-400 dark:text-slate-500">Updated {displayDate}</time>
+            {readingTime && (
+              <>
+                <span class="text-xs text-slate-300 dark:text-slate-600">·</span>
+                <span class="text-xs text-slate-400 dark:text-slate-500">{readingTime} min read</span>
+              </>
+            )}
+          </div>
+          <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">{title}</h1>
+          {description && (
+            <p class="text-slate-500 dark:text-slate-400 text-base leading-relaxed max-w-2xl">{description}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <!-- Content -->
-      <article class="flex-1 min-w-0 max-w-3xl prose prose-slate dark:prose-invert prose-code:before:content-none prose-code:after:content-none">
-        <h1>{title}</h1>
+  <!-- Main content area -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex gap-12">
+
+      <!-- TOC sidebar -->
+      <aside class="hidden xl:block w-56 flex-shrink-0" aria-label="Table of contents">
+        <div class="sticky top-24">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">On this page</p>
+          <nav id="guide-toc" aria-label="Page sections">
+            <!-- Populated by client-side JS -->
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Article -->
+      <article id="guide-content" class="flex-1 min-w-0 max-w-3xl">
         <slot />
+
+        <!-- Related guides -->
+        <div class="mt-16 pt-10 border-t border-slate-200 dark:border-slate-800">
+          <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Continue reading</p>
+          <div class="flex flex-col">
+            {relatedGuides.map((g) => (
+              <a
+                href={g.href}
+                class="group flex items-center gap-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors duration-150"
+              >
+                <!-- Icon -->
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg guide-card-icon flex items-center justify-center">
+                  <svg class="w-4 h-4 text-brand dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[g.icon]} />
+                  </svg>
+                </div>
+
+                <!-- Text -->
+                <div class="flex-1 min-w-0">
+                  <span class="text-xs text-slate-400 dark:text-slate-500">{g.badge} · </span>
+                  <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand dark:group-hover:text-orange-400 transition-colors duration-150">{g.title}</span>
+                  <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 leading-relaxed">{g.description}</p>
+                </div>
+
+                <!-- Arrow -->
+                <svg
+                  class="flex-shrink-0 w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-brand dark:group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all duration-150"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
+            ))}
+          </div>
+        </div>
       </article>
+
     </div>
   </div>
 </BaseLayout>
 
-<style is:global>
-  .prose pre {
-    @apply bg-slate-900 text-slate-100;
+<script>
+  function buildTOC() {
+    const content = document.getElementById('guide-content');
+    const toc = document.getElementById('guide-toc');
+    if (!content || !toc) return;
+
+    const headings = Array.from(content.querySelectorAll('h2, h3')).filter(
+      h => !h.classList.contains('related-guides-heading')
+    );
+    if (headings.length === 0) return;
+
+    const items = headings.map((h, i) => {
+      if (!h.id) h.id = `heading-${i}`;
+      return { id: h.id, text: h.textContent?.trim() || '', depth: parseInt(h.tagName[1]) };
+    });
+
+    const ul = document.createElement('ul');
+    ul.className = 'space-y-1';
+
+    items.forEach(item => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `#${item.id}`;
+      a.dataset.tocId = item.id;
+      a.className = `toc-link block text-sm py-0.5 transition-colors ${
+        item.depth === 3 ? 'pl-3 text-xs' : ''
+      } text-slate-500 dark:text-slate-400 hover:text-brand dark:hover:text-brand-dark`;
+      a.textContent = item.text;
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+
+    toc.appendChild(ul);
+
+    // Scroll-spy
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const link = toc.querySelector(`[data-toc-id="${entry.target.id}"]`);
+          if (!link) return;
+          if (entry.isIntersecting) {
+            toc.querySelectorAll('.toc-link').forEach(l => {
+              l.classList.remove('text-brand', 'dark:text-brand-dark', 'font-medium');
+              l.classList.add('text-slate-500', 'dark:text-slate-400');
+            });
+            link.classList.remove('text-slate-500', 'dark:text-slate-400');
+            link.classList.add('text-brand', 'font-medium');
+          }
+        });
+      },
+      { rootMargin: '-10% 0% -80% 0%' }
+    );
+
+    headings.forEach(h => observer.observe(h));
   }
-  .prose code {
-    @apply bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded text-xs;
+
+  document.addEventListener('DOMContentLoaded', buildTOC);
+</script>
+
+<style is:global>
+  /* Hero gradient */
+  .guide-hero {
+    background: linear-gradient(135deg, rgba(230, 82, 44, 0.04) 0%, transparent 60%);
+  }
+  .dark .guide-hero {
+    background: linear-gradient(135deg, rgba(230, 82, 44, 0.08) 0%, transparent 60%);
+  }
+  .guide-icon-bg {
+    background: rgba(230, 82, 44, 0.08);
+    border: 1px solid rgba(230, 82, 44, 0.2);
+  }
+  .dark .guide-icon-bg {
+    background: rgba(230, 82, 44, 0.12);
+    border-color: rgba(230, 82, 44, 0.25);
+  }
+
+  /* ── Guide content typography ─────────────────────────────────────── */
+  #guide-content > * + * {
+    margin-top: 0;
+  }
+
+  #guide-content p {
+    font-size: 0.9375rem;
+    line-height: 1.75;
+    color: #475569; /* slate-600 */
+    margin-bottom: 1rem;
+  }
+  .dark #guide-content p {
+    color: #94a3b8; /* slate-400 */
+  }
+
+  #guide-content a:not(.group) {
+    color: #E6522C;
+    text-decoration: none;
+  }
+  #guide-content a:not(.group):hover {
+    text-decoration: underline;
+  }
+  .dark #guide-content a:not(.group) {
+    color: #fb923c;
+  }
+
+  /* Section headings */
+  #guide-content h2 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 2.5rem;
+    margin-bottom: 0.875rem;
+    padding-left: 0.875rem;
+    border-left: 3px solid #E6522C;
+    line-height: 1.4;
+  }
+  .dark #guide-content h2 {
+    color: #f1f5f9;
+  }
+
+  #guide-content h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .dark #guide-content h3 {
+    color: #e2e8f0;
+  }
+
+  /* Lists */
+  #guide-content ul,
+  #guide-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  #guide-content ul {
+    list-style-type: disc;
+  }
+  #guide-content ol {
+    list-style-type: decimal;
+  }
+  #guide-content li {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: #475569;
+  }
+  .dark #guide-content li {
+    color: #94a3b8;
+  }
+
+  /* Inline code */
+  #guide-content :not(pre) > code {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 0;
+    border-radius: 0.25rem;
+    font-size: 0.8125rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    border: 1px solid #e2e8f0;
+  }
+  .dark #guide-content :not(pre) > code {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-color: #334155;
+  }
+
+  /* Code blocks */
+  #guide-content pre {
+    background: #0f172a;
+    border-radius: 0.75rem;
+    border: 1px solid #1e293b;
+    margin: 1.5rem 0;
+    overflow: hidden;
+  }
+  #guide-content pre code {
+    display: block;
+    padding: 0;
+    overflow-x: auto;
+    font-size: 0.8125rem;
+    line-height: 1.65;
+    color: #e2e8f0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: pre;
+    background: transparent;
+    border: none;
+  }
+
+  /* Images */
+  #guide-content img {
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    margin: 1.5rem 0;
+    max-width: 100%;
+  }
+  .dark #guide-content img {
+    border-color: #334155;
+  }
+
+  /* Note / callout paragraphs */
+  #guide-content p.text-sm {
+    font-size: 0.8125rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #94a3b8;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: #64748b;
+  }
+  .dark #guide-content p.text-sm {
+    background: #1e293b;
+    border-color: #334155;
+    border-left-color: #475569;
+    color: #94a3b8;
+  }
+
+  /* Related guides cards */
+  .guide-card-icon {
+    background: rgba(230, 82, 44, 0.08);
+    border: 1px solid rgba(230, 82, 44, 0.15);
+  }
+  .dark .guide-card-icon {
+    background: rgba(230, 82, 44, 0.12);
+    border-color: rgba(230, 82, 44, 0.2);
+  }
+  .guide-card-glow {
+    background: radial-gradient(circle, rgba(230, 82, 44, 0.12), transparent 70%);
+  }
+  .dark .guide-card-glow {
+    background: radial-gradient(circle, rgba(230, 82, 44, 0.15), transparent 70%);
   }
 </style>

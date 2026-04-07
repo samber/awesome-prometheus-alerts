@@ -2,12 +2,53 @@
 import GuideLayout from '../layouts/GuideLayout.astro';
 
 const base = import.meta.env.BASE_URL;
+
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to configure Prometheus and AlertManager for production alerting',
+  description:
+    'Set up Prometheus alert rules, configure AlertManager routing and receivers, use recording rules to reduce load, and troubleshoot alert delivery delays.',
+  step: [
+    {
+      '@type': 'HowToStep',
+      name: 'Configure Prometheus scrape and evaluation intervals',
+      text: 'In prometheus.yml, set scrape_interval and evaluation_interval (e.g. 20s). Point rule_files at your alerts/*.yml directory.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Write alert rules',
+      text: 'Create YAML rule files with alert name, expr (PromQL), for duration, severity label, and summary/description annotations.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Configure AlertManager routing',
+      text: 'In alertmanager.yml, define a route tree with group_wait, group_interval, repeat_interval, and child routes that match severity labels to specific receivers.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Set up receivers (Slack, PagerDuty, webhook)',
+      text: 'Add receiver blocks for each notification channel. For Slack, provide api_url, channel, and a message template. Use continue: true if multiple receivers should handle the same alert.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Add recording rules for expensive queries',
+      text: 'Wrap high-cardinality or frequently evaluated expressions in recording rules. Reference the recorded metric in your alert expressions to reduce Prometheus CPU usage.',
+    },
+  ],
+};
 ---
 
 <GuideLayout
   title="AlertManager Configuration"
-  description="Prometheus and AlertManager configuration examples, recorded rules, and troubleshooting guide for alert timing and notification routing."
+  description="Prometheus and AlertManager configuration examples, recorded rules, inhibition, and troubleshooting guide for alert timing and notification routing."
   breadcrumbs={[{ label: 'Guides' }, { label: 'AlertManager Config' }]}
+  icon="bell"
+  badge="Configuration Guide"
+  extraJsonLd={howToJsonLd}
+  dateUpdated="2025-01-15"
+  readingTime={5}
+  keywords="Prometheus, AlertManager, alerting, notification routing, alert timing, Slack alerts, recorded rules, inhibition, PromQL"
 >
   <p>
     If you notice a delay between an event and the first notification, read this post:
@@ -18,6 +59,11 @@ const base = import.meta.env.BASE_URL;
 
   <h2 id="prometheus-config">Prometheus configuration</h2>
 
+  <p>
+    Prometheus reads alert rules from YAML files and evaluates them on every <code>evaluation_interval</code> cycle.
+    Keep both <code>scrape_interval</code> and <code>evaluation_interval</code> consistent — a mismatch causes stale data in range queries.
+  </p>
+
   <pre class="rule-code"><code>{`# prometheus.yml
 
 global:
@@ -26,13 +72,12 @@ global:
   # A short evaluation_interval will check alerting rules very often.
   # It can be costly if you run Prometheus with 100+ alerts.
   evaluation_interval: 20s
-  ...
 
 rule_files:
   - 'alerts/*.yml'
 
 scrape_configs:
-  ...`}</code></pre>
+  # ...`}</code></pre>
 
   <pre class="rule-code"><code>{`# alerts/example-redis.yml
 
@@ -41,104 +86,152 @@ groups:
 - name: ExampleRedisGroup
   rules:
   - alert: ExampleRedisDown
-    expr: redis_up{} == 0
+    expr: redis_up == 0
     for: 2m
     labels:
       severity: critical
     annotations:
-      summary: "Redis instance down"
-      description: "Whatever"`}</code></pre>
+      summary: Redis instance down (instance {{ $labels.instance }})
+      description: "Redis is unreachable\\n  VALUE = {{ $value }}\\n  LABELS = {{ $labels }}"
+
+  - alert: ExampleRedisHighMemory
+    expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Redis memory usage above 90% (instance {{ $labels.instance }})
+      description: "Redis memory usage is {{ $value | humanizePercentage }}\\n  LABELS = {{ $labels }}"`}</code></pre>
 
   <h2 id="alertmanager-config">AlertManager configuration</h2>
+
+  <p>
+    AlertManager receives alerts from Prometheus, deduplicates and groups them, then routes them to the right receiver.
+    The three key timing parameters control when notifications are sent:
+  </p>
+  <ul>
+    <li><code>group_wait</code> — how long to wait for more alerts to batch into the first notification</li>
+    <li><code>group_interval</code> — how long to wait before sending a follow-up for an ongoing group</li>
+    <li><code>repeat_interval</code> — how often to re-notify if an alert hasn't resolved</li>
+  </ul>
 
   <pre class="rule-code"><code>{`# alertmanager.yml
 
 route:
-  # When a new group of alerts is created by an incoming alert, wait at
-  # least 'group_wait' to send the initial notification.
-  # This way ensures that you get multiple alerts for the same group that start
-  # firing shortly after another are batched together on the first notification.
   group_wait: 10s
-
-  # When the first notification was sent, wait 'group_interval' to send a batch
-  # of new alerts that started firing for that group.
   group_interval: 30s
-
-  # If an alert has successfully been sent, wait 'repeat_interval' to
-  # resend them.
-  repeat_interval: 30m
-
-  # A default receiver
+  repeat_interval: 4h
   receiver: "slack"
 
-  # All the above attributes are inherited by all child routes and can
-  # overwritten on each.
   routes:
+    # warnings and criticals → Slack
     - receiver: "slack"
-      group_wait: 10s
-      match_re:
-        severity: critical|warning
+      matchers:
+        - severity =~ "critical|warning"
       continue: true
 
-    - receiver: "pager"
-      group_wait: 10s
-      match_re:
-        severity: critical
-      continue: true
+    # criticals also → PagerDuty
+    - receiver: "pagerduty"
+      matchers:
+        - severity = "critical"
 
 receivers:
   - name: "slack"
     slack_configs:
       - api_url: 'https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXX/xxxxxxxxxxxxxxxxxxxxxxxxxxx'
         send_resolved: true
-        channel: 'monitoring'
-        text: "{{ range .Alerts }}<!channel> {{ .Annotations.summary }}\\n{{ .Annotations.description }}\\n{{ end }}"
+        channel: '#monitoring'
+        title: '{{ if eq .Status "firing" }}:fire:{{ else }}:white_check_mark:{{ end }} {{ .CommonLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          {{ end }}
 
-  - name: "pager"
-    webhook_configs:
-      - url: http://a.b.c.d:8080/send/sms
+  - name: "pagerduty"
+    pagerduty_configs:
+      - routing_key: '<your-pagerduty-integration-key>'
         send_resolved: true`}</code></pre>
+
+  <h2 id="inhibition">Inhibition rules</h2>
+
+  <p>
+    Inhibition suppresses lower-priority alerts when a higher-priority alert is already firing for the same target.
+    A common pattern: silence <code>warning</code> alerts when a <code>critical</code> alert is active on the same instance.
+  </p>
+
+  <pre class="rule-code"><code>{`# alertmanager.yml
+
+inhibit_rules:
+  # Suppress warnings when a critical is firing for the same instance
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal:
+      - alertname
+      - instance
+
+  # Suppress all alerts for a node when NodeDown is firing
+  - source_matchers:
+      - alertname = "NodeDown"
+    target_matchers:
+      - job = "node"
+    equal:
+      - instance`}</code></pre>
 
   <h2 id="recorded-rules">Reduce Prometheus server load</h2>
 
   <p>
-    For expensive or frequent PromQL queries, Prometheus allows you to precompute rules.
+    For expensive or frequently evaluated PromQL queries, use recording rules to precompute results.
+    AlertManager and dashboards then reference the lightweight recorded metric instead of re-evaluating the full expression.
   </p>
 
   <pre class="rule-code"><code>{`groups:
 
-  # first define the recorded rule
-  - name: ExampleRecordedGroup
+  # 1. Define the recording rule
+  - name: recordings
     rules:
-    - record: job:rabbitmq_queue_messages_delivered_total:rate:5m
+    - record: job:rabbitmq_queue_messages_delivered_total:rate5m
       expr: rate(rabbitmq_queue_messages_delivered_total[5m])
 
-  # then use it in alerts
-  - name: ExampleAlertingGroup
+  # 2. Reference it in alert rules
+  - name: alerts
     rules:
-    - alert: ExampleRabbitmqLowMessageDelivery
-      expr: sum(job:rabbitmq_queue_messages_delivered_total:rate:5m) < 10
+    - alert: RabbitmqLowMessageDelivery
+      expr: sum(job:rabbitmq_queue_messages_delivered_total:rate5m) < 10
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: "Low delivery rate in Rabbitmq queues"`}</code></pre>
+        summary: Low message delivery rate in RabbitMQ
+        description: "Delivery rate is {{ $value | humanize }} msg/s\\n  LABELS = {{ $labels }}"`}</code></pre>
 
-  <h2 id="troubleshooting">Troubleshooting</h2>
+  <h2 id="troubleshooting">Troubleshooting alert delays</h2>
 
-  <p>If the notification takes too much time to be triggered, check the following delays:</p>
+  <p>
+    The total time from an event occurring to a notification being sent is the sum of several independent delays.
+    Work through them in order:
+  </p>
   <ul>
-    <li><code>scrape_interval = 20s</code> (prometheus.yml)</li>
-    <li><code>evaluation_interval = 20s</code> (prometheus.yml)</li>
-    <li><code>increase(mysql_global_status_slow_queries[1m]) &gt; 0</code> (alerts/example-mysql.yml)</li>
-    <li><code>for: 5m</code> (alerts/example-mysql.yml)</li>
-    <li><code>group_wait = 10s</code> (alertmanager.yml)</li>
+    <li><strong>Scrape delay</strong>: up to <code>scrape_interval</code> (20s) before the metric is collected</li>
+    <li><strong>Evaluation delay</strong>: up to <code>evaluation_interval</code> (20s) before the rule fires</li>
+    <li><strong>Pending duration</strong>: the <code>for: 5m</code> window must be satisfied before the alert state changes to <em>firing</em></li>
+    <li><strong>GroupWait</strong>: AlertManager waits <code>group_wait</code> (10s) for other alerts to batch</li>
   </ul>
 
-  <p>Also read:</p>
+  <p>
+    In the worst case with <code>for: 5m</code>: 20s + 20s + 5m + 10s ≈ <strong>6 minutes</strong> from event to notification.
+    Reduce <code>evaluation_interval</code> and <code>for:</code> for time-sensitive alerts, but be careful of false positives from transient spikes.
+  </p>
+
+  <h2 id="resources">Further reading</h2>
+
   <ul>
     <li><a href="https://pracucci.com/prometheus-understanding-the-delays-on-alerting.html" target="_blank" rel="noopener noreferrer">Understanding the delays on alerting</a></li>
     <li><a href="https://hodovi.cc/blog/creating-awesome-alertmanager-templates-for-slack/" target="_blank" rel="noopener noreferrer">Creating awesome AlertManager templates for Slack</a></li>
+    <li><a href="https://prometheus.io/docs/alerting/latest/configuration/" target="_blank" rel="noopener noreferrer">AlertManager configuration reference</a></li>
     <li><a href="https://grafana.com/blog/2024/10/03/how-to-use-prometheus-to-efficiently-detect-anomalies-at-scale/" target="_blank" rel="noopener noreferrer">How to use Prometheus to efficiently detect anomalies at scale</a></li>
   </ul>
 </GuideLayout>

@@ -1,15 +1,22 @@
 ---
+import { SITE_NAME, AUTHOR_NAME, TWITTER_HANDLE } from '../data/site';
+
 interface Props {
   title: string;
   description: string;
   canonicalUrl: string;
   ogImage?: string;
+  ogType?: string;
+  keywords?: string;
   jsonLd?: object | object[];
   base: string;
   siteUrl: string;
+  datePublished?: string;
+  dateModified?: string;
 }
 
-const { title, description, canonicalUrl, jsonLd, base, siteUrl } = Astro.props;
+const { title, description, canonicalUrl, jsonLd, keywords, datePublished, dateModified, base, siteUrl } = Astro.props;
+const ogType = Astro.props.ogType ?? 'website';
 const ogImage = Astro.props.ogImage ?? `${base}/images/prometheus-logo.png`;
 const fullOgImage = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage}`;
 
@@ -20,22 +27,29 @@ const jsonLdArray = jsonLd
 
 <title>{title}</title>
 <meta name="description" content={description} />
+{keywords && <meta name="keywords" content={keywords} />}
 <link rel="canonical" href={canonicalUrl} />
 
 <!-- Open Graph -->
-<meta property="og:type" content="website" />
+<meta property="og:type" content={ogType} />
 <meta property="og:url" content={canonicalUrl} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={fullOgImage} />
-<meta property="og:site_name" content="Awesome Prometheus Alerts" />
+<meta property="og:image:alt" content={`${title} — Prometheus alert rules`} />
+<meta property="og:site_name" content={SITE_NAME} />
+<meta property="og:locale" content="en_US" />
+{ogType === 'article' && datePublished && <meta property="article:published_time" content={datePublished} />}
+{ogType === 'article' && dateModified && <meta property="article:modified_time" content={dateModified} />}
+{ogType === 'article' && <meta property="article:author" content={AUTHOR_NAME} />}
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={fullOgImage} />
-<meta name="twitter:site" content="@samuelberthe" />
+<meta name="twitter:site" content={TWITTER_HANDLE} />
+<meta name="twitter:creator" content={TWITTER_HANDLE} />
 
 {jsonLdArray.map((schema) => (
   <script type="application/ld+json" set:html={JSON.stringify(schema)} />

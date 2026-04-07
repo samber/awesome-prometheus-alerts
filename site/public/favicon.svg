@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 40">
+  <!-- Prometheus flame -->
+  <path fill="#E6522C" d="
+    M16 0
+    C 13 4 9 8 7 12
+    C 4 17 3 21 3 25
+    C 3 33.3 8.9 39.5 16 40
+    C 23.1 39.5 29 33.3 29 25
+    C 29 21 28 17 25 12
+    C 23 8 19 4 16 0 Z
+  "/>
+  <!-- Inner cutout — circular hole like the official Prometheus flame -->
+  <circle cx="16" cy="27" r="5.5" fill="white"/>
+  <!-- Small inner flame pointing upward -->
+  <path fill="#E6522C" d="
+    M16 19
+    C 14.5 21.5 13.5 23.5 13.5 26
+    C 13.5 27.9 14.6 29.5 16 30
+    C 17.4 29.5 18.5 27.9 18.5 26
+    C 18.5 23.5 17.5 21.5 16 19 Z
+  "/>
+</svg>

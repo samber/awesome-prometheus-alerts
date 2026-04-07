@@ -3,7 +3,9 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import Sidebar from '../../../components/Sidebar.astro';
 import ExporterSection from '../../../components/ExporterSection.astro';
+import CautionBanner from '../../../components/CautionBanner.astro';
 import { data, getGroupSlug, getServiceSlug, getRuleCount, getAllServices } from '../../../data/rules';
+import { SITE_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, SCHEMA_IN_LANGUAGE } from '../../../data/site';
 
 export function getStaticPaths() {
   return getAllServices().map(({ group, service, groupSlug, serviceSlug }) => ({
@@ -22,7 +24,10 @@ const serviceIndex = group.services.findIndex((s) => getServiceSlug(s) === servi
 
 // Build exporters summary for meta description
 const exporterNames = service.exporters.map((e) => e.name).filter(Boolean).join(', ');
-const metaDesc = `${ruleCount} Prometheus alerting rules for ${service.name}${exporterNames ? ` via ${exporterNames}` : ''}. Copy-paste ready YAML configurations for critical and warning alerts.`;
+const metaDescBase = `${ruleCount} ready-to-use Prometheus alert rules for ${service.name}${exporterNames ? ` (${exporterNames})` : ''}. Copy-paste YAML for critical and warning alerts.`;
+const metaDesc = metaDescBase.length > 160
+  ? `${ruleCount} ready-to-use Prometheus alert rules for ${service.name}. Copy-paste YAML for critical and warning alerts.`
+  : metaDescBase;
 
 // FAQ JSON-LD for GEO (AI search engines)
 const faqItems = service.exporters.flatMap((exp) =>
@@ -36,32 +41,48 @@ const faqItems = service.exporters.flatMap((exp) =>
   }))
 );
 
-const jsonLd = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'TechArticle',
-    headline: `${service.name} Prometheus Alert Rules`,
-    description: metaDesc,
-    about: `Prometheus monitoring for ${service.name}`,
-    url: `https://samber.github.io${base}/rules/${groupSlug}/${serviceSlug}/`,
-    isPartOf: {
-      '@type': 'WebSite',
-      name: 'Awesome Prometheus Alerts',
-      url: 'https://samber.github.io/awesome-prometheus-alerts/',
+const buildDate = new Date().toISOString().slice(0, 10);
+const keywords = [
+  'Prometheus', 'alerting rules', service.name, 'monitoring', 'PromQL',
+  ...service.exporters.map((e) => e.name).filter(Boolean),
+].join(', ');
+
+const pageUrl = `${SITE_URL}rules/${groupSlug}/${serviceSlug}/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'TechArticle',
+      '@id': `${pageUrl}#article`,
+      headline: `${service.name} Prometheus Alert Rules`,
+      description: metaDesc,
+      about: `Prometheus monitoring for ${service.name}`,
+      url: pageUrl,
+      inLanguage: SCHEMA_IN_LANGUAGE,
+      datePublished: SITE_DATE_PUBLISHED,
+      dateModified: buildDate,
+      author: schemaAuthor,
+      publisher: schemaPublisher,
+      isPartOf: schemaWebSite,
     },
-  },
-  ...(faqItems.length > 0 ? [{
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqItems,
-  }] : []),
-];
+    ...(faqItems.length > 0 ? [{
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      mainEntity: faqItems,
+    }] : []),
+  ],
+};
 ---
 
 <BaseLayout
-  title={`${service.name} Prometheus Alert Rules | Awesome Prometheus Alerts`}
+  title={`${service.name} Alert Rules | Awesome Prometheus Alerts`}
   description={metaDesc}
+  ogType="article"
+  keywords={keywords}
   jsonLd={jsonLd}
+  datePublished={SITE_DATE_PUBLISHED}
+  dateModified={buildDate}
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <Breadcrumbs
@@ -79,15 +100,18 @@ const jsonLd = [
         groups={data.groups}
         currentGroupSlug={groupSlug}
         currentServiceSlug={serviceSlug}
+        currentService={service}
         base={base}
       />
 
       <!-- Main content -->
       <div class="flex-1 min-w-0">
+        <CautionBanner />
+
         <!-- Page header -->
         <div class="mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
-          <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{service.name}</h1>
-          <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+          <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{service.name} Prometheus Alert Rules</h1>
+          <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-2">
             {ruleCount} Prometheus alerting rule{ruleCount !== 1 ? 's' : ''} for {service.name}.
             {exporterNames && `Exported via ${exporterNames}.`}
             These rules cover critical and warning conditions — copy and paste the YAML into your Prometheus configuration.
@@ -131,6 +155,27 @@ const jsonLd = [
             );
           })()}
         </nav>
+
+        <!-- More in group -->
+        {group.services.length > 1 && (
+          <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-3">
+              More in <a href={`${base}/rules/${groupSlug}/`} class="hover:text-brand dark:hover:text-brand-dark transition-colors">{group.name}</a>
+            </h2>
+            <div class="flex flex-wrap gap-2">
+              {group.services
+                .filter((s) => getServiceSlug(s) !== serviceSlug)
+                .map((s) => (
+                  <a
+                    href={`${base}/rules/${groupSlug}/${getServiceSlug(s)}/`}
+                    class="inline-flex items-center px-3 py-1 text-xs rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand/10 dark:hover:bg-brand-dark/10 hover:text-brand dark:hover:text-brand-dark border border-slate-200 dark:border-slate-700 transition-colors"
+                  >
+                    {s.name}
+                  </a>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   </div>

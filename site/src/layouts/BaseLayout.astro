@@ -3,14 +3,19 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import SEO from '../components/SEO.astro';
+import { SITE_ORIGIN, AUTHOR_NAME } from '../data/site';
 
 interface Props {
   title: string;
   description?: string;
   canonicalUrl?: string;
   ogImage?: string;
+  ogType?: string;
+  keywords?: string;
   jsonLd?: object | object[];
   noIndex?: boolean;
+  datePublished?: string;
+  dateModified?: string;
 }
 
 const {
@@ -18,13 +23,16 @@ const {
   description = 'Collection of alerting rules for Prometheus. Copy-pasteable Prometheus alert configurations for 90+ services.',
   canonicalUrl,
   ogImage,
+  ogType,
+  keywords,
   jsonLd,
   noIndex = false,
+  datePublished,
+  dateModified,
 } = Astro.props;
 
 const base = import.meta.env.BASE_URL;
-const siteUrl = 'https://samber.github.io';
-const canonical = canonicalUrl ?? `${siteUrl}${base}${Astro.url.pathname.replace(base, '')}`;
+const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.replace(base, '')}`;
 ---
 
 <!DOCTYPE html>
@@ -33,6 +41,7 @@ const canonical = canonicalUrl ?? `${siteUrl}${base}${Astro.url.pathname.replace
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#E6522C" />
+  <meta name="author" content={AUTHOR_NAME} />
   {noIndex && <meta name="robots" content="noindex" />}
 
   <SEO
@@ -40,12 +49,21 @@ const canonical = canonicalUrl ?? `${siteUrl}${base}${Astro.url.pathname.replace
     description={description}
     canonicalUrl={canonical}
     ogImage={ogImage}
+    ogType={ogType}
+    keywords={keywords}
     jsonLd={jsonLd}
     base={base}
-    siteUrl={siteUrl}
+    siteUrl={SITE_ORIGIN}
+    datePublished={datePublished}
+    dateModified={dateModified}
   />
 
+  <link rel="preconnect" href="https://www.googletagmanager.com" />
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+  <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
   <link rel="icon" type="image/x-icon" href={`${base}/favicon.ico`} />
+  <link rel="manifest" href={`${base}/manifest.json`} />
 
   <!-- Dark mode: set class before paint to avoid flash -->
   <script is:inline>
@@ -58,12 +76,12 @@ const canonical = canonicalUrl ?? `${siteUrl}${base}${Astro.url.pathname.replace
   </script>
 
   <!-- Google Analytics 4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDF25KKVNL"></script>
   <script is:inline>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
     gtag('js', new Date());
-    gtag('config', 'G-XXXXXXXXXX');
+    gtag('config', 'G-GDF25KKVNL');
   </script>
 </head>
 <body class="min-h-screen flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-150">

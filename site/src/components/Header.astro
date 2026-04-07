@@ -1,5 +1,7 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import { sponsors } from '../data/sponsors';
+import { SITE_NAME, GITHUB_URL, GITHUB_API_REPO_URL, GITHUB_CONTRIBUTING_URL } from '../data/site';
 
 interface Props {
   base: string;
@@ -11,19 +13,20 @@ const currentPath = Astro.url.pathname;
 function isActive(path: string) {
   return currentPath.startsWith(`${base}${path}`);
 }
----
 
-<!-- Sponsor banner -->
-<div class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 py-1.5 px-4 text-center">
-  Kindly supported by&nbsp;
-  <a href="https://cast.ai/samuel" target="_blank" rel="noopener noreferrer" class="inline-flex items-center mx-2 hover:opacity-80">
-    <img src={`${base}/images/sponsor-cast-ai.png`} alt="CAST AI" class="h-4 inline" />
-  </a>
-  and&nbsp;
-  <a href="https://betterstack.com/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center mx-2 hover:opacity-80">
-    <img src={`${base}/images/sponsor-betterstack.png`} alt="Better Stack" class="h-4 inline" />
-  </a>
-</div>
+let stars = 0;
+try {
+  const res = await fetch(GITHUB_API_REPO_URL, {
+    headers: { 'Accept': 'application/vnd.github+json' }
+  });
+  if (res.ok) {
+    const data = await res.json();
+    stars = data.stargazers_count ?? 0;
+  }
+} catch {}
+
+const starsLabel = stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : String(stars);
+---
 
 <!-- Main header -->
 <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur border-b border-slate-200 dark:border-slate-800">
@@ -31,11 +34,9 @@ function isActive(path: string) {
     <div class="flex items-center justify-between h-14">
 
       <!-- Logo -->
-      <a href={`${base}/`} class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white hover:text-brand dark:hover:text-brand-dark transition-colors">
-        <svg class="w-6 h-6 text-brand" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-        </svg>
-        <span class="hidden sm:block text-sm">Awesome Prometheus Alerts</span>
+      <a href={`${base}/`} class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white hover:text-brand dark:hover:text-brand-dark transition-colors flex-shrink-0">
+        <img src={`${base}/favicon.svg`} alt="Prometheus flame" class="w-6 h-6" aria-hidden="true" />
+        <span class="hidden sm:block text-sm">{SITE_NAME}</span>
         <span class="sm:hidden text-sm">APA</span>
       </a>
 
@@ -70,7 +71,7 @@ function isActive(path: string) {
         </div>
 
         <a
-          href="https://github.com/samber/awesome-prometheus-alerts/blob/master/CONTRIBUTING.md"
+          href={GITHUB_CONTRIBUTING_URL}
           target="_blank"
           rel="noopener noreferrer"
           class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -79,16 +80,20 @@ function isActive(path: string) {
         </a>
 
         <a
-          href="https://github.com/samber/awesome-prometheus-alerts"
+          href={GITHUB_URL}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub repository"
-          class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+          class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
         >
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
           </svg>
+          {stars > 0 && (
+            <span class="text-xs font-medium tabular-nums">{starsLabel}</span>
+          )}
         </a>
+
       </nav>
 
       <div class="flex items-center gap-2">
@@ -113,6 +118,18 @@ function isActive(path: string) {
     </div>
   </div>
 
+  <!-- Sponsors row -->
+  <div class="border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-900/50 py-2 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto flex items-center justify-center gap-3">
+      <span class="text-xs font-medium tracking-wider uppercase text-slate-400 dark:text-slate-500">Sponsored by</span>
+      {sponsors.map((s) => (
+        <a href={s.url} target="_blank" rel="noopener noreferrer" class="hover:opacity-75 transition-opacity" title={s.name}>
+          <img src={`${base}${s.logo}`} alt={`${s.name} — ${s.description}`} class="h-10 w-auto" />
+        </a>
+      ))}
+    </div>
+  </div>
+
   <!-- Mobile menu -->
   <div
     id="mobile-menu"
@@ -123,8 +140,8 @@ function isActive(path: string) {
       <a href={`${base}/alertmanager/`} class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">AlertManager Config</a>
       <a href={`${base}/blackbox-exporter/`} class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Blackbox Exporter</a>
       <a href={`${base}/sleep-peacefully/`} class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Sleep Peacefully</a>
-      <a href="https://github.com/samber/awesome-prometheus-alerts/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Contribute</a>
-      <a href="https://github.com/samber/awesome-prometheus-alerts" target="_blank" rel="noopener noreferrer" class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">GitHub</a>
+      <a href={GITHUB_CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer" class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Contribute</a>
+      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">GitHub</a>
     </nav>
   </div>
 </header>

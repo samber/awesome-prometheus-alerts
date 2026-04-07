@@ -3,26 +3,182 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import StatsBar from '../components/StatsBar.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import SearchWidget from '../components/SearchWidget.astro';
-import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount } from '../data/rules';
+import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, getPopularServices } from '../data/rules';
+import { SITE_URL, GITHUB_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, LICENSE_CC_BY_URL, LICENSE_MIT_URL } from '../data/site';
 
 const base = import.meta.env.BASE_URL;
 const totalRules = getTotalRuleCount();
 const totalServices = getTotalServiceCount();
+const popularServices = getPopularServices();
+
+const org = {
+  '@type': 'Organization',
+  '@id': `${SITE_URL}#organization`,
+  name: schemaPublisher.name,
+  url: GITHUB_URL,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${SITE_URL}favicon.svg`,
+  },
+  sameAs: [GITHUB_URL, SITE_URL],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'technical support',
+    url: `${GITHUB_URL}/issues`,
+  },
+};
+
+const buildDate = new Date().toISOString().slice(0, 10);
+
+const faqItems = [
+  {
+    '@type': 'Question',
+    name: 'What are Prometheus alerting rules?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: 'Prometheus alerting rules are PromQL-based conditions evaluated by the Prometheus server. When a condition is true for a specified duration, an alert fires and is routed by AlertManager to receivers like Slack, PagerDuty, or email. Rules are defined as YAML files and cover metrics thresholds, absence of expected data, and rate-of-change conditions.',
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'How do I use these Prometheus alert rules?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: 'Find the service you want to monitor, copy the YAML snippet for any rule, and paste it into your Prometheus rules file (e.g., alerts/my-service.yml). Reload Prometheus to apply the rules. Adjust thresholds to match your workload — the values provided are sensible defaults but may need tuning.',
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'What exporters and services are covered?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: `Awesome Prometheus Alerts covers ${totalServices} services across ${data.groups.length} categories: ${data.groups.map((g) => `${g.name} (${g.services.map((s) => s.name).join(', ')})`).join('; ')}.`,
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'What is the difference between warning and critical severity?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: 'Critical alerts require immediate human attention — the system is down or severely degraded and revenue or reliability is directly impacted. Warning alerts need attention soon but are not immediately urgent. Info alerts are awareness-only, such as configuration changes or underutilized resources. Set up AlertManager routes to page on-call engineers only for critical alerts.',
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'What is PromQL?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: 'PromQL (Prometheus Query Language) is the functional query language used to select, filter, and aggregate time-series data in Prometheus. Alert rules use PromQL expressions — for example, rate(http_requests_total[5m]) > 100 fires when request rate exceeds 100/s over a 5-minute window.',
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'Can I contribute new alert rules?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: `Yes! Contributions are welcome. Open a pull request on GitHub at ${GITHUB_URL} with your new rules added to the _data/rules.yml file. Follow the existing format: provide a clear rule name, a description explaining what the alert means and why it matters, a tested PromQL expression, an appropriate severity, and a sensible "for" duration to avoid false positives.`,
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'What is AlertManager and how does it relate to these rules?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: 'AlertManager is the component that receives firing alerts from Prometheus and handles deduplication, grouping, silencing, and routing to receivers (Slack, PagerDuty, email, webhooks). The alert rules in this collection fire alerts from Prometheus — AlertManager then decides who to notify and when. See the AlertManager Configuration guide on this site for setup examples.',
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'How do I silence or suppress an alert?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: 'AlertManager supports silences — time-bounded mutes applied via its UI or API that suppress notifications without disabling the rule. For recurring suppression (nights, weekends, deployments), use inhibition rules or time-based PromQL patterns. See the Sleep Peacefully guide on this site for timezone-aware suppression examples using day_of_week() and hour() functions.',
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'What is the license for these alert rules?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: `The alert rules are licensed under Creative Commons CC BY 4.0. You are free to use, adapt, and redistribute them — including in commercial environments — as long as you provide attribution. See the LICENSE file in the GitHub repository for details.`,
+    },
+  },
+];
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Awesome Prometheus Alerts',
-  url: 'https://samber.github.io/awesome-prometheus-alerts/',
-  description: `Collection of ${totalRules} copy-pasteable Prometheus alerting rules for ${totalServices} services.`,
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: 'https://samber.github.io/awesome-prometheus-alerts/rules/?q={search_term_string}',
+  '@graph': [
+    org,
+    {
+      '@type': 'SoftwareSourceCode',
+      name: 'awesome-prometheus-alerts',
+      description: 'Collection of Prometheus alerting rules — YAML configurations for 90+ services',
+      url: GITHUB_URL,
+      codeRepository: GITHUB_URL,
+      programmingLanguage: 'YAML',
+      author: schemaAuthor,
+      license: LICENSE_MIT_URL,
     },
-    'query-input': 'required name=search_term_string',
-  },
+    {
+      '@type': 'Dataset',
+      name: 'Awesome Prometheus Alerts',
+      description: `Collection of ${totalRules} production-ready Prometheus alerting rules covering ${totalServices} services and 13 categories including databases, Kubernetes, cloud providers, and more.`,
+      url: SITE_URL,
+      creator: schemaAuthor,
+      datePublished: SITE_DATE_PUBLISHED,
+      dateModified: buildDate,
+      keywords: ['Prometheus', 'alerting rules', 'monitoring', 'PromQL', 'SRE', 'DevOps', 'observability'],
+      license: LICENSE_CC_BY_URL,
+      isAccessibleForFree: true,
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${SITE_URL}#faq`,
+      mainEntity: faqItems,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}#website`,
+      name: schemaWebSite.name,
+      url: SITE_URL,
+      description: `Collection of ${totalRules} copy-pasteable Prometheus alerting rules for ${totalServices} services.`,
+      publisher: { '@id': `${SITE_URL}#organization` },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: `${SITE_URL}rules/?q={search_term_string}`,
+        },
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: schemaWebSite.name,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'All',
+      url: SITE_URL,
+      image: `${SITE_URL}favicon.svg`,
+      description: `Collection of ${totalRules} copy-pasteable Prometheus alerting rules for ${totalServices} services — covering databases, Kubernetes, cloud providers, message brokers, and more.`,
+      author: schemaAuthor,
+      publisher: { '@id': `${SITE_URL}#organization` },
+      offers: {
+        '@type': 'Offer',
+        price: 0,
+        priceCurrency: 'USD',
+      },
+    },
+    {
+      '@type': 'ItemList',
+      name: 'Site Navigation',
+      itemListElement: [
+        { '@type': 'SiteNavigationElement', position: 1, name: 'Alert Rules', url: `${SITE_URL}rules/` },
+        { '@type': 'SiteNavigationElement', position: 2, name: 'AlertManager Config', url: `${SITE_URL}alertmanager/` },
+        { '@type': 'SiteNavigationElement', position: 3, name: 'Blackbox Exporter', url: `${SITE_URL}blackbox-exporter/` },
+        { '@type': 'SiteNavigationElement', position: 4, name: 'Sleep Peacefully', url: `${SITE_URL}sleep-peacefully/` },
+      ],
+    },
+  ],
 };
 ---
 
@@ -44,10 +200,10 @@ const jsonLd = {
         />
       </div>
       <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-        Awesome Prometheus Alerts
+        Awesome Prometheus Alert Rules
       </h1>
       <p class="text-lg text-slate-500 dark:text-slate-400 mb-8 max-w-2xl mx-auto">
-        {totalRules} copy-pasteable Prometheus alerting rules for {totalServices} services.
+        {totalRules} copy-pasteable Prometheus alerting rules.
         Find, copy, and deploy alerts in seconds.
       </p>
 
@@ -84,6 +240,23 @@ const jsonLd = {
   <section class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <StatsBar />
+    </div>
+  </section>
+
+  <!-- Popular services -->
+  <section class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-5">Popular services</h2>
+      <div class="flex flex-wrap gap-2">
+        {popularServices.map(({ service, groupSlug, serviceSlug }) => (
+          <a
+            href={`${base}/rules/${groupSlug}/${serviceSlug}/`}
+            class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-brand/10 dark:hover:bg-brand-dark/10 hover:text-brand dark:hover:text-brand-dark transition-colors border border-slate-200 dark:border-slate-700"
+          >
+            {service.name}
+          </a>
+        ))}
+      </div>
     </div>
   </section>
 
@@ -147,6 +320,26 @@ const jsonLd = {
           <p class="text-sm text-slate-500 dark:text-slate-400">Time-based alert suppression and timezone-aware PromQL patterns.</p>
         </a>
       </div>
+    </div>
+  </section>
+
+  <!-- FAQ section -->
+  <section class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-8">Frequently asked questions</h2>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+        {faqItems.map((item) => (
+          <details class="group border-b border-slate-100 dark:border-slate-800">
+            <summary class="flex cursor-pointer items-center justify-between gap-3 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 list-none [&::-webkit-details-marker]:hidden">
+              {item.name}
+              <svg class="w-4 h-4 flex-shrink-0 text-slate-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="pb-4 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{item.acceptedAnswer.text}</p>
+          </details>
+        ))}
+      </dl>
     </div>
   </section>
 </BaseLayout>

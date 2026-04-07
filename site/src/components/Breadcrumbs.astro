@@ -9,8 +9,9 @@ interface Props {
   base: string;
 }
 
+import { SITE_ORIGIN } from '../data/site';
+
 const { items, base } = Astro.props;
-const siteUrl = 'https://samber.github.io';
 
 const allItems = [{ label: 'Home', href: `${base}/` }, ...items];
 
@@ -21,7 +22,7 @@ const jsonLd = {
     '@type': 'ListItem',
     position: i + 1,
     name: item.label,
-    ...(item.href ? { item: `${siteUrl}${item.href}` } : {}),
+    ...(item.href ? { item: `${SITE_ORIGIN}${item.href}` } : {}),
   })),
 };
 ---

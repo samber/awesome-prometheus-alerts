@@ -1,0 +1,19 @@
+{
+  "name": "Awesome Prometheus Alerts",
+  "short_name": "Prom Alerts",
+  "description": "Collection of copy-pasteable Prometheus alerting rules for 90+ services.",
+  "start_url": "/awesome-prometheus-alerts/",
+  "scope": "/awesome-prometheus-alerts/",
+  "display": "browser",
+  "background_color": "#0f172a",
+  "theme_color": "#E6522C",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/awesome-prometheus-alerts/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

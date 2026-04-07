@@ -1,11 +1,46 @@
 ---
 import GuideLayout from '../layouts/GuideLayout.astro';
+
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to suppress Prometheus alerts during nights and weekends',
+  description: 'Use PromQL time functions and timezone-aware recording rules to prevent alert fatigue by silencing alerts during off-hours.',
+  step: [
+    {
+      '@type': 'HowToStep',
+      name: 'Add inline time conditions to alert expressions',
+      text: 'Append time conditions directly to your alert PromQL: e.g., node_load5 > 10 and ON() (0 < day_of_week() < 6) to suppress weekend alerts, or and ON() (8 < hour() < 18) for business hours only.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Create timezone offset recording rules',
+      text: 'Define a european_summer_time_offset recording rule in a "timezones" rule group that returns 1 during DST and 0 otherwise, accounting for exact DST transition weekends.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Derive local time recording rules',
+      text: 'Use the timezone offset to compute local time metrics such as europe_london_time (time() + 3600 * european_summer_time_offset) and derive hour and day-of-week variants from them.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Reference time rules in alerts',
+      text: 'Use the recording rules as gate conditions in alerts: e.g., node_load5 > 10 and ON() (europe_london_weekday and europe_paris_weekday). Use absent() for the inverse (off-hours suppression).',
+    },
+  ],
+};
 ---
 
 <GuideLayout
   title="Sleep Peacefully"
   description="Time-based alert suppression with PromQL. Prevent alert fatigue using day-of-week, hour-of-day filters, and timezone-aware recording rules."
   breadcrumbs={[{ label: 'Guides' }, { label: 'Sleep Peacefully' }]}
+  icon="moon"
+  badge="PromQL Tips"
+  extraJsonLd={howToJsonLd}
+  dateUpdated="2025-01-15"
+  readingTime={4}
+  keywords="Prometheus, alert suppression, PromQL, time-based alerting, timezone, day_of_week, alert fatigue, recording rules"
 >
   <h2 id="alerting-time-window">Alerting time window</h2>
 

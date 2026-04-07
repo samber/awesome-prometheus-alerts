@@ -1,8 +1,7 @@
 ---
-import { getTotalRuleCount, getTotalServiceCount, getTotalExporterCount, data } from '../data/rules';
+import { getTotalRuleCount, getTotalExporterCount, data } from '../data/rules';
 
 const totalRules = getTotalRuleCount();
-const totalServices = getTotalServiceCount();
 const totalExporters = getTotalExporterCount();
 const totalGroups = data.groups.length;
 ---
@@ -11,10 +10,6 @@ const totalGroups = data.groups.length;
   <div>
     <div class="text-2xl font-bold text-brand dark:text-brand-dark">{totalRules}</div>
     <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">alert rules</div>
-  </div>
-  <div>
-    <div class="text-2xl font-bold text-brand dark:text-brand-dark">{totalServices}</div>
-    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">services</div>
   </div>
   <div>
     <div class="text-2xl font-bold text-brand dark:text-brand-dark">{totalExporters}</div>

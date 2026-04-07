@@ -2,7 +2,9 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import ServiceCard from '../../../components/ServiceCard.astro';
+import CautionBanner from '../../../components/CautionBanner.astro';
 import { data, getGroupSlug, getServiceSlug, getRuleCount } from '../../../data/rules';
+import { SITE_URL, schemaWebSite, SITE_DATE_PUBLISHED } from '../../../data/site';
 
 export function getStaticPaths() {
   return data.groups.map((group) => ({
@@ -15,11 +17,49 @@ const { group } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const groupSlug = getGroupSlug(group);
 const totalRules = group.services.reduce((sum, svc) => sum + getRuleCount(svc), 0);
+
+// Build a service list for the meta description (truncated to keep under 160 chars)
+const serviceNames = group.services.map((s) => s.name);
+const serviceList = serviceNames.slice(0, 5).join(', ') + (serviceNames.length > 5 ? `, and ${serviceNames.length - 5} more` : '');
+const groupDesc = `Browse ${totalRules} Prometheus alerting rules for ${group.name} — ${serviceList}. Copy-paste ready YAML for ${group.name} monitoring.`;
+
+const pageUrl = `${SITE_URL}rules/${groupSlug}/`;
+const buildDate = new Date().toISOString().slice(0, 10);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'CollectionPage',
+      name: `${group.name} — Prometheus Alert Rules`,
+      description: groupDesc,
+      url: pageUrl,
+      isPartOf: schemaWebSite,
+    },
+    {
+      '@type': 'ItemList',
+      name: `${group.name} Prometheus Alert Services`,
+      url: pageUrl,
+      numberOfItems: group.services.length,
+      itemListElement: group.services.map((service, idx) => ({
+        '@type': 'ListItem',
+        position: idx + 1,
+        name: service.name,
+        url: `${SITE_URL}rules/${groupSlug}/${getServiceSlug(service)}/`,
+        description: `${getRuleCount(service)} Prometheus alerting rules`,
+      })),
+    },
+  ],
+};
 ---
 
 <BaseLayout
-  title={`${group.name} — Prometheus Alert Rules | Awesome Prometheus Alerts`}
-  description={`${totalRules} Prometheus alerting rules for ${group.services.length} services in the ${group.name} category.`}
+  title={`${group.name} Prometheus Alerts | Awesome Prometheus Alerts`}
+  description={groupDesc}
+  jsonLd={jsonLd}
+  ogType="article"
+  datePublished={SITE_DATE_PUBLISHED}
+  dateModified={buildDate}
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <Breadcrumbs
@@ -36,6 +76,8 @@ const totalRules = group.services.reduce((sum, svc) => sum + getRuleCount(svc), 
         {group.services.length} service{group.services.length !== 1 ? 's' : ''} · {totalRules} rules
       </p>
     </div>
+
+    <CautionBanner />
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {group.services.map((service) => (

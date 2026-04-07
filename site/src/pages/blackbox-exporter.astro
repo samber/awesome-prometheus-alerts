@@ -2,12 +2,47 @@
 import GuideLayout from '../layouts/GuideLayout.astro';
 
 const base = import.meta.env.BASE_URL;
+
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to deploy Blackbox Exporter for worldwide endpoint probing',
+  description: 'Deploy blackbox exporters in multiple Points of Presence to monitor HTTP, HTTPS, DNS, TCP, and ICMP endpoints with geolocation support in Grafana.',
+  step: [
+    {
+      '@type': 'HowToStep',
+      name: 'Deploy blackbox exporters worldwide',
+      text: 'Deploy blackbox exporters in multiple PoPs (e.g., Montreal, Paris, Singapore, Sydney). Use community-hosted endpoints at probe-<city>.cleverapps.io or self-host using the samber/blackbox_exporter configuration.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Define targets with encoded labels',
+      text: 'Create a service discovery file (sd/blackbox.yml) encoding the exporter host, probe module, city name, geohash, and target URL in the target address using the :_: separator format.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Configure Prometheus relabeling',
+      text: 'Add a scrape job to prometheus.yml with relabel_configs to extract module, pop, geohash, and instance labels from the compound target address. Use regex patterns to parse each field.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Set up geohash labels for Grafana',
+      text: 'Convert probe PoP coordinates to geohash format using geohash.co. Add the geohash value to your target definitions so Grafana\'s geomap panel can display probe locations on a world map.',
+    },
+  ],
+};
 ---
 
 <GuideLayout
   title="Blackbox Exporter"
   description="Deploy blackbox exporters worldwide for endpoint probing over HTTP, HTTPS, DNS, TCP and ICMP. Prometheus configuration and Grafana geohash map setup."
   breadcrumbs={[{ label: 'Guides' }, { label: 'Blackbox Exporter' }]}
+  extraJsonLd={howToJsonLd}
+  dateUpdated="2025-01-15"
+  readingTime={6}
+  icon="globe"
+  badge="Monitoring Guide"
+  keywords="Prometheus, blackbox exporter, endpoint probing, HTTP monitoring, ICMP, DNS monitoring, Grafana geomap, worldwide probes, PromQL"
 >
   <h2 id="worldwide-probes">Worldwide probes</h2>
 
@@ -31,7 +66,7 @@ const base = import.meta.env.BASE_URL;
   </ul>
 
   <p class="text-sm text-slate-500 dark:text-slate-400">
-    ☝️ Logs have been disabled. More probes from the community would be appreciated —
+    ☝️ Server logs have been disabled. More probes from the community would be appreciated —
     <a href="https://github.com/samber/awesome-prometheus-alerts/" target="_blank" rel="noopener noreferrer">contribute here</a>!
     These blackbox exporters use the following
     <a href="https://github.com/samber/blackbox_exporter/blob/master/samber.yml" target="_blank" rel="noopener noreferrer">configuration</a>.
@@ -129,7 +164,7 @@ scrape_configs:
 
   <img
     src={`${base}/images/grafana-map-panel.png`}
-    alt="Grafana map panel showing worldwide probe locations"
+    alt="Grafana geomap panel showing worldwide Prometheus blackbox exporter probe locations"
     class="rounded-lg border border-slate-200 dark:border-slate-700 my-4"
     loading="lazy"
   />

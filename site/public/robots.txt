@@ -1,4 +1,28 @@
 User-agent: *
 Allow: /
 
+# AI search bots — explicitly allowed for citation
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
 Sitemap: https://samber.github.io/awesome-prometheus-alerts/sitemap-index.xml
+LLMs: https://samber.github.io/awesome-prometheus-alerts/llms.txt
+LLMs-full: https://samber.github.io/awesome-prometheus-alerts/llms-full.txt
