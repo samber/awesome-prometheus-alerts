@@ -16,24 +16,16 @@ Please ensure your pull request adheres to the following guidelines:
 - Description must be factual (the "what?") and should provide root cause suggestions (the "why?"), for faster resolution.
 - Queries must be tested on latest exporter version.
 
-## Improving Github page
+## Improving the website
+
+The site is built with Astro + TypeScript, located in `site/`.
 
 ### Run locally
 
 ```
-gem install bundler
-bundle install
-jekyll serve
+cd site
+npm install
+npm run dev
 ```
 
-Or with Docker:
-
-```
-docker run --rm -it -p 4000:4000 -v $(pwd):/srv/jekyll jekyll/jekyll jekyll serve
-```
-
-Or with Docker Compose:
-
-```
-docker compose up -d
-```
+Site serves at http://localhost:4321/awesome-prometheus-alerts.

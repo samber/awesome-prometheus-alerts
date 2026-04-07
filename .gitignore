@@ -1,9 +1,3 @@
-# Jekyll (legacy)
-_site/
-.sass-cache/
-.jekyll-cache/
-.jekyll-metadata
-
 # Generated data
 _data/rules.json
 test/rules/

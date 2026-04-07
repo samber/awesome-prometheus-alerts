@@ -6,17 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A curated collection of ~940 Prometheus alerting rules covering 90+ services across 100+ exporters, organized in categories: basic resource monitoring (Prometheus, host/hardware, SMART, Docker, Blackbox, Windows, VMware, Netdata), databases (MySQL, PostgreSQL, Redis, MongoDB, Elasticsearch, Cassandra, Clickhouse, CouchDB, etc.), message brokers (RabbitMQ, Kafka, Pulsar, Nats, Zookeeper), proxies/load balancers/service meshes (Nginx, Apache, HaProxy, Traefik, Caddy, Linkerd, Istio), runtimes (PHP-FPM, JVM, Sidekiq), data engineering (Apache Flink, Apache Spark, Hadoop), orchestrators (Kubernetes, Nomad, Consul, Etcd, OpenStack), CI/CD (Jenkins, ArgoCD, FluxCD, GitLab CI, Spinnaker), network and security (SSL/TLS, CoreDNS, Vault, Cloudflare, Cilium, eBPF), storage (Ceph, ZFS, OpenEBS, Minio), cloud providers (AWS, Azure, DigitalOcean), observability (Thanos, Loki, Cortex, OpenTelemetry Collector, Grafana Tempo/Mimir/Alloy, Jaeger), and other (APC UPS, Graph Node).
 
-All rules are stored in a single YAML data file (`_data/rules.yml`) and rendered as a Jekyll-based GitHub Pages site at https://samber.github.io/awesome-prometheus-alerts. The site provides copy-pasteable Prometheus alert snippets and downloadable rule files per exporter.
+All rules are stored in a single YAML data file (`_data/rules.yml`) and rendered as a static site built with Astro + TypeScript (located in `site/`). The site provides copy-pasteable Prometheus alert snippets and downloadable rule files per exporter.
 
 The project is community-driven. Most contributions are PRs adding or updating rules in `_data/rules.yml`. Files in `dist/rules/` are auto-generated on merge — never edit them manually.
 
 ## Architecture
 
 - **`_data/rules.yml`** — The single source of truth for all alerting rules. This is the main file contributors edit. It is NOT a valid Prometheus config; the site renders each rule into copy-pasteable Prometheus alert format.
-- **`rules.md`** — Jekyll template that iterates over `_data/rules.yml` and renders the rules page with copy buttons and formatted YAML blocks.
-- **`alertmanager.md`** — Static page with Prometheus/AlertManager configuration examples.
-- **`_layouts/default.html`** — Site layout (Jekyll theme: cayman).
-- **`_config.yml`** — Jekyll configuration.
+- **`site/`** — Astro + TypeScript static site. Run `npm run dev` inside this directory to develop locally.
+- **`site/src/data/rules.ts`** — Typed wrappers and helper functions over `_data/rules.yml`.
+- **`site/src/data/site.ts`** — Shared site metadata constants (URLs, author, schema objects).
+- **`site/src/pages/`** — Astro page routes: `index.astro` (homepage), `rules/[group]/[service].astro` (per-service rule pages), `alertmanager.astro`, `blackbox-exporter.astro`, `sleep-peacefully.astro` (guides).
+- **`site/src/layouts/BaseLayout.astro`** — Root HTML layout (SEO, GA, dark mode).
+- **`site/src/layouts/GuideLayout.astro`** — Layout for guide pages (TOC, hero, related guides).
+- **`site/src/components/`** — Shared Astro components (Header, Footer, Sidebar, RuleCard, ExporterSection, etc.).
+- **`site/astro.config.mjs`** — Astro configuration (sitemap, Vite YAML plugin, base URL).
 - **`dist/rules/`** — Pre-built downloadable rule files organized by service/exporter (referenced in the site for `wget` commands).
 
 ## Rules YAML Structure
@@ -50,19 +54,20 @@ Services are grouped in category. If you are not sure about the classification, 
 ## Running Locally
 
 ```bash
-# With Ruby/Bundler
-gem install bundler
-bundle install
-jekyll serve
-
-# With Docker Compose
-docker compose up -d
-
-# With Docker directly
-docker run --rm -it -p 4000:4000 -v $(pwd):/srv/jekyll jekyll/jekyll jekyll serve
+cd site
+npm install
+npm run dev
 ```
 
-Site serves at http://localhost:4000/awesome-prometheus-alerts.
+Site serves at http://localhost:4321/awesome-prometheus-alerts.
+
+To build for production:
+
+```bash
+cd site
+npm run build
+npm run preview
+```
 
 ## Contributing Rules
 

@@ -179,7 +179,7 @@ There are many ways to contribute: writing code, alerting rules, documentation, 
 
 ## 🏋️ Improvements
 
-- Create an alert rule builder in Jekyll for custom alerts (severity, thresholds, instances...)
+- Create an alert rule builder for custom alerts (severity, thresholds, instances...)
 - Add resolution suggestions to rule descriptions, for faster incident resolution ([#85](https://github.com/samber/awesome-prometheus-alerts/issues/85)).
 
 ## 💫 Show your support
