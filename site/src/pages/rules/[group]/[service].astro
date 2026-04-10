@@ -15,7 +15,7 @@ export function getStaticPaths() {
 }
 
 const { group, service } = Astro.props;
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const groupSlug = getGroupSlug(group);
 const serviceSlug = getServiceSlug(service);
 const ruleCount = getRuleCount(service);

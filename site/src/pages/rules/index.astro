@@ -6,7 +6,7 @@ import CautionBanner from '../../components/CautionBanner.astro';
 import { data, getGroupSlug, getServiceSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, buildRedirectMap } from '../../data/rules';
 import { SITE_URL, schemaWebSite } from '../../data/site';
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const totalRules = getTotalRuleCount();
 const totalServices = getTotalServiceCount();
 const redirectMap = buildRedirectMap(base);

@@ -5,7 +5,7 @@ interface Props {
   class?: string;
 }
 const { class: extraClass = '' } = Astro.props;
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <div id="search" class={extraClass}></div>
@@ -14,7 +14,7 @@ const base = import.meta.env.BASE_URL;
 <script>
   // Load Pagefind UI lazily (only when the search div is visible/focused)
   function initPagefind() {
-    const base = import.meta.env.BASE_URL;
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     // @ts-ignore
     import(`${base}/pagefind/pagefind-ui.js`).then((module) => {
       const PagefindUI = module.PagefindUI;

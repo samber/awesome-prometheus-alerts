@@ -6,7 +6,7 @@ import SearchWidget from '../components/SearchWidget.astro';
 import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, getPopularServices } from '../data/rules';
 import { SITE_URL, GITHUB_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, LICENSE_CC_BY_URL, LICENSE_MIT_URL } from '../data/site';
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const totalRules = getTotalRuleCount();
 const totalServices = getTotalServiceCount();
 const popularServices = getPopularServices();

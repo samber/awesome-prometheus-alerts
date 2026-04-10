@@ -27,7 +27,7 @@ interface Props {
 }
 
 const { title, description, breadcrumbs = [], icon = 'book', badge = 'Guide', extraJsonLd, dateUpdated, keywords, readingTime } = Astro.props;
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const canonicalUrl = `${SITE_ORIGIN}${base}${Astro.url.pathname.replace(base, '')}`;
 
 const dateModified = dateUpdated ?? new Date().toISOString().slice(0, 10);
