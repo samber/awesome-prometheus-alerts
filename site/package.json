@@ -17,7 +17,7 @@
     "astro-icon": "^1.0.0",
     "js-yaml": "^4.1.0",
     "pagefind": "^1.0.0",
-    "tailwindcss": "^3.4.0",
+    "tailwindcss": "^4.2.2",
     "yaml": "^2.8.3"
   },
   "devDependencies": {
