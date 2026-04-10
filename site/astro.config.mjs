@@ -1,5 +1,5 @@
 import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
+import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
 import icon from 'astro-icon';
 import { parse as parseYaml } from 'yaml';
@@ -70,7 +70,6 @@ export default defineConfig({
   redirects: buildRedirects(base),
   output: 'static',
   integrations: [
-    tailwind({ applyBaseStyles: false }),
     sitemap({
       serialize(item) {
         const path = new URL(item.url).pathname;
@@ -100,6 +99,6 @@ export default defineConfig({
     icon(),
   ],
   vite: {
-    plugins: [yamlPlugin()],
+    plugins: [tailwindcss(), yamlPlugin()],
   },
 });
