@@ -43,45 +43,48 @@ const btnId = `copy-btn-${targetId}`;
   </button>
 )}
 
-<script>
-  document.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const targetId = btn.dataset.copyTarget;
-      if (!targetId) return;
-      const target = document.getElementById(targetId);
-      if (!target) return;
+<script define:vars={{ btnId }}>
+  const btn = document.getElementById(btnId);
+  if (!(btn instanceof HTMLButtonElement)) return;
+  if (btn.dataset.copyBound === 'true') return;
 
-      const text = target.textContent ?? '';
-      try {
-        await navigator.clipboard.writeText(text.trim());
-      } catch {
-        // Fallback for older browsers
-        const ta = document.createElement('textarea');
-        ta.value = text.trim();
-        ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
+  btn.dataset.copyBound = 'true';
+  btn.addEventListener('click', async () => {
+    const targetId = btn.dataset.copyTarget;
+    if (!targetId) return;
+    const target = document.getElementById(targetId);
+    if (!target) return;
 
-      // Visual feedback
-      const copyIcon = btn.querySelector('.copy-icon');
-      const checkIcon = btn.querySelector('.check-icon');
-      const copyLabel = btn.querySelector('.copy-label');
-      const copiedLabel = btn.querySelector('.copied-label');
+    const text = target.textContent ?? '';
+    try {
+      await navigator.clipboard.writeText(text.trim());
+    } catch {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text.trim();
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
 
-      copyIcon?.classList.add('hidden');
-      checkIcon?.classList.remove('hidden');
-      copyLabel?.classList.add('hidden');
-      copiedLabel?.classList.remove('hidden');
+    // Visual feedback
+    const copyIcon = btn.querySelector('.copy-icon');
+    const checkIcon = btn.querySelector('.check-icon');
+    const copyLabel = btn.querySelector('.copy-label');
+    const copiedLabel = btn.querySelector('.copied-label');
 
-      setTimeout(() => {
-        copyIcon?.classList.remove('hidden');
-        checkIcon?.classList.add('hidden');
-        copyLabel?.classList.remove('hidden');
-        copiedLabel?.classList.add('hidden');
-      }, 2000);
-    });
+    copyIcon?.classList.add('hidden');
+    checkIcon?.classList.remove('hidden');
+    copyLabel?.classList.add('hidden');
+    copiedLabel?.classList.remove('hidden');
+
+    setTimeout(() => {
+      copyIcon?.classList.remove('hidden');
+      checkIcon?.classList.add('hidden');
+      copyLabel?.classList.remove('hidden');
+      copiedLabel?.classList.add('hidden');
+    }, 2000);
   });
 </script>
