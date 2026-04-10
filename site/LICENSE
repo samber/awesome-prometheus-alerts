@@ -1,22 +1,4 @@
-This repository uses a dual license:
-
-- Alert rules and content (_data/rules.yml, dist/rules/, README.md):
-  Creative Commons Attribution 4.0 International (CC BY 4.0)
-  https://creativecommons.org/licenses/by/4.0/
-
-- Site source code (site/):
-  MIT License
-  https://opensource.org/licenses/MIT
-
----
-
-Creative Commons Attribution 4.0 International License (CC BY 4.0)
-
-http://creativecommons.org/licenses/by/4.0/
-
----
-
-MIT License (site source code)
+MIT License
 
 Copyright (c) 2018 Samuel Berthe
 

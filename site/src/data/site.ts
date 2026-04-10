@@ -21,6 +21,8 @@ export const GITHUB_LICENSE_URL = `${GITHUB_URL}/blob/master/LICENSE`;
 export const LICENSE_CC_BY_URL = 'https://creativecommons.org/licenses/by/4.0/';
 export const LICENSE_CC_BY_NAME = 'Creative Commons CC BY 4.0';
 export const LICENSE_MIT_URL = 'https://opensource.org/licenses/MIT';
+export const LICENSE_MIT_NAME = 'MIT';
+export const GITHUB_MIT_LICENSE_URL = `${GITHUB_URL}/blob/master/site/LICENSE`;
 
 export const schemaAuthor = {
   '@type': 'Person',

@@ -1,7 +1,7 @@
 ---
 import { sponsors } from '../data/sponsors';
 import { getPopularServices, data, getGroupSlug } from '../data/rules';
-import { SITE_NAME, SITE_URL, GITHUB_URL, GITHUB_CONTRIBUTING_URL, GITHUB_LICENSE_URL, AUTHOR_NAME, AUTHOR_GITHUB_URL, TWITTER_HANDLE, LICENSE_CC_BY_NAME } from '../data/site';
+import { SITE_NAME, SITE_URL, GITHUB_URL, GITHUB_CONTRIBUTING_URL, GITHUB_LICENSE_URL, GITHUB_MIT_LICENSE_URL, AUTHOR_NAME, AUTHOR_GITHUB_URL, TWITTER_HANDLE, LICENSE_CC_BY_NAME, LICENSE_MIT_NAME } from '../data/site';
 
 interface Props {
   base: string;
@@ -90,7 +90,11 @@ const featuredGroups = data.groups.filter((g) => featuredGroupSlugs.includes(get
         {' '}is maintained by{' '}
         <a href={AUTHOR_GITHUB_URL} class="hover:text-brand dark:hover:text-brand-dark transition-colors">@{AUTHOR_GITHUB_URL.split('/').pop()}</a>
       </span>
-      <span>Licensed under <a href={GITHUB_LICENSE_URL} class="hover:text-brand dark:hover:text-brand-dark transition-colors">{LICENSE_CC_BY_NAME}</a></span>
+      <span>
+        Alert rules: <a href={GITHUB_LICENSE_URL} class="hover:text-brand dark:hover:text-brand-dark transition-colors">{LICENSE_CC_BY_NAME}</a>
+        {' · '}
+        Site code: <a href={GITHUB_MIT_LICENSE_URL} class="hover:text-brand dark:hover:text-brand-dark transition-colors">{LICENSE_MIT_NAME}</a>
+      </span>
     </div>
   </div>
 </footer>
