@@ -10,7 +10,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
   <br>
   <a href="https://cast.ai/samuel">
     <div>
-      <img src="https://samber.github.io/awesome-prometheus-alerts/assets/sponsor-cast-ai.png" width="200" alt="Cast AI">
+      <img src="https://samber.github.io/awesome-prometheus-alerts/images/sponsor-cast-ai.png" width="200" alt="Cast AI">
     </div>
     <div>
       Cut Kubernetes & AI costs, boost application stability.
@@ -19,7 +19,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
   <br>
   <a href="https://betterstack.com">
     <div>
-      <img src="https://samber.github.io/awesome-prometheus-alerts/assets/sponsor-betterstack.png" width="200" alt="Better Stack">
+      <img src="https://samber.github.io/awesome-prometheus-alerts/images/sponsor-betterstack.png" width="200" alt="Better Stack">
     </div>
     <div>
       Better Stack lets you centralize, search, and visualize your logs.
