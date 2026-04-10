@@ -49,11 +49,10 @@ function buildRedirects(base) {
         // Old anchor slug (spaces → hyphens only, no other substitutions)
         const oldSlug = service.name.replace(/ /g, '-').toLowerCase();
         const newPath = `${base}/rules/${groupSlug}/${serviceSlug}/`;
-        // Redirect from flat old path (with and without trailing slash)
-        for (const oldPath of [`${base}/rules/${oldSlug}`, `${base}/rules/${oldSlug}/`]) {
-          if (oldPath !== newPath && oldPath !== newPath.slice(0, -1)) {
-            redirects[oldPath] = { destination: newPath, status: 301 };
-          }
+        // Redirect from flat old path (without trailing slash; Astro handles the slash variant)
+        const oldPath = `${base}/rules/${oldSlug}`;
+        if (oldPath !== newPath && oldPath !== newPath.slice(0, -1)) {
+          redirects[oldPath] = { destination: newPath, status: 301 };
         }
       }
     }
@@ -102,6 +101,5 @@ export default defineConfig({
   ],
   vite: {
     plugins: [yamlPlugin()],
-    assetsInclude: ['**/*.yml'],
   },
 });
