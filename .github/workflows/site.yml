@@ -1,0 +1,36 @@
+name: Site build
+
+on:
+  pull_request:
+    paths:
+      - site/**
+  push:
+    branches:
+      - master
+    paths:
+      - site/**
+
+jobs:
+  site-build:
+    name: Build Astro site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Build Astro site
+        working-directory: site
+        env:
+          ASTRO_TELEMETRY_DISABLED: "1"
+        run: npm run build
