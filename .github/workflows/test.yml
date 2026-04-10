@@ -2,13 +2,13 @@ name: Promtool check
 
 on:
   pull_request:
-    path:
-      - _data
+    paths:
+      - _data/**
   push:
     branches:
       - master
-    path:
-      - _data
+    paths:
+      - _data/**
 
 jobs:
   promtool-check:
