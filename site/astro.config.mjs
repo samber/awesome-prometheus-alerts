@@ -9,14 +9,20 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+function normalizeViteId(id) {
+  const cleanId = id.split('?', 1)[0].split('#', 1)[0];
+  return cleanId.startsWith('/@fs/') ? cleanId.slice(4) : cleanId;
+}
+
 /** Custom Vite plugin that parses YAML files using the 'yaml' package,
  *  which tolerates duplicate keys (last one wins) unlike js-yaml 4.x. */
 function yamlPlugin() {
   return {
     name: 'vite-plugin-yaml-tolerant',
     transform(code, id) {
-      if (!id.endsWith('.yml') && !id.endsWith('.yaml')) return null;
-      const content = readFileSync(resolve(id), 'utf-8');
+      const normalizedId = normalizeViteId(id);
+      if (!normalizedId.endsWith('.yml') && !normalizedId.endsWith('.yaml')) return null;
+      const content = typeof code === 'string' ? code : readFileSync(resolve(normalizedId), 'utf-8');
       const data = parseYaml(content, { merge: true, strict: false, uniqueKeys: false });
       return {
         code: `export default ${JSON.stringify(data)};`,
