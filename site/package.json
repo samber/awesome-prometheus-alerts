@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.0.0",
-    "@astrojs/tailwind": "^5.0.0",
+    "@astrojs/tailwind": "^6.0.2",
     "@iconify-json/lucide": "^1.0.0",
     "@rollup/plugin-yaml": "^4.0.0",
     "astro": "^5.0.0",
