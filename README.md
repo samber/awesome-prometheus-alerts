@@ -28,6 +28,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
   <hr>
 </div>
 
+- [Gitstar](https://dev.gitstar.ai?utm_medium=github_readme&utm_source=awesome_list&utm_campaign=samber_awesome-prometheus-alerts) - Follow developers on GitHub and get a feed of what they star and build.
 ## ✨ Contents
 
 - [Rules](#-rules)
