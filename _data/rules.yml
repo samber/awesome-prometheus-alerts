@@ -5733,9 +5733,82 @@ groups:
 
       - name: Jaeger
         exporters:
-          - name: Embedded exporter
+          - name: Embedded exporter (v2+)
             slug: embedded-exporter
-            doc_url: https://www.jaegertracing.io/docs/latest/monitoring/
+            doc_url: https://www.jaegertracing.io/docs/2.dev/operations/monitoring/
+            comments: |
+              Jaeger v2 is built on OpenTelemetry Collector and exposes metrics on port 8888 (/metrics).
+              It emits standard otelcol_* pipeline metrics alongside Jaeger-specific storage and query metrics.
+              For span ingestion pipeline alerts (refused spans, export failures, queue saturation),
+              use the OpenTelemetry Collector rules instead.
+            rules:
+              - name: Jaeger high storage error rate
+                description: "Jaeger on {{ $labels.instance }} is experiencing {{ $value | humanize }}% storage errors on {{ $labels.operation }}."
+                query: '100 * sum(rate(jaeger_storage_requests_total{result="err"}[1m])) by (instance, job, namespace, operation) / sum(rate(jaeger_storage_requests_total[1m])) by (instance, job, namespace, operation) > 1 and sum(rate(jaeger_storage_requests_total[1m])) by (instance, job, namespace, operation) > 0'
+                severity: warning
+                for: 5m
+              - name: Jaeger slow storage operations
+                description: "Jaeger on {{ $labels.instance }} storage p99 latency for {{ $labels.operation }} is {{ $value | humanizeDuration }}."
+                query: 'histogram_quantile(0.99, sum(rate(jaeger_storage_latency_seconds_bucket[5m])) by (le, instance, job, namespace, operation)) > 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 1s is a rough default. Adjust based on your storage backend and data volume.
+              - name: Jaeger query service high error rate
+                description: "Jaeger query service on {{ $labels.instance }} is returning {{ $value | humanize }}% HTTP 5xx errors."
+                query: '100 * sum(rate(http_server_request_duration_seconds_count{http_route="/api/traces",http_response_status_code=~"5.."}[1m])) by (instance, job, namespace) / sum(rate(http_server_request_duration_seconds_count{http_route="/api/traces"}[1m])) by (instance, job, namespace) > 1 and sum(rate(http_server_request_duration_seconds_count{http_route="/api/traces"}[1m])) by (instance, job, namespace) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Filters on http_route="/api/traces" (the trace search endpoint). The http_server_request_duration_seconds
+                  metric is emitted by the otelhttp middleware used by the Jaeger query service.
+              - name: Jaeger query service slow responses
+                description: "Jaeger query service on {{ $labels.instance }} p99 response latency is {{ $value | humanizeDuration }}."
+                query: 'histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{http_route="/api/traces"}[5m])) by (le, instance, job, namespace)) > 2'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 2s is a rough default. Adjust based on your storage backend and data volume.
+              - name: Jaeger storage completely unavailable
+                description: "Jaeger on {{ $labels.instance }} has 100% storage errors for {{ $labels.operation }} — storage backend may be down."
+                query: 'sum(rate(jaeger_storage_requests_total{result="err"}[1m])) by (instance, job, namespace, operation) > 0 and sum(rate(jaeger_storage_requests_total{result="ok"}[1m])) by (instance, job, namespace, operation) == 0'
+                severity: critical
+                for: 2m
+                comments: |
+                  Fires when all storage operations for a given type are failing and none are succeeding.
+                  Indicates the storage backend (Cassandra, Elasticsearch, etc.) is likely unreachable or misconfigured.
+              - name: Jaeger slow single trace retrieval
+                description: "Jaeger on {{ $labels.instance }} p99 latency for single trace retrieval is {{ $value | humanizeDuration }}."
+                query: 'histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{http_route="/api/traces/{traceID}"}[5m])) by (le, instance, job, namespace)) > 5'
+                severity: warning
+                for: 5m
+                comments: |
+                  Single trace retrieval (/api/traces/{traceID}) can be slower than search, especially for large traces.
+                  Threshold of 5s is a rough default.
+              - name: Jaeger service discovery errors
+                description: "Jaeger on {{ $labels.instance }} is returning {{ $value | humanize }}% HTTP 5xx errors on the services endpoint."
+                query: '100 * sum(rate(http_server_request_duration_seconds_count{http_route="/api/services",http_response_status_code=~"5.."}[1m])) by (instance, job, namespace) / sum(rate(http_server_request_duration_seconds_count{http_route="/api/services"}[1m])) by (instance, job, namespace) > 1 and sum(rate(http_server_request_duration_seconds_count{http_route="/api/services"}[1m])) by (instance, job, namespace) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Errors on /api/services indicate the storage backend cannot return the list of instrumented services,
+                  which breaks the Jaeger UI service selector.
+              - name: Jaeger no storage reads succeeding
+                description: "Jaeger on {{ $labels.instance }} has no successful storage reads for {{ $labels.operation }} in the past 15 minutes."
+                query: 'sum(increase(jaeger_storage_requests_total{result="ok"}[15m])) by (instance, job, namespace, operation) == 0 and sum(increase(jaeger_storage_requests_total[15m])) by (instance, job, namespace, operation) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Fires when an operation (e.g. find_traces, get_services) has received requests but none succeeded.
+                  May indicate a persistent storage error or a backend that is slow to recover.
+          - name: Embedded exporter (legacy, <v2)
+            slug: embedded-exporter-legacy
+            doc_url: https://www.jaegertracing.io/docs/1.x/monitoring/
+            comments: |
+              These rules target Jaeger v1.x metrics (jaeger_* prefix).
+              Jaeger v1 reached end-of-life on December 31, 2025.
+              For Jaeger v2+, use the "Embedded exporter (v2+)" rules instead.
+              Note: jaeger-agent was deprecated in v1.35 and removed in v2.0.
             rules:
               - name: Jaeger agent HTTP server errors
                 description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors."
