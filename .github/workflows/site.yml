@@ -25,6 +25,7 @@ jobs:
         with:
           cache: npm
           cache-dependency-path: site/package-lock.json
+          node-version: 'latest'
 
       - name: Install dependencies
         working-directory: site
