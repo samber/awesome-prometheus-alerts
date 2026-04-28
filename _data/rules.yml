@@ -5918,3 +5918,28 @@ groups:
                 severity: critical
                 comments: |
                   Threshold of 20ms. Adjust based on your expected database latency.
+
+      - name: LiteLLM
+        exporters:
+          - slug: embedded-exporter
+            doc_url: https://docs.litellm.ai/docs/proxy/prometheus
+            rules:
+              - name: LiteLLM provider spend over budget
+                description: "Cumulative spend for an LLM provider has exceeded the daily budget threshold. Replace the regex `(claude-|anthropic/).*` with your provider's model-name pattern. Useful as a soft-warning when `provider_budget_config` hard-cap is unavailable or disabled."
+                query: 'sum(increase(litellm_spend_metric_total{model=~"(claude-|anthropic/).*"}[24h])) > 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  The threshold (1) is in USD. The `model` label carries the resolved model-name (post-routing). 
+                  PromQL `increase()` requires ≥2 datapoints with growth-difference to extrapolate positive — 
+                  for brand-new counter series this needs ≥2 distinct request bursts ≥1 scrape-cycle apart.
+              - name: LiteLLM proxy failed requests rate high
+                description: "LiteLLM proxy is returning failed responses to clients (>5% error rate over 5min). Investigate downstream LLM provider availability or auth issues."
+                query: 'sum(rate(litellm_proxy_failed_requests_metric_total[5m])) / sum(rate(litellm_proxy_total_requests_metric_total[5m])) > 0.05'
+                severity: warning
+                for: 10m
+              - name: LiteLLM request latency p95 high
+                description: "LiteLLM request total latency p95 exceeds 10 seconds over 5min. Check downstream LLM provider response-times and proxy queue-depth."
+                query: 'histogram_quantile(0.95, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le)) > 10'
+                severity: warning
+                for: 10m
