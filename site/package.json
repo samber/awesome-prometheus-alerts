@@ -19,7 +19,7 @@
     "js-yaml": "^4.1.0",
     "pagefind": "^1.0.0",
     "posthog-js": "^1.369.2",
-    "tailwindcss": "^4.2.2",
+    "tailwindcss": "^4.2.4",
     "yaml": "^2.8.3"
   },
   "devDependencies": {
