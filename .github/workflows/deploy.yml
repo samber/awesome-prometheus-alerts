@@ -45,7 +45,7 @@ jobs:
         run: npx pagefind --site dist
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site/dist
 
