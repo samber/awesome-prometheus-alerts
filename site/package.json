@@ -20,7 +20,7 @@
     "pagefind": "^1.5.2",
     "posthog-js": "^1.372.6",
     "tailwindcss": "^4.2.4",
-    "yaml": "^2.8.3"
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.0"
