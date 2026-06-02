@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.0.0",
-    "@iconify-json/lucide": "^1.2.102",
+    "@iconify-json/lucide": "^1.2.111",
     "@rollup/plugin-yaml": "^4.0.0",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.2.1",
