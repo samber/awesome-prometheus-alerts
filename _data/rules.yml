@@ -4536,6 +4536,40 @@ groups:
                   May indicate routing issues or a misconfigured allowed-ips.
                   Only useful if you expect continuous traffic on all peers.
 
+      - name: Flowtriq
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://docs.flowtriq.com/integrations/prometheus
+            rules:
+              - name: Flowtriq DDoS attack detected
+                description: "Flowtriq detected a DDoS attack on {{ $value }} node(s)."
+                query: "flowtriq_nodes_under_attack > 0"
+                severity: critical
+              - name: Flowtriq node offline
+                description: "{{ $value }} Flowtriq node(s) have gone offline."
+                query: "flowtriq_nodes_offline > 0"
+                severity: warning
+                for: 5m
+              - name: Flowtriq all nodes offline
+                description: All Flowtriq nodes are offline. Network monitoring is completely unavailable.
+                query: "flowtriq_nodes_online == 0 and flowtriq_nodes_total > 0"
+                severity: critical
+                for: 2m
+              - name: Flowtriq high incident rate
+                description: "Flowtriq has detected {{ $value }} incidents in the last 24 hours."
+                query: "flowtriq_incidents_last_24h > 10"
+                severity: warning
+              - name: Flowtriq mitigation rule failed
+                description: "{{ $value }} Flowtriq mitigation rule(s) failed to apply. Attack traffic may not be filtered."
+                query: "flowtriq_mitigation_failed_rules > 0"
+                severity: critical
+              - name: Flowtriq mitigation adapter unhealthy
+                description: "Flowtriq mitigation adapter {{ $labels.adapter }} ({{ $labels.type }}) is unhealthy."
+                query: "flowtriq_mitigation_adapter_healthy == 0"
+                severity: warning
+                for: 5m
+
   - name: Storage
     services:
       - name: Ceph
