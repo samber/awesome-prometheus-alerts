@@ -14,7 +14,7 @@
     "@iconify-json/lucide": "^1.2.111",
     "@rollup/plugin-yaml": "^4.0.0",
     "@tailwindcss/vite": "^4.3.2",
-    "astro": "^6.4.6",
+    "astro": "^7.0.4",
     "astro-icon": "^1.0.0",
     "js-yaml": "^4.2.0",
     "pagefind": "^1.5.2",
