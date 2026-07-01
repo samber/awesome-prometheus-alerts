@@ -13,7 +13,7 @@
     "@astrojs/sitemap": "^3.7.3",
     "@iconify-json/lucide": "^1.2.111",
     "@rollup/plugin-yaml": "^4.0.0",
-    "@tailwindcss/vite": "^4.2.4",
+    "@tailwindcss/vite": "^4.3.2",
     "astro": "^6.4.6",
     "astro-icon": "^1.0.0",
     "js-yaml": "^4.2.0",
