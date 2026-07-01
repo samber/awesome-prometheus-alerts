@@ -18,7 +18,7 @@
     "astro-icon": "^1.0.0",
     "js-yaml": "^4.2.0",
     "pagefind": "^1.5.2",
-    "posthog-js": "^1.391.2",
+    "posthog-js": "^1.396.3",
     "tailwindcss": "^4.3.2",
     "yaml": "^2.9.0"
   },
