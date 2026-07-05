@@ -517,6 +517,13 @@ groups:
                 query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) < 20'
                 severity: info
                 for: 7d
+              - name: Container Unhealthy
+                description: Container {{ $labels.name }} on {{ $labels.instance }} has been reporting an unhealthy Docker health check status for more than 5m
+                query: 'container_health_state == 0'
+                comments: |
+                  Docker-specific health check rule. 0=unhealthy, 1=healthy, -1=no health check configured.
+                severity: warning
+                for: 5m
 
       - name: Blackbox
         exporters:
