@@ -7,7 +7,10 @@ let starsPromise: Promise<number> | null = null;
 
 export function getGithubStars(): Promise<number> {
   if (!starsPromise) {
-    starsPromise = fetchGithubStars();
+    starsPromise = fetchGithubStars().catch((err) => {
+      starsPromise = null;
+      throw err;
+    });
   }
   return starsPromise;
 }
