@@ -1,4 +1,4 @@
-// @ts-ignore — Vite YAML plugin provides this at build time
+// @ts-expect-error — Vite YAML plugin provides this at build time
 import rulesData from '../../../_data/rules.yml';
 
 export interface Rule {

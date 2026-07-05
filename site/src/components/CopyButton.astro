@@ -68,9 +68,7 @@ const nudgeId = `star-nudge-${btnId}`;
 
 <script define:vars={{ btnId, nudgeId, withAttribution, nudge, GITHUB_URL, copyData }}>
   const btn = document.getElementById(btnId);
-  if (!(btn instanceof HTMLButtonElement)) return;
-  if (btn.dataset.copyBound === 'true') return;
-
+  if (btn instanceof HTMLButtonElement && btn.dataset.copyBound !== 'true') {
   btn.dataset.copyBound = 'true';
   btn.addEventListener('click', async () => {
     const targetId = btn.dataset.copyTarget;
@@ -132,4 +130,5 @@ const nudgeId = `star-nudge-${btnId}`;
     }
     window.dispatchEvent(new CustomEvent('copy-success'));
   });
+  }
 </script>

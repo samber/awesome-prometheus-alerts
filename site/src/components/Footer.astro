@@ -1,14 +1,12 @@
 ---
 import { sponsors } from '../data/sponsors';
-import { getPopularServices, data, getGroupSlug } from '../data/rules';
-import { SITE_NAME, SITE_URL, GITHUB_URL, GITHUB_CONTRIBUTING_URL, GITHUB_LICENSE_URL, GITHUB_MIT_LICENSE_URL, AUTHOR_NAME, AUTHOR_GITHUB_URL, TWITTER_HANDLE, LICENSE_CC_BY_NAME, LICENSE_MIT_NAME } from '../data/site';
+import { data, getGroupSlug } from '../data/rules';
+import { SITE_NAME, SITE_URL, GITHUB_URL, GITHUB_CONTRIBUTING_URL, GITHUB_LICENSE_URL, GITHUB_MIT_LICENSE_URL, AUTHOR_GITHUB_URL, TWITTER_HANDLE, LICENSE_CC_BY_NAME, LICENSE_MIT_NAME } from '../data/site';
 
 interface Props {
   base: string;
 }
 const { base } = Astro.props;
-
-const popularServices = getPopularServices();
 
 const featuredGroupSlugs = [
   'basic-resource-monitoring',

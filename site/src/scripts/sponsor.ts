@@ -21,7 +21,10 @@ export function initSponsorClickTracking(): void {
       if (w) {
         w.location.href = href;
       } else {
-        window.open(href, '_blank') ?? (window.location.href = href);
+        const opened = window.open(href, '_blank');
+        if (!opened) {
+          window.location.href = href;
+        }
       }
     });
   });

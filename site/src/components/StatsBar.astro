@@ -1,6 +1,7 @@
 ---
 import { getTotalRuleCount, getTotalExporterCount, data } from '../data/rules';
-import { GITHUB_API_REPO_URL, GITHUB_URL } from '../data/site';
+import { GITHUB_URL } from '../data/site';
+import { getGithubStars } from '../data/github';
 
 const totalRules = getTotalRuleCount();
 const totalExporters = getTotalExporterCount();
@@ -9,16 +10,7 @@ const totalGroups = data.groups.length;
 const STAR_MILESTONE = 10000;
 const MILESTONE_LABEL = '10k';
 
-let stars = 0;
-try {
-  const res = await fetch(GITHUB_API_REPO_URL, {
-    headers: { 'Accept': 'application/vnd.github+json' }
-  });
-  if (res.ok) {
-    const json = await res.json();
-    stars = json.stargazers_count ?? 0;
-  }
-} catch {}
+const stars = await getGithubStars();
 
 const starsLabel = stars > 0 ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : String(stars)) : '—';
 const progressPct = stars > 0 ? Math.min(100, (stars / STAR_MILESTONE) * 100).toFixed(1) : '0';
