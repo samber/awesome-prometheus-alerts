@@ -15,7 +15,6 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   // Load Pagefind UI lazily (only when the search div is visible/focused)
   function initPagefind() {
     const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-    // @ts-ignore
     import(`${base}/pagefind/pagefind-ui.js`).then((module) => {
       const PagefindUI = module.PagefindUI;
       new PagefindUI({

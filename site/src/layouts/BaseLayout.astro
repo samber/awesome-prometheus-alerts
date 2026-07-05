@@ -71,7 +71,7 @@ const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.rep
   <!-- Dark mode: set class before paint to avoid flash -->
   <script is:inline>
     (function() {
-      var theme = localStorage.getItem('theme');
+      const theme = localStorage.getItem('theme');
       if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
       }
@@ -81,10 +81,12 @@ const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.rep
   <!-- Google Analytics 4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDF25KKVNL"></script>
   <script is:inline>
+    /* eslint-disable -- vendor snippet, copied verbatim from Google Analytics' install instructions */
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
     gtag('js', new Date());
     gtag('config', 'G-GDF25KKVNL');
+    /* eslint-enable */
   </script>
 
   <PostHog />

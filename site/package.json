@@ -7,7 +7,9 @@
     "build": "astro build && pagefind --site dist --output-path public/pagefind",
     "pagefind": "pagefind --site dist --output-path public/pagefind",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check": "astro check",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -23,7 +25,14 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.0"
+    "@astrojs/check": "^0.9.9",
+    "@eslint/js": "^10.0.1",
+    "@types/js-yaml": "^4.0.0",
+    "eslint": "^10.6.0",
+    "eslint-plugin-astro": "^1.7.0",
+    "globals": "^17.7.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1"
   },
   "browserslist": [
     "> 0.5%",

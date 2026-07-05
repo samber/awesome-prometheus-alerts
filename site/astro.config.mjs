@@ -1,4 +1,4 @@
-import { defineConfig } from 'astro/config';
+import { defineConfig, envField } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
 import icon from 'astro-icon';
@@ -69,6 +69,13 @@ export default defineConfig({
   base,
   redirects: { ...buildRedirects(base) },
   output: 'static',
+  env: {
+    schema: {
+      // Raises the GitHub API rate limit from 60 to 5000 req/hour; matters in CI where
+      // runners share IPs and easily trip the unauthenticated limit.
+      GITHUB_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
+    },
+  },
   integrations: [
     sitemap({
       /** Exclude redirect source URLs from the sitemap.

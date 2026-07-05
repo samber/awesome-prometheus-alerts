@@ -1,7 +1,8 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
 import { sponsors } from '../data/sponsors';
-import { SITE_NAME, GITHUB_URL, GITHUB_API_REPO_URL, GITHUB_CONTRIBUTING_URL } from '../data/site';
+import { SITE_NAME, GITHUB_URL, GITHUB_CONTRIBUTING_URL } from '../data/site';
+import { getGithubStars } from '../data/github';
 
 interface Props {
   base: string;
@@ -14,16 +15,7 @@ function isActive(path: string) {
   return currentPath.startsWith(`${base}${path}`);
 }
 
-let stars = 0;
-try {
-  const res = await fetch(GITHUB_API_REPO_URL, {
-    headers: { 'Accept': 'application/vnd.github+json' }
-  });
-  if (res.ok) {
-    const data = await res.json();
-    stars = data.stargazers_count ?? 0;
-  }
-} catch {}
+const stars = await getGithubStars();
 
 const starsLabel = stars > 0 ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : String(stars)) : '—';
 ---

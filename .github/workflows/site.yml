@@ -31,8 +31,19 @@ jobs:
         working-directory: site
         run: npm ci
 
+      - name: Lint
+        working-directory: site
+        run: npm run lint
+
+      - name: Type check
+        working-directory: site
+        env:
+          ASTRO_TELEMETRY_DISABLED: "1"
+        run: npm run check
+
       - name: Build Astro site
         working-directory: site
         env:
           ASTRO_TELEMETRY_DISABLED: "1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build
