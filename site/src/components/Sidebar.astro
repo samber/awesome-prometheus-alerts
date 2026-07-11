@@ -1,6 +1,7 @@
 ---
 import type { Group, Service } from '../data/rules';
 import { getGroupSlug, getServiceSlug } from '../data/rules';
+import ServiceLogo from './ServiceLogo.astro';
 
 interface Props {
   groups: Group[];
@@ -36,13 +37,14 @@ const { groups, currentGroupSlug, currentServiceSlug, currentService, base } = A
                   <li>
                     <a
                       href={`${base}/rules/${groupSlug}/${serviceSlug}/`}
-                      class={`block text-sm py-0.5 px-2 rounded transition-colors truncate ${
+                      class={`flex items-center gap-1.5 text-sm py-0.5 px-2 rounded transition-colors truncate ${
                         isActive
                           ? 'text-brand dark:text-brand-dark bg-brand/5 dark:bg-brand-dark/10 font-medium'
                           : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                       }`}
                     >
-                      {service.name}
+                      <ServiceLogo logo={service.logo} name={service.name} base={base} class="h-3.5 w-3.5" />
+                      <span class="truncate">{service.name}</span>
                     </a>
 
                     {/* Exporter sub-level — only on the current service page */}

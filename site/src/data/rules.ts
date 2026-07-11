@@ -1,5 +1,7 @@
 // @ts-expect-error — Vite YAML plugin provides this at build time
 import rulesData from '../../../_data/rules.yml';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export interface Rule {
   name: string;
@@ -20,6 +22,7 @@ export interface Exporter {
 
 export interface Service {
   name: string;
+  logo?: string;
   exporters: Exporter[];
 }
 
@@ -33,6 +36,29 @@ export interface RulesData {
 }
 
 export const data: RulesData = rulesData as RulesData;
+
+// Every service must ship a logo (see site/public/images/services/ and the
+// "logo:" field in _data/rules.yml). Fail the build loudly instead of
+// silently falling back to a text-only card, so a missing logo can't ship.
+// process.cwd() (not import.meta.url) because Vite bundles this module into
+// a chunk under dist/ during build, which would resolve relative paths wrong.
+const PUBLIC_DIR = path.resolve(process.cwd(), 'public');
+const logoProblems: string[] = [];
+for (const group of data.groups) {
+  for (const service of group.services) {
+    if (!service.logo) {
+      logoProblems.push(`${group.name} > ${service.name}: missing "logo:" field`);
+    } else if (!fs.existsSync(path.join(PUBLIC_DIR, service.logo))) {
+      logoProblems.push(`${group.name} > ${service.name}: logo file not found at site/public${service.logo}`);
+    }
+  }
+}
+if (logoProblems.length > 0) {
+  throw new Error(
+    `Every service must have a logo. ${logoProblems.length} problem(s) found:\n` +
+      logoProblems.map((p) => `  - ${p}`).join('\n')
+  );
+}
 
 /** Slugify a name for use in URLs — mirrors the dist/ workflow naming */
 export function toSlug(name: string): string {

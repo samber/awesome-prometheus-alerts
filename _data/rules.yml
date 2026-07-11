@@ -11,6 +11,7 @@ groups:
   - name: Basic resource monitoring
     services:
       - name: Prometheus self-monitoring
+        logo: /images/services/prometheus-self-monitoring.svg
         exporters:
           - slug: embedded-exporter
             rules:
@@ -137,6 +138,7 @@ groups:
                 severity: warning
 
       - name: Host and hardware
+        logo: /images/services/host-and-hardware.svg
         exporters:
           - name: node-exporter
             slug: node-exporter
@@ -328,6 +330,7 @@ groups:
                 for: 2m
 
       - name: S.M.A.R.T Device Monitoring
+        logo: /images/services/s-m-a-r-t-device-monitoring.svg
         exporters:
           - name: smartctl-exporter
             slug: smartctl-exporter
@@ -367,6 +370,7 @@ groups:
                 severity: critical
 
       - name: IPMI
+        logo: /images/services/ipmi.svg
         exporters:
           - name: prometheus-community/ipmi_exporter
             slug: ipmi-exporter
@@ -463,6 +467,7 @@ groups:
                   SEL storage is typically very limited (e.g., 16KB). When full, new events may be dropped.
 
       - name: Docker containers
+        logo: /images/services/docker-containers.svg
         exporters:
           - name: google/cAdvisor
             slug: google-cadvisor
@@ -527,6 +532,7 @@ groups:
                 for: 5m
 
       - name: Blackbox
+        logo: /images/services/blackbox.svg
         exporters:
           - name: prometheus/blackbox_exporter
             slug: blackbox-exporter
@@ -580,6 +586,7 @@ groups:
                 for: 1m
 
       - name: Windows Server
+        logo: /images/services/windows-server.svg
         exporters:
           - name: prometheus-community/windows_exporter
             slug: windows-exporter
@@ -610,6 +617,7 @@ groups:
                 for: 2m
 
       - name: VMware
+        logo: /images/services/vmware.svg
         exporters:
           - name: pryorda/vmware_exporter
             slug: pryorda-vmware-exporter
@@ -637,6 +645,7 @@ groups:
                 for: 5m
 
       - name: Proxmox VE
+        logo: /images/services/proxmox-ve.svg
         exporters:
           - name: prometheus-pve/prometheus-pve-exporter
             slug: prometheus-pve-exporter
@@ -693,6 +702,7 @@ groups:
                   and fencing. This requires immediate attention.
 
       - name: Netdata
+        logo: /images/services/netdata.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -743,6 +753,7 @@ groups:
                 severity: warning
 
       - name: eBPF
+        logo: /images/services/ebpf.svg
         exporters:
           - name: cloudflare/ebpf_exporter
             slug: ebpf-exporter
@@ -767,6 +778,7 @@ groups:
                 for: 5m
 
       - name: Process Exporter
+        logo: /images/services/process-exporter.svg
         exporters:
           - name: ncabatoff/process-exporter
             slug: process-exporter
@@ -835,6 +847,7 @@ groups:
                   Detects restarts by watching for changes in the oldest process start time within the group.
 
       - name: Systemd
+        logo: /images/services/systemd.svg
         exporters:
           - name: prometheus-community/systemd_exporter
             slug: systemd-exporter
@@ -887,6 +900,7 @@ groups:
   - name: Databases
     services:
       - name: MySQL
+        logo: /images/services/mysql.svg
         exporters:
           - name: prometheus/mysqld_exporter
             slug: mysqld-exporter
@@ -974,6 +988,7 @@ groups:
                 for: 2m
 
       - name: PostgreSQL
+        logo: /images/services/postgresql.svg
         exporters:
           - name: prometheus-community/postgres_exporter
             slug: postgres-exporter
@@ -1085,6 +1100,7 @@ groups:
                 for: 30s
 
       - name: SQL Server
+        logo: /images/services/sql-server.svg
         exporters:
           - name: Ozarklake/prometheus-mssql-exporter
             slug: ozarklake-mssql-exporter
@@ -1104,6 +1120,7 @@ groups:
                 for: 1m
 
       - name: Oracle Database
+        logo: /images/services/oracle-database.svg
         exporters:
           - name: iamseth/oracledb_exporter
             slug: iamseth-oracledb-exporter
@@ -1163,6 +1180,7 @@ groups:
                   The metric from v$waitclassmetric is already a normalized rate (centiseconds per second). Threshold 300 means 3 seconds of I/O wait per second of wall time.
 
       - name: Patroni
+        logo: /images/services/patroni.svg
         exporters:
           - name: Embedded exporter (Patroni >= 2.1.0)
             slug: embedded-exporter-patroni
@@ -1177,6 +1195,7 @@ groups:
                   1m delay allows a restart without triggering an alert.
 
       - name: PGBouncer
+        logo: /images/services/pgbouncer.svg
         exporters:
           - name: spreaker/prometheus-pgbouncer-exporter
             slug: spreaker-pgbouncer-exporter
@@ -1197,6 +1216,7 @@ groups:
                 severity: critical
 
       - name: Redis
+        logo: /images/services/redis.svg
         exporters:
           - name: oliver006/redis_exporter
             slug: oliver006-redis-exporter
@@ -1265,6 +1285,7 @@ groups:
                 severity: warning
 
       - name: Memcached
+        logo: /images/services/memcached.svg
         exporters:
           - name: prometheus/memcached_exporter
             slug: memcached-exporter
@@ -1325,6 +1346,7 @@ groups:
                 for: 5m
 
       - name: MongoDB
+        logo: /images/services/mongodb.svg
         exporters:
           - name: percona/mongodb_exporter
             slug: percona-mongodb-exporter
@@ -1423,6 +1445,7 @@ groups:
                 severity: critical
 
       - name: Elasticsearch
+        logo: /images/services/elasticsearch.svg
         exporters:
           - name: prometheus-community/elasticsearch_exporter
             slug: prometheus-community-elasticsearch-exporter
@@ -1529,6 +1552,7 @@ groups:
                 for: 5m
 
       - name: OpenSearch
+        logo: /images/services/opensearch.svg
         exporters:
           - name: opensearch-project/opensearch-prometheus-exporter
             slug: opensearch-project-opensearch-prometheus-exporter
@@ -1566,6 +1590,7 @@ groups:
 
 
       - name: Meilisearch
+        logo: /images/services/meilisearch.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -1581,6 +1606,7 @@ groups:
                 severity: warning
 
       - name: Cassandra
+        logo: /images/services/cassandra.svg
         exporters:
           - name: instaclustr/cassandra-exporter
             slug: instaclustr-cassandra-exporter
@@ -1740,6 +1766,7 @@ groups:
                   A low key cache hit rate increases disk I/O. Threshold is workload-dependent — adjust based on your data access patterns.
 
       - name: Clickhouse
+        logo: /images/services/clickhouse.svg
         exporters:
           - name: Embedded Exporter
             slug: embedded-exporter
@@ -1850,6 +1877,7 @@ groups:
                 for: 2m
 
       - name: CouchDB
+        logo: /images/services/couchdb.svg
         exporters:
           - name: gesellix/couchdb-prometheus-exporter
             slug: gesellix-couchdb-prometheus-exporter
@@ -1951,6 +1979,7 @@ groups:
                 for: 1m
 
       - name: Solr
+        logo: /images/services/solr.svg
         exporters:
           - name: embedded exporter
             slug: embedded-exporter
@@ -1977,6 +2006,7 @@ groups:
   - name: Message brokers
     services:
       - name: RabbitMQ
+        logo: /images/services/rabbitmq.svg
         exporters:
           - name: rabbitmq/rabbitmq-prometheus
             slug: rabbitmq-exporter
@@ -2114,6 +2144,7 @@ groups:
                 for: 2m
 
       - name: Zookeeper
+        logo: /images/services/zookeeper.svg
         exporters:
           - name: cloudflare/kafka_zookeeper_exporter
             slug: cloudflare-kafka-zookeeper-exporter
@@ -2145,6 +2176,7 @@ groups:
                 for: 3m
 
       - name: Kafka
+        logo: /images/services/kafka.svg
         exporters:
           - name: danielqsj/kafka_exporter
             slug: danielqsj-kafka-exporter
@@ -2174,6 +2206,7 @@ groups:
                 for: 15m
 
       - name: Pulsar
+        logo: /images/services/pulsar.svg
         exporters:
           - name: embedded exporter
             slug: embedded-exporter
@@ -2240,6 +2273,7 @@ groups:
                 severity: critical
 
       - name: Nats
+        logo: /images/services/nats.svg
         exporters:
           - name: nats-io/prometheus-nats-exporter
             slug: nats-exporter
@@ -2321,6 +2355,7 @@ groups:
   - name: Proxies, load balancers and service meshes
     services:
       - name: Nginx
+        logo: /images/services/nginx.svg
         exporters:
           - name: knyar/nginx-lua-prometheus
             slug: knyar-nginx-exporter
@@ -2343,6 +2378,7 @@ groups:
                 for: 2m
 
       - name: Apache
+        logo: /images/services/apache.svg
         exporters:
           - name: Lusitaniae/apache_exporter
             slug: lusitaniae-apache-exporter
@@ -2363,6 +2399,7 @@ groups:
                 severity: info
 
       - name: HaProxy
+        logo: /images/services/haproxy.svg
         exporters:
           - name: Embedded exporter (HAProxy >= v2)
             slug: embedded-exporter-v2
@@ -2518,6 +2555,7 @@ groups:
                 severity: warning
 
       - name: Traefik
+        logo: /images/services/traefik.svg
         exporters:
           - name: Embedded exporter v2
             slug: embedded-exporter-v2
@@ -2557,6 +2595,7 @@ groups:
                 for: 1m
 
       - name: Caddy
+        logo: /images/services/caddy.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -2579,6 +2618,7 @@ groups:
                 for: 1m
 
       - name: Envoy
+        logo: /images/services/envoy.svg
         exporters:
           - name: Built-in metrics
             slug: embedded-exporter
@@ -2674,6 +2714,7 @@ groups:
                 for: 5m
 
       - name: Linkerd
+        logo: /images/services/linkerd.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -2688,6 +2729,7 @@ groups:
                 for: 1m
 
       - name: Istio
+        logo: /images/services/istio.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -2752,6 +2794,7 @@ groups:
   - name: Runtimes
     services:
       - name: PHP-FPM
+        logo: /images/services/php-fpm.svg
         exporters:
           - name: bakins/php-fpm-exporter
             slug: bakins-fpm-exporter
@@ -2763,6 +2806,7 @@ groups:
                 severity: warning
 
       - name: JVM
+        logo: /images/services/jvm.svg
         exporters:
           - name: java-client
             slug: jvm-exporter
@@ -2839,6 +2883,7 @@ groups:
                 for: 5m
 
       - name: Golang
+        logo: /images/services/golang.svg
         exporters:
           - name: client_golang
             slug: golang-exporter
@@ -2916,6 +2961,7 @@ groups:
                 for: 5m
 
       - name: Ruby
+        logo: /images/services/ruby.svg
         exporters:
           - name: prometheus_exporter
             slug: ruby-exporter
@@ -2952,6 +2998,7 @@ groups:
                 for: 5m
 
       - name: Python
+        logo: /images/services/python.svg
         exporters:
           - name: client_python
             slug: python-exporter
@@ -2990,6 +3037,7 @@ groups:
                   Threshold is a rough default. Adjust based on your application's expected memory footprint.
 
       - name: Sidekiq
+        logo: /images/services/sidekiq.svg
         exporters:
           - name: Strech/sidekiq-prometheus-exporter
             slug: strech-sidekiq-exporter
@@ -3008,6 +3056,7 @@ groups:
   - name: Data engineering
     services:
       - name: Apache Flink
+        logo: /images/services/apache-flink.svg
         exporters:
           - name: Built-in Prometheus reporter
             slug: flink-prometheus-reporter
@@ -3093,6 +3142,7 @@ groups:
                   Only fires for tasks that have previously received records, to avoid false positives during startup.
 
       - name: Apache Spark
+        logo: /images/services/apache-spark.svg
         exporters:
           - name: Built-in Prometheus (PrometheusServlet + PrometheusResource)
             slug: spark-prometheus
@@ -3156,6 +3206,7 @@ groups:
                   Disk spilling indicates insufficient memory for the workload.
 
       - name: Hadoop
+        logo: /images/services/hadoop.svg
         exporters:
           - name: hadoop/jmx_exporter
             slug: jmx_exporter
@@ -3242,6 +3293,7 @@ groups:
   - name: Orchestrators
     services:
       - name: Kubernetes
+        logo: /images/services/kubernetes.svg
         exporters:
           - name: kube-state-metrics
             slug: kubestate-exporter
@@ -3427,6 +3479,7 @@ groups:
                 for: 2m
 
       - name: Nomad
+        logo: /images/services/nomad.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -3450,6 +3503,7 @@ groups:
                 severity: warning
 
       - name: Consul
+        logo: /images/services/consul.svg
         exporters:
           - name: prometheus/consul_exporter
             slug: consul-exporter
@@ -3470,6 +3524,7 @@ groups:
                 severity: critical
 
       - name: Etcd
+        logo: /images/services/etcd.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -3547,6 +3602,7 @@ groups:
                 for: 2m
 
       - name: OpenStack
+        logo: /images/services/openstack.svg
         exporters:
           - name: openstack-exporter/openstack-exporter
             slug: openstack-exporter
@@ -3662,6 +3718,7 @@ groups:
   - name: CI/CD
     services:
       - name: Jenkins
+        logo: /images/services/jenkins.svg
         exporters:
           - name: Metric plugin
             slug: metric-plugin
@@ -3710,6 +3767,7 @@ groups:
                   * ABORTED   4 false - The build was manually aborted.
 
       - name: ArgoCD
+        logo: /images/services/argocd.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -3727,6 +3785,7 @@ groups:
                 for: 15m
 
       - name: FluxCD
+        logo: /images/services/fluxcd.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -3754,6 +3813,7 @@ groups:
                 for: 15m
 
       - name: GitLab CI
+        logo: /images/services/gitlab-ci.svg
         exporters:
           - name: GitLab built-in exporter
             slug: gitlab-built-in-exporter
@@ -3977,6 +4037,7 @@ groups:
                   Check Gitaly service health and logs.
 
       - name: Spinnaker
+        logo: /images/services/spinnaker.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4062,6 +4123,7 @@ groups:
   - name: Network and security
     services:
       - name: SpeedTest
+        logo: /images/services/speedtest.svg
         exporters:
           - name: Speedtest exporter
             slug: nlamirault-speedtest-exporter
@@ -4077,6 +4139,7 @@ groups:
                 severity: warning
 
       - name: SSL/TLS
+        logo: /images/services/ssl-tls.svg
         exporters:
           - name: ssl_exporter
             slug: ribbybibby-ssl-exporter
@@ -4101,6 +4164,7 @@ groups:
                 severity: warning
 
       - name: cert-manager
+        logo: /images/services/cert-manager.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4133,6 +4197,7 @@ groups:
                   For cert-manager < v1.19, use: certmanager_http_acme_client_request_count.
 
       - name: Juniper
+        logo: /images/services/juniper.png
         exporters:
           - name: czerwonk/junos_exporter
             slug: czerwonk-junos-exporter
@@ -4154,6 +4219,7 @@ groups:
                 for: 1m
 
       - name: CoreDNS
+        logo: /images/services/coredns.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4164,6 +4230,7 @@ groups:
                 severity: critical
 
       - name: Freeswitch
+        logo: /images/services/freeswitch.svg
         exporters:
           - name: znerol/prometheus-freeswitch-exporter
             slug: znerol-freeswitch-exporter
@@ -4186,6 +4253,7 @@ groups:
                 for: 5m
 
       - name: Hashicorp Vault
+        logo: /images/services/hashicorp-vault.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4212,6 +4280,7 @@ groups:
                 severity: critical
 
       - name: Keycloak
+        logo: /images/services/keycloak.svg
         exporters:
           - name: aerogear/keycloak-metrics-spi
             slug: aerogear-keycloak-metrics-spi
@@ -4258,6 +4327,7 @@ groups:
                   keycloak_request_duration is in milliseconds. Threshold of 2000ms (2 seconds) is a rough default.
 
       - name: Cloudflare
+        logo: /images/services/cloudflare.svg
         exporters:
           - name: lablabs/cloudflare-exporter
             slug: lablabs-cloudflare-exporter
@@ -4273,6 +4343,7 @@ groups:
                 severity: critical
 
       - name: SNMP
+        logo: /images/services/snmp.svg
         exporters:
           - name: prometheus/snmp_exporter
             slug: snmp-exporter
@@ -4326,6 +4397,7 @@ groups:
                 comments: sysUpTime is in centiseconds (hundredths of a second).
 
       - name: Cilium
+        logo: /images/services/cilium.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4513,6 +4585,7 @@ groups:
                 comments: Threshold of 10% is a rough default. Some DNS errors may be normal depending on your workload.
 
       - name: WireGuard
+        logo: /images/services/wireguard.svg
         exporters:
           - name: MindFlavor/prometheus_wireguard_exporter
             slug: mindflavor-prometheus-wireguard-exporter
@@ -4547,6 +4620,7 @@ groups:
   - name: Storage
     services:
       - name: Ceph
+        logo: /images/services/ceph.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4624,6 +4698,7 @@ groups:
                 for: 1m
 
       - name: ZFS
+        logo: /images/services/zfs.svg
         exporters:
           - name: node-exporter
             slug: node-exporter
@@ -4660,6 +4735,7 @@ groups:
                 severity: warning
 
       - name: OpenEBS
+        logo: /images/services/openebs.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4671,6 +4747,7 @@ groups:
                 for: 2m
 
       - name: Minio
+        logo: /images/services/minio.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -4691,6 +4768,7 @@ groups:
   - name: Cloud providers
     services:
       - name: AWS CloudWatch
+        logo: /images/services/aws-cloudwatch.svg
         exporters:
           - name: prometheus/cloudwatch_exporter
             slug: prometheus-cloudwatch-exporter
@@ -4784,6 +4862,7 @@ groups:
                 comments: Requires Lambda Errors and Invocations metrics.
 
       - name: Google Cloud Stackdriver
+        logo: /images/services/google-cloud-stackdriver.svg
         exporters:
           - name: prometheus-community/stackdriver_exporter
             slug: stackdriver-exporter
@@ -4816,6 +4895,7 @@ groups:
                 severity: warning
 
       - name: DigitalOcean
+        logo: /images/services/digitalocean.svg
         exporters:
           - name: metalmatze/digitalocean_exporter
             slug: digitalocean-exporter
@@ -4871,6 +4951,7 @@ groups:
                 comments: Fires when more than 80% of the account's droplet limit is in use.
 
       - name: Azure
+        logo: /images/services/azure.svg
         exporters:
           - name: webdevops/azure-metrics-exporter
             slug: azure-metrics-exporter
@@ -4911,6 +4992,7 @@ groups:
   - name: Observability
     services:
       - name: Thanos
+        logo: /images/services/thanos.svg
         exporters:
           - name: Thanos Compactor
             slug: thanos-compactor
@@ -5169,6 +5251,7 @@ groups:
                 for: 5m
 
       - name: Loki
+        logo: /images/services/loki.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5192,6 +5275,7 @@ groups:
                 severity: critical
                 for: 5m
       - name: Promtail
+        logo: /images/services/promtail.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5207,6 +5291,7 @@ groups:
                 severity: critical
                 for: 5m
       - name: Cortex
+        logo: /images/services/cortex.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5242,6 +5327,7 @@ groups:
                 for: 5m
 
       - name: Grafana Tempo
+        logo: /images/services/grafana-tempo.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5350,6 +5436,7 @@ groups:
                   Fires when the memcached error rate exceeds 20%. Only relevant if Tempo is configured with memcached caching.
 
       - name: Grafana Mimir
+        logo: /images/services/grafana-mimir.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5640,6 +5727,7 @@ groups:
                 for: 15m
 
       - name: Grafana Alloy
+        logo: /images/services/grafana-alloy.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5650,6 +5738,7 @@ groups:
                 severity: critical
 
       - name: OpenTelemetry Collector
+        logo: /images/services/opentelemetry-collector.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5740,6 +5829,7 @@ groups:
                 for: 2m
 
       - name: Jaeger
+        logo: /images/services/jaeger.svg
         exporters:
           - name: Embedded exporter (v2+)
             slug: embedded-exporter
@@ -5862,6 +5952,7 @@ groups:
   - name: Other
     services:
       - name: APC UPS
+        logo: /images/services/apc-ups.svg
         exporters:
           - name: mdlayher/apcupsd_exporter
             slug: apcupsd_exporter
@@ -5894,6 +5985,7 @@ groups:
                 severity: warning
 
       - name: Graph Node
+        logo: /images/services/graph-node.svg
         exporters:
           - name: Embedded exporter
             slug: embedded-exporter
@@ -5928,6 +6020,7 @@ groups:
                   Threshold of 20ms. Adjust based on your expected database latency.
 
       - name: LiteLLM
+        logo: /images/services/litellm.svg
         exporters:
           - slug: embedded-exporter
             doc_url: https://docs.litellm.ai/docs/proxy/prometheus
