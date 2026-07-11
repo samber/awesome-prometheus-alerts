@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ServiceCard from '../../components/ServiceCard.astro';
-import SearchWidget from '../../components/SearchWidget.astro';
 import CautionBanner from '../../components/CautionBanner.astro';
 import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, buildRedirectMap } from '../../data/rules';
 import { SITE_URL, schemaWebSite } from '../../data/site';
@@ -55,11 +54,6 @@ const jsonLd = {
       <p class="text-slate-500 dark:text-slate-400">
         {totalRules} alerting rules across {totalServices} services and {data.groups.length} categories.
       </p>
-    </div>
-
-    <!-- Search -->
-    <div class="mb-8 max-w-xl">
-      <SearchWidget />
     </div>
 
     <CautionBanner />
