@@ -1,7 +1,7 @@
 ---
-// Renders a service's brand logo when available. Silently renders nothing
-// when `logo` is unset, so services without a known logo keep the
-// text-only fallback they always had.
+// Renders a service's brand logo. The build enforces that every service has a
+// `logo` field and that the referenced asset exists under site/public/.
+// (The `logo` prop is still treated defensively to avoid runtime crashes.)
 interface Props {
   logo?: string;
   name: string;
