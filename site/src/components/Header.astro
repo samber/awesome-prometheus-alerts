@@ -1,5 +1,6 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import SearchOverlay from './SearchOverlay.astro';
 import { sponsors } from '../data/sponsors';
 import { SITE_NAME, GITHUB_URL, GITHUB_CONTRIBUTING_URL } from '../data/site';
 import { getGithubStars } from '../data/github';
@@ -92,6 +93,18 @@ const starsLabel = stars > 0 ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` 
       </nav>
 
       <div class="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Search"
+          onclick="window.openSearch?.()"
+          class="hidden md:flex items-center gap-1.5 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+          </svg>
+          <span class="hidden lg:inline text-xs text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5">⌘K</span>
+        </button>
+
         <ThemeToggle />
 
         <!-- Mobile hamburger -->
@@ -131,6 +144,16 @@ const starsLabel = stars > 0 ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` 
     class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950"
   >
     <nav class="px-4 py-3 space-y-1" aria-label="Mobile navigation">
+      <button
+        type="button"
+        id="mobile-search-btn"
+        class="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+        </svg>
+        Search
+      </button>
       <a href={`${base}/rules/`} class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">Rules</a>
       <a href={`${base}/alertmanager/`} class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">AlertManager Config</a>
       <a href={`${base}/blackbox-exporter/`} class="block px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Blackbox Exporter</a>
@@ -140,6 +163,8 @@ const starsLabel = stars > 0 ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` 
     </nav>
   </div>
 </header>
+
+<SearchOverlay />
 
 <script>
   import { initSponsorClickTracking } from '../scripts/sponsor';
@@ -157,6 +182,15 @@ const starsLabel = stars > 0 ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` 
     btn.setAttribute('aria-expanded', String(isOpen));
     hamburger?.classList.toggle('hidden', isOpen);
     closeIcon?.classList.toggle('hidden', !isOpen);
+  });
+
+  const mobileSearchBtn = document.getElementById('mobile-search-btn');
+  mobileSearchBtn?.addEventListener('click', () => {
+    menu?.classList.add('hidden');
+    btn?.setAttribute('aria-expanded', 'false');
+    hamburger?.classList.remove('hidden');
+    closeIcon?.classList.add('hidden');
+    (window as Window & { openSearch?: () => void }).openSearch?.();
   });
 
   // Live star count — fetch from GitHub API on page load, cache in sessionStorage

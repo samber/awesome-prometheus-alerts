@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StatsBar from '../components/StatsBar.astro';
 import ServiceCard from '../components/ServiceCard.astro';
-import SearchWidget from '../components/SearchWidget.astro';
 import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, getPopularServices } from '../data/rules';
 import { SITE_URL, GITHUB_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, LICENSE_CC_BY_URL, LICENSE_MIT_URL } from '../data/site';
 
@@ -206,11 +205,6 @@ const jsonLd = {
         {totalRules} copy-pasteable Prometheus alerting rules.
         Find, copy, and deploy alerts in seconds.
       </p>
-
-      <!-- Search -->
-      <div class="max-w-xl mx-auto mb-8">
-        <SearchWidget />
-      </div>
 
       <!-- CTA buttons -->
       <div class="flex flex-wrap justify-center gap-3">
