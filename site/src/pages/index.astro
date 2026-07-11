@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StatsBar from '../components/StatsBar.astro';
 import ServiceCard from '../components/ServiceCard.astro';
+import ServiceLogo from '../components/ServiceLogo.astro';
 import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, getPopularServices } from '../data/rules';
 import { SITE_URL, GITHUB_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, LICENSE_CC_BY_URL, LICENSE_MIT_URL } from '../data/site';
 
@@ -245,8 +246,9 @@ const jsonLd = {
         {popularServices.map(({ service, groupSlug, serviceSlug }) => (
           <a
             href={`${base}/rules/${groupSlug}/${serviceSlug}/`}
-            class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-brand/10 dark:hover:bg-brand-dark/10 hover:text-brand dark:hover:text-brand-dark transition-colors border border-slate-200 dark:border-slate-700"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-brand/10 dark:hover:bg-brand-dark/10 hover:text-brand dark:hover:text-brand-dark transition-colors border border-slate-200 dark:border-slate-700"
           >
+            <ServiceLogo logo={service.logo} name={service.name} base={base} class="h-4 w-4" />
             {service.name}
           </a>
         ))}

@@ -3,6 +3,7 @@ import type { Exporter, Service } from '../data/rules';
 import { formatExporterAsYaml, getDistUrl } from '../data/rules';
 import RuleCard from './RuleCard.astro';
 import CopyButton from './CopyButton.astro';
+import ServiceLogo from './ServiceLogo.astro';
 
 interface Props {
   exporter: Exporter;
@@ -14,6 +15,7 @@ interface Props {
   serviceSlug: string;
   exporterIndex: number;
   showExporterNumber: boolean;
+  base: string;
 }
 
 const {
@@ -26,6 +28,7 @@ const {
   serviceSlug,
   exporterIndex,
   showExporterNumber,
+  base,
 } = Astro.props;
 
 const distUrl = getDistUrl(service.name, exporter.slug);
@@ -51,6 +54,7 @@ const exporterPrefix = showExporterNumber
           <span class="text-slate-400 dark:text-slate-500 font-normal text-sm">
             {exporterPrefix}
           </span>
+          <ServiceLogo logo={service.logo} name={service.name} base={base} class="h-5 w-5" />
           {exporter.doc_url ? (
             <a href={exporter.doc_url} target="_blank" rel="noopener noreferrer" class="text-brand dark:text-brand-dark hover:underline">
               {exporter.name}
@@ -63,10 +67,11 @@ const exporterPrefix = showExporterNumber
           </span>
         </h2>
       ) : (
-        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">
-          <span class="text-slate-400 dark:text-slate-500 font-normal text-sm mr-1">{exporterPrefix}</span>
-          {service.name}
-          <span class="text-xs font-normal text-slate-400 dark:text-slate-500 ml-2">
+        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 flex-wrap">
+          <span class="text-slate-400 dark:text-slate-500 font-normal text-sm">{exporterPrefix}</span>
+          <ServiceLogo logo={service.logo} name={service.name} base={base} class="h-5 w-5" />
+          <span>{service.name}</span>
+          <span class="text-xs font-normal text-slate-400 dark:text-slate-500">
             ({exporter.rules?.length ?? 0} rules)
           </span>
         </h2>

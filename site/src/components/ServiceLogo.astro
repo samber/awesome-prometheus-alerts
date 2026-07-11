@@ -1,0 +1,38 @@
+---
+// Renders a service's brand logo. The build enforces that every service has a
+// `logo` field and that the referenced asset exists under site/public/.
+// (The `logo` prop is still treated defensively to avoid runtime crashes.)
+interface Props {
+  logo?: string;
+  name: string;
+  base: string;
+  class?: string;
+}
+
+const { logo, name, base, class: className = 'h-5 w-5' } = Astro.props;
+
+// Logos that ship as a single dark color (Simple Icons fallbacks, OpenZFS,
+// and the hand-drawn icons for tools with no available brand mark) render
+// too dark to see on a dark background, so they need inverting to white.
+const MONOCHROME_LOGO_SLUGS = new Set([
+  // Simple Icons fallbacks (no dashboard-icons entry for these tools)
+  'windows-server', 'pulsar', 'nats', 'envoy', 'linkerd', 'sidekiq',
+  'apache-flink', 'hadoop', 'fluxcd', 'spinnaker', 'speedtest',
+  'digitalocean', 'opentelemetry-collector', 'zfs',
+  // Hand-drawn icons for tools with no available brand logo
+  'host-and-hardware', 's-m-a-r-t-device-monitoring', 'ipmi', 'blackbox',
+  'process-exporter', 'patroni', 'pgbouncer', 'ssl-tls',
+  'freeswitch', 'snmp',
+]);
+const logoSlug = logo?.match(/([^/]+)\.[a-z]+$/)?.[1];
+const isMonochrome = logoSlug ? MONOCHROME_LOGO_SLUGS.has(logoSlug) : false;
+---
+
+{logo && (
+  <img
+    src={`${base}${logo}`}
+    alt={`${name} logo`}
+    loading="lazy"
+    class={`object-contain shrink-0 ${isMonochrome ? 'dark:invert' : ''} ${className}`}
+  />
+)}

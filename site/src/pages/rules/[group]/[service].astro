@@ -4,6 +4,7 @@ import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import Sidebar from '../../../components/Sidebar.astro';
 import ExporterSection from '../../../components/ExporterSection.astro';
 import CautionBanner from '../../../components/CautionBanner.astro';
+import ServiceLogo from '../../../components/ServiceLogo.astro';
 import { data, getGroupSlug, getServiceSlug, getRuleCount, getAllServices } from '../../../data/rules';
 import { SITE_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, SCHEMA_IN_LANGUAGE } from '../../../data/site';
 
@@ -106,7 +107,10 @@ const jsonLd = {
       <div class="flex-1 min-w-0">
         <!-- Page header -->
         <div class="mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
-          <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{service.name} Prometheus Alert Rules</h1>
+          <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
+            <ServiceLogo logo={service.logo} name={service.name} base={base} class="h-8 w-8" />
+            {service.name} Prometheus Alert Rules
+          </h1>
           <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-2">
             {ruleCount} Prometheus alerting rule{ruleCount !== 1 ? 's' : ''} for {service.name}.
             {exporterNames && `Exported via ${exporterNames}.`}
@@ -128,6 +132,7 @@ const jsonLd = {
             serviceSlug={serviceSlug}
             exporterIndex={expIdx + 1}
             showExporterNumber={service.exporters.length > 1}
+            base={base}
           />
         ))}
 
