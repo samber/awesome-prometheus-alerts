@@ -48,8 +48,10 @@ for (const group of data.groups) {
   for (const service of group.services) {
     if (!service.logo) {
       logoProblems.push(`${group.name} > ${service.name}: missing "logo:" field`);
-    } else if (!fs.existsSync(path.join(PUBLIC_DIR, service.logo))) {
-      logoProblems.push(`${group.name} > ${service.name}: logo file not found at site/public${service.logo}`);
+    } else if (!fs.existsSync(path.join(PUBLIC_DIR, service.logo.replace(/^\/+/, '')))) {
+      logoProblems.push(
+        `${group.name} > ${service.name}: logo file not found at site/public/${service.logo.replace(/^\/+/, '')}`
+      );
     }
   }
 }
