@@ -22,7 +22,7 @@ export interface Exporter {
 
 export interface Service {
   name: string;
-  logo?: string;
+  logo: string;
   exporters: Exporter[];
 }
 
