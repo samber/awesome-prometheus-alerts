@@ -85,7 +85,7 @@ enforced by any schema. Follow them for new/edited entries so the file stays uni
 - Keep it a short factual sentence; put the threshold in parentheses when useful.
 - Identify the instance as `on {{ $labels.instance }}` or `(instance {{ $labels.instance }})`.
 - Format `{{ $value }}` with the formatter matching its unit: `printf "%.2f"` / `printf "%.0f"` for plain
-  decimals, `humanize` for byte counts (append `B`, e.g. `{{ $value | humanize }}B`), `humanizeDuration`
+  decimals, `humanize` / `humanize1024` for byte counts (append `B`, e.g. `{{ $value | humanize1024 }}B`), `humanizeDuration`
   for seconds, `humanizePercentage` for 0–1 ratios. See "Descriptions" below for the humanizeDuration
   seconds-vs-milliseconds pitfall.
 
