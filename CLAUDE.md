@@ -33,9 +33,10 @@ groups:
   - name: "<category>"        # e.g. "Basic resource monitoring"
     services:
       - name: "<service>"     # e.g. "Host and hardware"
+        logo: "<path>"             # /images/services/<service-slug>.svg, see naming rule below
         exporters:
-          - name: "<exporter>"
-            slug: "<slug>"          # used for download URLs
+          - name: "<exporter>"     # optional, see naming rule below
+            slug: "<slug>"          # used for download URLs, kebab-case, unique per exporter
             doc_url: "<url>"        # optional link to exporter docs
             comments:               # optional, exporter-level multiline notes rendered before rules
               "<comment>"
@@ -50,6 +51,69 @@ groups:
 ```
 
 Services are grouped in category. If you are not sure about the classification, ask the developer.
+
+Field order for a rule is always `name`, `description`, `query`, `severity`, `for`, `comments` — keep new
+rules in this order even though a few legacy rules interleave `comments` earlier.
+
+## YAML Authoring Conventions
+
+These are patterns observed consistently across the ~940 existing rules in `_data/rules.yml` but not
+enforced by any schema. Follow them for new/edited entries so the file stays uniform.
+
+### Naming fields
+
+- `logo`: `/images/services/<service-slug>.svg`, where `<service-slug>` is the service `name` lowercased
+  with every run of non-alphanumeric characters collapsed to a single `-` (e.g. "S.M.A.R.T Device
+  Monitoring" → `s-m-a-r-t-device-monitoring.svg`).
+- Exporter `name`: the GitHub `org/repo` for third-party exporters (e.g. `oliver006/redis_exporter`), a
+  human label for native/embedded exporters (e.g. `Embedded exporter`, `Embedded exporter (Patroni >=
+  2.1.0)`), or omitted entirely when only a `slug` is needed.
+- `slug`: kebab-case, unique per exporter, vendor/org-prefixed for third-party exporters (e.g.
+  `percona-mongodb-exporter`, `spreaker-pgbouncer-exporter`). Native exporters use `embedded-exporter`;
+  when a service ships several native exporter variants, disambiguate with a suffix (e.g.
+  `embedded-exporter-v2`, `embedded-exporter-legacy`).
+
+### Alert naming
+
+- Human-readable and service-prefixed, e.g. `Redis too many connections`, `Host out of memory` — not the
+  PascalCase alertnames used by upstream mixins (the site renders the PascalCase form separately).
+- Use `<Service> down` for the canonical liveness check (see "Service-down pattern" below).
+- Echo the threshold in parentheses when it helps scanning, e.g. `MySQL too many connections (> 80%)`.
+
+### Descriptions and value formatting
+
+- Keep it a short factual sentence; put the threshold in parentheses when useful.
+- Identify the instance as `on {{ $labels.instance }}` or `(instance {{ $labels.instance }})`.
+- Format `{{ $value }}` with the formatter matching its unit: `printf "%.2f"` / `printf "%.0f"` for plain
+  decimals, `humanize` for byte counts (append `B`, e.g. `{{ $value | humanize }}B`), `humanizeDuration`
+  for seconds, `humanizePercentage` for 0–1 ratios. See "Descriptions" below for the humanizeDuration
+  seconds-vs-milliseconds pitfall.
+
+### Service-down pattern
+
+For any stateful service exporting its own liveness gauge, use this exact shape:
+
+```yaml
+- name: "<Service> down"
+  description: "<Service> instance is down on {{ $labels.instance }}"
+  query: "<exporter>_up == 0"
+  severity: critical
+  for: 1m
+  comments: |
+    1m delay allows a restart without triggering an alert.
+```
+
+This relies on the exporter's own application-level `_up` gauge, which is the recommended way to detect a
+down instance — distinct from the discouraged `up{job=~"..."} == 0` target-liveness check described in
+"Query design" below (which misses staleness on service-discovered/multi-target jobs).
+
+### Reusable boilerplate comments
+
+Reuse these verbatim where they apply, instead of rewording:
+
+- Restart tolerance: `1m delay allows a restart without triggering an alert.`
+- Arbitrary/workload-dependent threshold: `Threshold of X is arbitrary. Adjust ... to your workload.` (or
+  `... is a rough default. Adjust based on your workload.`) — see "Thresholds" below for when to add this.
 
 ## Running Locally
 
@@ -129,10 +193,13 @@ These are the most frequent issues raised during code review on this repo:
 - When checking a cumulative total metric (one that only resets on process restart) with `> 0`, the alert will fire permanently after the first occurrence and never resolve. Always wrap such metrics in `increase()` or `rate()` to detect new events. Known example: `opensearch_circuitbreaker_tripped_count > 0` fires forever after the first circuit breaker trip.
 
 ### Comments
-- When an alert or its query needs explanation (e.g., non-obvious PromQL logic, threshold rationale, edge cases), use the rule-level `comments:` field. Use multiline comments when needed.
-- Use the exporter-level `comments:` field for notes that apply to all rules under that exporter (e.g., exporter version requirements, known quirks, setup prerequisites).
-- Comments are rendered as YAML `#` comments in the output, so they are visible to users who copy-paste the rules.
-- Never add two `comments:` keys to the same rule or exporter block. YAML silently discards the first when there are duplicate keys in the same mapping. Always merge multiple comment paragraphs into a single `comments:` field using the multiline `|` block scalar.
+
+Three distinct scopes exist — don't confuse them:
+- Plain YAML `#` comments: source-only, for contributors reading/editing the file. Stripped at parse time, never shown on the site. Used only for the file-level notice at the top of `_data/rules.yml`.
+- Rule-level `comments:` field: rendered as a `#` comment in the copy-pasteable snippet for that one rule. Use for non-obvious PromQL logic, threshold rationale, or an edge case specific to that rule — not for restating the description.
+- Exporter-level `comments:` field: rendered once before all rules under that exporter. Use for notes that apply exporter-wide (version requirements, known quirks, setup prerequisites) instead of repeating the same note on every rule. Don't state the obvious (e.g. "these metrics are specific to exporter X" — the `name`/`doc_url` already say that).
+
+A rule or exporter block may have only **one** `comments:` key. YAML silently discards the first when there are duplicate keys in the same mapping — merge multiple paragraphs into a single `comments:` field using the multiline `|` block scalar.
 
 ### Descriptions
 - Keep descriptions short, factual, and actionable.
