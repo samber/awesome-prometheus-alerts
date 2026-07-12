@@ -195,7 +195,7 @@ These are the most frequent issues raised during code review on this repo:
 ### Comments
 
 Three distinct scopes exist — don't confuse them:
-- Plain YAML `#` comments: source-only, for contributors reading/editing the file. Stripped at parse time, never shown on the site. Used only for the file-level notice at the top of `_data/rules.yml`.
+- Plain YAML `#` comments: source-only, for contributors reading/editing the file. Stripped at parse time, never shown on the site. Used for the file-level notice at the top of `_data/rules.yml` and occasional in-file section headers.
 - Rule-level `comments:` field: rendered as a `#` comment in the copy-pasteable snippet for that one rule. Use for non-obvious PromQL logic, threshold rationale, or an edge case specific to that rule — not for restating the description.
 - Exporter-level `comments:` field: rendered once before all rules under that exporter. Use for notes that apply exporter-wide (version requirements, known quirks, setup prerequisites) instead of repeating the same note on every rule. Don't state the obvious (e.g. "these metrics are specific to exporter X" — the `name`/`doc_url` already say that).
 
