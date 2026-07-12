@@ -1,4 +1,6 @@
 ---
+import { MONOCHROME_LOGO_SLUGS } from '../data/monochromeLogos';
+
 // Renders a service's brand logo. The build enforces that every service has a
 // `logo` field and that the referenced asset exists under site/public/.
 // (The `logo` prop is still treated defensively to avoid runtime crashes.)
@@ -7,23 +9,16 @@ interface Props {
   name: string;
   base: string;
   class?: string;
+  // Marks this instance as the page's own logo for Pagefind, so the search
+  // results overlay shows it as the result thumbnail. Only pass this on the
+  // single hero logo of a service/exporter page — never on list/nav usages
+  // (ServiceCard, Sidebar, ExporterSection), which render many logos per page
+  // and would make Pagefind pick an arbitrary one as the page thumbnail.
+  pagefindMeta?: boolean;
 }
 
-const { logo, name, base, class: className = 'h-5 w-5' } = Astro.props;
+const { logo, name, base, class: className = 'h-5 w-5', pagefindMeta = false } = Astro.props;
 
-// Logos that ship as a single dark color (Simple Icons fallbacks, OpenZFS,
-// and the hand-drawn icons for tools with no available brand mark) render
-// too dark to see on a dark background, so they need inverting to white.
-const MONOCHROME_LOGO_SLUGS = new Set([
-  // Simple Icons fallbacks (no dashboard-icons entry for these tools)
-  'windows-server', 'pulsar', 'nats', 'envoy', 'linkerd', 'sidekiq',
-  'apache-flink', 'hadoop', 'fluxcd', 'spinnaker', 'speedtest',
-  'digitalocean', 'opentelemetry-collector', 'zfs',
-  // Hand-drawn icons for tools with no available brand logo
-  'host-and-hardware', 's-m-a-r-t-device-monitoring', 'ipmi', 'blackbox',
-  'process-exporter', 'patroni', 'pgbouncer', 'ssl-tls',
-  'freeswitch', 'snmp',
-]);
 const logoSlug = logo?.match(/([^/]+)\.[a-z]+$/)?.[1];
 const isMonochrome = logoSlug ? MONOCHROME_LOGO_SLUGS.has(logoSlug) : false;
 ---
@@ -34,5 +29,6 @@ const isMonochrome = logoSlug ? MONOCHROME_LOGO_SLUGS.has(logoSlug) : false;
     alt={`${name} logo`}
     loading="lazy"
     class={`object-contain shrink-0 ${isMonochrome ? 'dark:invert' : ''} ${className}`}
+    data-pagefind-meta={pagefindMeta ? 'image[src], image_alt[alt]' : undefined}
   />
 )}

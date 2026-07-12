@@ -108,7 +108,7 @@ const jsonLd = {
         <!-- Page header -->
         <div class="mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
           <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
-            <ServiceLogo logo={service.logo} name={service.name} base={base} class="h-8 w-8" />
+            <ServiceLogo logo={service.logo} name={service.name} base={base} class="h-8 w-8" pagefindMeta />
             {service.name} Prometheus Alert Rules
           </h1>
           <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-2">
@@ -164,7 +164,7 @@ const jsonLd = {
 
         <!-- More in group -->
         {group.services.length > 1 && (
-          <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+          <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800" data-pagefind-ignore>
             <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-3">
               More in <a href={`${base}/rules/${groupSlug}/`} class="hover:text-brand dark:hover:text-brand-dark transition-colors">{group.name}</a>
             </h2>
