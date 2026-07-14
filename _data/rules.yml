@@ -301,7 +301,6 @@ groups:
                   node_vmstat_oom_kill is a monotonically increasing kernel counter (see /proc/vmstat),
                   declared as Untyped by node_exporter's client library. delta() is used here instead of
                   increase() as a deliberate choice, not because the metric is a gauge.
-                comments: |
                   When a machine runs out of memory, the node exporter can become unresponsive for several minutes. Even if the system takes 15–20 minutes to recover, the alert should still trigger.
               - name: Host EDAC Correctable Errors detected
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 1 minute.'
