@@ -4551,8 +4551,8 @@ groups:
                 severity: warning
                 for: 5m
                 comments: Threshold of 90% is a rough default. Adjust based on your pod churn rate and IP pool size.
-              - name: Cilium operator IPAM interface creation failures
-                description: "Cilium operator is failing to create IPAM network interfaces. IP allocation may be impacted."
+              - name: Cilium operator IPAM interface creation rate high
+                description: "Cilium operator is creating IPAM network interfaces at a high rate. This indicates churn and may correlate with IPAM issues depending on your Cilium version."
                 query: 'sum(rate(cilium_operator_ipam_interface_creation_ops[5m])) by () > 0.05'
                 severity: warning
                 for: 10m
