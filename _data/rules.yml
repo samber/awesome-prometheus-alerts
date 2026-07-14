@@ -88,7 +88,7 @@ groups:
                 severity: warning
               - name: Prometheus AlertManager notification failing
                 description: "Alertmanager is failing to send {{ $value | humanizePercentage }} of notifications"
-                query: "rate(alertmanager_notifications_failed_total[5m]) / ignoring(reason) group_left rate(alertmanager_notifications_total[5m]) > 0.01"
+                query: "(rate(alertmanager_notifications_failed_total[5m]) / ignoring(reason) group_left rate(alertmanager_notifications_total[5m])) > 0.01 and ignoring(reason) rate(alertmanager_notifications_total[5m]) > 0"
                 severity: critical
               - name: Prometheus target empty
                 description: Prometheus has no target in service discovery
