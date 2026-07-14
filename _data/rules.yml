@@ -3382,7 +3382,7 @@ groups:
                 severity: critical
               - name: Kubernetes StatefulSet down
                 description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} went down
-                query: "kube_statefulset_replicas != kube_statefulset_status_replicas_ready > 0 and changes(kube_statefulset_status_replicas_updated[10m]) == 0"
+                query: "kube_statefulset_replicas > 0 and kube_statefulset_replicas != kube_statefulset_status_replicas_ready and changes(kube_statefulset_status_replicas_updated[10m]) == 0"
                 severity: critical
                 for: 3m
               - name: Kubernetes HPA scale inability
