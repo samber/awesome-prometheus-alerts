@@ -194,14 +194,14 @@ groups:
                 query: "(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < .10)"
                 severity: warning
                 for: 2m
+              # node_exporter pipes every /proc/vmstat field through one generic path as Untyped, so the
+              # declared type carries no semantics here. The kernel value is increment-only since boot
+              # (vm_event_item, mutated only by raw_cpu_inc), i.e. a counter that resets on reboot only.
+              # rate() corrects that reset; deriv() and delta() would swing negative across it.
               - name: Host memory under memory pressure
                 description: "The node is under heavy memory pressure. High rate of major page faults ({{ $value }}/s)."
-                query: "(deriv(node_vmstat_pgmajfault[5m]) > 1000)"
+                query: "(rate(node_vmstat_pgmajfault[5m]) > 1000)"
                 severity: warning
-                comments: |
-                  node_vmstat_pgmajfault is a monotonically increasing kernel counter (see /proc/vmstat),
-                  declared as Untyped by node_exporter's client library. deriv() is used here instead of
-                  rate() as a deliberate choice, not because the metric is a gauge.
               - name: Host Memory is underutilized
                 description: "Node memory usage is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})"
                 query: "min_over_time(node_memory_MemFree_bytes[1w]) > node_memory_MemTotal_bytes * .8"
@@ -332,14 +332,16 @@ groups:
                 description: Kernel version for {{ $labels.instance }} has changed.
                 query: "changes(node_uname_info[1h]) > 0"
                 severity: info
+              # node_exporter pipes every /proc/vmstat field through one generic path as Untyped, so the
+              # declared type carries no semantics here. The kernel value is increment-only since boot
+              # (vm_event_item, mutated only by raw_cpu_inc), i.e. a counter that resets on reboot only.
+              # increase() corrects that reset; delta() would swing negative across it — which is exactly
+              # the reboot that an OOM storm tends to end in.
               - name: Host OOM kill detected
                 description: OOM kill detected
-                query: "(delta(node_vmstat_oom_kill[30m]) > 0)"
+                query: "(increase(node_vmstat_oom_kill[30m]) > 0)"
                 severity: warning
                 comments: |
-                  node_vmstat_oom_kill is a monotonically increasing kernel counter (see /proc/vmstat),
-                  declared as Untyped by node_exporter's client library. delta() is used here instead of
-                  increase() as a deliberate choice, not because the metric is a gauge.
                   When a machine runs out of memory, the node exporter can become unresponsive for several minutes. Even if the system takes 15–20 minutes to recover, the alert should still trigger.
               - name: Host EDAC Correctable Errors detected
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 1 minute.'
@@ -978,11 +980,13 @@ groups:
                 query: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and ignoring(type) systemd_unit_tasks_max > 0'
                 severity: warning
                 for: 5m
+              # The exporter declares this GaugeValue, but that is an upstream mistyping: NRefused and
+              # NAccepted are the same D-Bus uint32 read on adjacent lines, yet only NAccepted gets
+              # CounterValue. systemd's n_refused is increment-only and resets when the unit restarts,
+              # i.e. a counter. increase() corrects that reset; delta() would swallow the refusals.
               - name: Systemd socket refused connections
                 description: "Systemd socket {{ $labels.name }} is refusing connections. ({{ $value }} refused in last 5m, instance {{ $labels.instance }})"
-                query: 'delta(systemd_socket_refused_connections_total[5m]) > 3'
-                comments: |
-                  systemd_socket_refused_connections_total is declared as Gauge by the exporter despite the _total suffix, so delta() is used instead of increase().
+                query: 'increase(systemd_socket_refused_connections_total[5m]) > 3'
                 severity: warning
                 for: 2m
               - name: Systemd socket high connections
@@ -1050,11 +1054,13 @@ groups:
                 query: "( (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) and ON (instance) mysql_slave_status_master_server_id > 0 ) > 30"
                 severity: critical
                 for: 1m
+              # mysqld_exporter only types the six SHOW GLOBAL STATUS prefixes it recognises; everything
+              # else, including Slow_queries, falls back to Untyped. MySQL increments it cumulatively
+              # since server start and resets it on restart or FLUSH STATUS, i.e. a counter, so
+              # increase() is correct — see the InnoDB log waits rule below for the same pattern.
               - name: MySQL slow queries
                 description: "MySQL server has some new slow queries ({{ $value }} in the last minute)."
-                query: delta(mysql_global_status_slow_queries[1m]) > 0
-                comments: |
-                  mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so delta() is used instead of increase().
+                query: increase(mysql_global_status_slow_queries[1m]) > 0
                 severity: warning
                 for: 2m
               - name: MySQL InnoDB log waits
@@ -1065,11 +1071,13 @@ groups:
                 description: MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.
                 query: "mysql_global_status_uptime < 60"
                 severity: info
+              # mysqld_exporter only types the six SHOW GLOBAL STATUS prefixes it recognises; everything
+              # else, including Questions, falls back to Untyped. MySQL increments it cumulatively since
+              # server start and resets it on restart or FLUSH STATUS, i.e. a counter, so rate() is
+              # correct. Both rate() and deriv() are per-second, so the 10k QPS threshold is unaffected.
               - name: MySQL High QPS
                 description: MySQL is being overload with unusual QPS (> 10k QPS).
-                query: "deriv(mysql_global_status_questions[1m]) > 10000"
-                comments: |
-                  mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so deriv() is used instead of irate().
+                query: "rate(mysql_global_status_questions[1m]) > 10000"
                 severity: info
                 for: 2m
               - name: MySQL too many open files
@@ -2662,13 +2670,14 @@ groups:
                 for: 5m
                 comments: |
                   Replace job="nats" with the actual job name in your Prometheus configuration.
+              # gnatsd_varz_cpu is a gauge, not a counter. Compare it directly, never wrap it in rate().
               - name: Nats high CPU usage
                 description: NATS server is using more than 80% CPU for the last 5 minutes
                 query: "gnatsd_varz_cpu > 80"
                 severity: warning
                 for: 5m
                 comments: |
-                  gnatsd_varz_cpu is a gauge reporting CPU percentage (0-100 scale).
+                  gnatsd_varz_cpu reports CPU usage on a 0-100 scale, not 0-1.
               - name: Nats high number of connections
                 description: NATS server has more than 1000 active connections
                 query: "gnatsd_connz_num_connections > 1000"
@@ -2815,11 +2824,11 @@ groups:
                 query: (haproxy_backend_current_sessions / haproxy_backend_limit_sessions * 100) > 80 and haproxy_backend_limit_sessions > 0
                 severity: warning
                 for: 2m
+              # haproxy_backend_current_queue is a gauge (current queue depth), not a counter.
+              # Compare it directly, never wrap it in rate().
               - name: HAProxy pending requests
                 description: Some HAProxy requests are pending on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}
                 query: sum by (proxy) (haproxy_backend_current_queue) > 0
-                comments: |
-                  haproxy_backend_current_queue is a gauge (current queue depth), not a counter.
                 severity: warning
                 for: 2m
               - name: HAProxy HTTP slowing down
@@ -3124,8 +3133,6 @@ groups:
               - name: Linkerd high error rate
                 description: "Linkerd error rate for {{ $labels.deployment }}{{ $labels.statefulset }}{{ $labels.daemonset }} is over 10%"
                 query: 'sum(rate(response_total{classification="failure"}[1m])) by (deployment, statefulset, daemonset) / sum(rate(response_total[1m])) by (deployment, statefulset, daemonset) * 100 > 10 and sum(rate(response_total[1m])) by (deployment, statefulset, daemonset) > 0'
-                comments: |
-                  Linkerd does not expose request_errors_total. Errors are tracked via response_total{classification="failure"}.
                 severity: warning
                 for: 1m
 
@@ -3191,9 +3198,12 @@ groups:
                 description: Istio Pilot has detected {{ $value }} duplicate Envoy cluster(s), indicating misconfigured DestinationRules or ServiceEntries.
                 query: "sum(pilot_duplicate_envoy_clusters{}) > 0"
                 severity: critical
+              # istio_build is an info-style gauge whose value is always 1, so it vanishes rather than
+              # dropping to 0 when istiod stops. Only absent() detects the outage; istio_build < 1 or
+              # == 0 can never fire.
               - name: Istio control plane component down
                 description: Istio control plane component {{ $labels.component }} has stopped reporting for over 5 minutes, disrupting service discovery, configuration propagation, and traffic management across the mesh.
-                query: "avg_over_time(istio_build{}[1m]) < 1"
+                query: 'absent(istio_build{component="pilot"})'
                 severity: critical
                 for: 5m
 
@@ -3215,6 +3225,9 @@ groups:
                 query: "sum(phpfpm_listen_queue_connections) by (instance) / sum(phpfpm_listen_queue_length_connections) by (instance) > 0.8"
                 severity: warning
                 for: 5m
+              # phpfpm_processes_total is a gauge despite its _total suffix (the exporter declares it
+              # GaugeValue): it is the current process count per state. Compare it directly, never
+              # wrap it in rate() or increase().
               - name: PHP-FPM busy process ratio high
                 description: "{{ $value }}% of PHP-FPM processes are active (busy) on {{ $labels.instance }}, the pool is approaching its max_children capacity."
                 query: '(sum(phpfpm_processes_total{state="active"}) by (instance) * 100) / sum(phpfpm_processes_total) by (instance) > 80'
@@ -3442,6 +3455,7 @@ groups:
                 for: 5m
                 comments: |
                   process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
+                  This alert will also fire for Go, JVM, or any process exposing these metrics.
               - name: Python GC generation 2 collections high
                 description: Python full GC (generation 2) is running too frequently, indicating memory pressure
                 query: 'rate(python_gc_collections_total{generation="2"}[5m]) > 1'
@@ -3844,15 +3858,14 @@ groups:
                 query: 'sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0'
                 severity: critical
                 for: 15m
+              # Keyed on the CrashLoopBackOff waiting reason rather than a restart-count threshold:
+              # Kubernetes' exponential backoff (up to 5m between restarts) means a real crash loop
+              # won't restart 4+ times per minute after the first minute or two.
               - name: Kubernetes pod crash looping
                 description: Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping
                 query: 'max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}[5m]) >= 1'
                 severity: warning
                 for: 2m
-                comments: |
-                  Uses the CrashLoopBackOff waiting reason instead of a restart-count threshold, since
-                  Kubernetes' exponential backoff (up to 5m between restarts) means a real crash loop
-                  won't restart 4+ times per minute after the first minute or two.
               - name: Kubernetes ReplicaSet replicas mismatch
                 description: ReplicaSet {{ $labels.namespace }}/{{ $labels.replicaset }} replicas mismatch
                 query: "kube_replicaset_spec_replicas != kube_replicaset_status_ready_replicas"
@@ -4063,14 +4076,16 @@ groups:
                 severity: warning
                 for: 2m
                 comments: |
-                  Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
+                  Counts server-side failures only. NotFound, AlreadyExists and Cancelled are normal gRPC
+                  responses and are deliberately excluded from the error rate.
               - name: Etcd high number of failed GRPC requests critical
                 description: More than 5% GRPC request failure detected in Etcd
                 query: 'sum(rate(grpc_server_handled_total{grpc_code=~"Unknown|FailedPrecondition|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
                 severity: critical
                 for: 2m
                 comments: |
-                  Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
+                  Counts server-side failures only. NotFound, AlreadyExists and Cancelled are normal gRPC
+                  responses and are deliberately excluded from the error rate.
               - name: Etcd GRPC requests slow
                 description: GRPC requests slowing down, 99th percentile is over 0.15s
                 query: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_method!="Defragment", grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
@@ -4124,9 +4139,11 @@ groups:
                 query: "sum(rate(etcd_network_peer_sent_failures_total[1m])) by (To) > 0.01"
                 severity: warning
                 for: 2m
+              # without (instance) keeps the count scoped per etcd cluster: several clusters often share
+              # a job label (main and events), and aggregating across them both misfires and masks.
               - name: Etcd insufficient members for quorum
                 description: Only {{ $value }} etcd members are reachable, fewer than required for quorum; the cluster will reject writes until quorum is restored.
-                query: 'sum(up{job="etcd"} == bool 1) < ((count(up{job="etcd"}) + 1) / 2)'
+                query: 'sum(up{job=~".*etcd.*"} == bool 1) without (instance) < ((count(up{job=~".*etcd.*"}) without (instance) + 1) / 2)'
                 severity: critical
                 for: 3m
               - name: Etcd database quota low space
@@ -4352,6 +4369,9 @@ groups:
                 query: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[5m])) / sum(rate(grpc_server_handled_total[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total[5m])) > 0'
                 severity: warning
                 for: 10m
+              # argocd_repo_pending_request_total is a gauge despite its _total suffix (NewGaugeVec,
+              # Inc()/Dec()): it is the number of requests currently holding on the repo lock and it
+              # drains as locks release. Compare it directly, never wrap it in rate() or increase().
               - name: ArgoCD repo server too many pending requests
                 description: ArgoCD repo server has more than 50 requests pending on the repository lock for {{ $labels.repo }}, indicating the repo server is overloaded and manifest generation is being delayed.
                 query: "argocd_repo_pending_request_total > 50"
@@ -4597,7 +4617,8 @@ groups:
                 severity: warning
                 for: 5m
                 comments: |
-                  Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
+                  Counts server-side failures only. NotFound, AlreadyExists and Cancelled are normal gRPC
+                  responses and are deliberately excluded from the error rate.
               - name: GitLab Gitaly resource exhausted
                 description: "Gitaly on {{ $labels.instance }} is returning ResourceExhausted errors, indicating overload ({{ $value }}%)."
                 query: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code="ResourceExhausted"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 1 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
@@ -4908,9 +4929,13 @@ groups:
                 query: "sum(vault_core_active) < 1"
                 severity: critical
                 for: 5m
+              # Each side must be compared to its threshold before the or. rate() drops __name__, so both
+              # operands would otherwise carry identical label sets and the or would discard the
+              # response-failure branch entirely — and Vault increments log_request_failure on every
+              # request (with 0.0 on success), so that branch is always present to mask it.
               - name: Vault audit log write failures
                 description: 'Vault failed to write to an audit device on {{ $labels.instance }} ({{ $value | printf "%.2f" }} failures/s), so audit log entries may be incomplete. Check audit device connectivity, disk space, or permissions.'
-                query: "sum(rate(vault_audit_log_request_failure[5m]) or rate(vault_audit_log_response_failure[5m])) by (instance) > 0"
+                query: "sum(rate(vault_audit_log_request_failure[5m])) by (instance) > 0 or sum(rate(vault_audit_log_response_failure[5m])) by (instance) > 0"
                 severity: warning
                 for: 5m
               - name: Vault low response success rate
@@ -5798,7 +5823,8 @@ groups:
                 severity: warning
                 for: 5m
                 comments: |
-                  Filters to actual error codes only. grpc_code!="OK" would include benign codes like NotFound, AlreadyExists, and Cancelled.
+                  Counts server-side failures only. NotFound, AlreadyExists and Cancelled are normal gRPC
+                  responses and are deliberately excluded from the error rate.
               - name: Thanos Query High D N S Failures
                 description: "Thanos Query {{$labels.job}} have {{$value | humanize}}% of failing DNS queries for store endpoints."
                 query: '(sum by (job) (rate(thanos_query_store_apis_dns_failures_total[5m])) / sum by (job) (rate(thanos_query_store_apis_dns_lookups_total[5m]))) * 100 > 1 and sum by (job) (rate(thanos_query_store_apis_dns_lookups_total[5m])) > 0'
@@ -6109,8 +6135,7 @@ groups:
                 severity: critical
                 for: 5m
                 comments: |
-                  for: 5m tolerates transient ring-membership flapping during rolling restarts/deploys,
-                  without waiting as long as upstream's 15m.
+                  for: 5m tolerates transient ring-membership flapping during rolling restarts and deploys.
               - name: Cortex frontend queries stuck
                 description: There are queued up queries in query-frontend.
                 query: sum by (job) (cortex_query_frontend_queue_length) > 1
@@ -6342,44 +6367,48 @@ groups:
                 for: 5m
               - name: Tempo live store all owners lagging
                 description: All live-store owners of Tempo partition {{ $labels.partition }} are lagging by {{ $value }}s behind their Kafka ingest partition, causing a partial read outage for recent traces.
-                query: 'min by (job, partition) (avg_over_time(tempo_ingest_group_partition_lag_seconds{container="live-store"}[6m])) > 300'
+                query: 'min by (job, partition) (tempo_ingest_group_partition_lag_seconds{container="live-store"}) > 300'
                 severity: critical
-                for: 5m
+                for: 2m
               - name: Tempo live store partition lag warning
-                description: Tempo live-store owner of partition {{ $labels.partition }} is lagging by {{ $value }}s behind its Kafka ingest partition, degrading read completeness for recent traces.
-                query: 'avg_over_time(tempo_ingest_group_partition_lag_seconds{container="live-store"}[6m]) > 200'
+                description: Tempo live-store {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}, degrading read completeness for recent traces.
+                query: 'tempo_ingest_group_partition_lag_seconds{container="live-store"} > 200'
                 severity: warning
-                for: 5m
+                for: 2m
               - name: Tempo live store partition lag critical
-                description: Tempo live-store owner of partition {{ $labels.partition }} is lagging by {{ $value }}s behind its Kafka ingest partition; recent traces on this partition may be significantly delayed.
-                query: 'avg_over_time(tempo_ingest_group_partition_lag_seconds{container="live-store"}[6m]) > 1200'
+                description: Tempo live-store {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; recent traces on this partition may be significantly delayed.
+                query: 'tempo_ingest_group_partition_lag_seconds{container="live-store"} > 1200'
                 severity: critical
-                for: 5m
+                for: 2m
               - name: Tempo live store partitions unowned
                 description: "{{ $labels.job }} has live-store partitions with no owner in the partition ring; spans for those partitions are fully unqueryable."
                 query: 'max by (job) (tempo_partition_ring_partitions{name="livestore-partitions", state=~"Active|Inactive"}) > count(count by (partition, job) (tempo_live_store_partition_owned)) by (job)'
                 severity: critical
                 for: 10m
               - name: Tempo block builder partition lag warning
-                description: Tempo block-builder for partition {{ $labels.partition }} is lagging by {{ $value }}s behind its Kafka ingest partition; traces are delayed in being flushed into durable blocks.
+                description: Tempo block-builder {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; traces are delayed in being flushed into durable blocks.
                 query: 'avg_over_time(tempo_ingest_group_partition_lag_seconds{container="block-builder"}[6m]) > 200'
                 severity: warning
-                for: 5m
+                comments: |
+                  The block-builder consumes in batches, so its raw lag sawtooths up to consume_cycle_duration
+                  (5m by default) on every healthy cycle. The 6m average is what makes 200s meaningful: it
+                  means the block-builder is burning roughly 45% of its cycle budget. Raise the window
+                  alongside consume_cycle_duration if you tune it.
               - name: Tempo block builder partition lag critical
-                description: Tempo block-builder for partition {{ $labels.partition }} is lagging by {{ $value }}s behind its Kafka ingest partition; traces are significantly delayed in being flushed into durable blocks.
-                query: 'avg_over_time(tempo_ingest_group_partition_lag_seconds{container="block-builder"}[6m]) > 300'
+                description: Tempo block-builder {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; traces are significantly delayed in being flushed into durable blocks.
+                query: 'tempo_ingest_group_partition_lag_seconds{container="block-builder"} > 300'
                 severity: critical
-                for: 5m
+                for: 2m
               - name: Tempo backend scheduler jobs failing
                 description: 'Tempo backend-scheduler job failure rate is {{ printf "%.2f" $value }}% for {{ $labels.job }}, indicating compaction jobs are failing in the backend-scheduler/backend-worker pipeline.'
                 query: "100 * sum by (job) (increase(tempo_backend_scheduler_jobs_failed_total[5m])) / sum by (job) (increase(tempo_backend_scheduler_jobs_created_total[5m])) > 5 and sum by (job) (increase(tempo_backend_scheduler_jobs_created_total[5m])) > 0"
                 severity: critical
                 for: 10m
               - name: Tempo metrics generator partition lag critical
-                description: Tempo metrics-generator partition {{ $labels.partition }} is lagging by {{ $value }}s behind its Kafka ingest partition; generated service-graph and span metrics reflect stale data.
-                query: 'max by (job, partition) (tempo_ingest_group_partition_lag_seconds{container="metrics-generator"}) > 900'
+                description: Tempo metrics-generator {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; generated service-graph and span metrics reflect stale data.
+                query: 'tempo_ingest_group_partition_lag_seconds{container="metrics-generator"} > 900'
                 severity: critical
-                for: 5m
+                for: 2m
               - name: Tempo block builders partitions mismatch
                 description: "{{ $labels.job }} has more live-store partitions in the partition ring than block-builders currently own, indicating stuck or misconfigured partition ownership."
                 query: 'max by (job) (tempo_partition_ring_partitions{name="livestore-partitions", state=~"Active|Inactive"}) > sum by (job) (tempo_block_builder_owned_partitions)'
