@@ -1561,8 +1561,11 @@ groups:
                   1m delay allows a restart without triggering an alert.
               - name: MongoDB replication lag (Percona)
                 description: Mongodb replication lag is more than 30s
-                query: 'mongodb_mongod_replset_member_replication_lag > 30'
+                query: '(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"}) / 1000 > 30'
                 severity: warning
+                comments: |
+                  mongodb_rs_members_optimeDate is exposed in default mode; its value is in milliseconds, hence the /1000 to compare seconds.
+                  Older exporters (or --compatible-mode) instead expose a ready-made lag in seconds: mongodb_mongod_replset_member_replication_lag > 30.
               - name: MongoDB replication headroom
                 description: MongoDB replication headroom is <= 0
                 query: 'sum(avg(mongodb_mongod_replset_oplog_head_timestamp - mongodb_mongod_replset_oplog_tail_timestamp)) - sum(avg(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"})) <= 0'
@@ -1600,14 +1603,20 @@ groups:
                 severity: warning
                 for: 2m
               - name: MongoDB replica set primary changed
-                description: Replica set {{ $labels.set }} has undergone a primary election in the last 10 minutes, which may indicate instability or an unplanned failover.
-                query: "min by (set) (changes(mongodb_mongod_replset_my_state[10m])) > 0"
+                description: MongoDB member {{ $labels.instance }} changed replica set state in the last 10 minutes, which may indicate a primary election or an unplanned failover.
+                query: "changes(mongodb_rs_myState[10m]) > 0"
                 severity: warning
                 for: 2m
+                comments: |
+                  mongodb_rs_myState (this node's replica set state) is exposed in default mode.
+                  Older exporters (or --compatible-mode) instead expose mongodb_mongod_replset_my_state.
               - name: MongoDB instance recently restarted
                 description: MongoDB instance {{ $labels.instance }} was restarted {{ $value }} seconds ago.
-                query: "mongodb_instance_uptime_seconds < 300"
+                query: "mongodb_ss_uptime < 300"
                 severity: info
+                comments: |
+                  mongodb_ss_uptime (from serverStatus.uptime) is exposed in default mode.
+                  Older exporters (or --compatible-mode) instead expose mongodb_instance_uptime_seconds.
 
           - name: dcu/mongodb_exporter
             slug: dcu-mongodb-exporter
