@@ -82,6 +82,21 @@ during an incident: "is it up?" before "is it slow?" before "is it running low o
 Within the same category, order by severity (`critical`, then `warning`, then `info`); ties within the
 same category and severity keep their existing relative order rather than being reshuffled arbitrarily.
 
+Mark each category boundary with a plain `#` comment (see "Comments" below — this is the source-only
+scope, stripped at render time, not the rule-level `comments:` field) directly above the first rule of
+that category, with no blank line before it:
+
+```yaml
+              #
+              # {Category name}
+              #
+              - name: "<first rule of this category>"
+```
+
+Use the category name as written above (`Availability`, `Resource saturation (USE)`, `Performance and
+errors (RED)`, `Capacity and trend`, `Info, security, and config`). Omit the header for a category that
+has no rules in a given exporter.
+
 This convention governs new PRs and rule reorderings; it does not by itself justify rewriting existing
 descriptions, queries, or thresholds — reordering is a pure permutation of the `rules:` list.
 

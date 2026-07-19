@@ -48,7 +48,6 @@ groups:
                 description: A Prometheus AlertManager job has disappeared
                 query: 'absent(up{job="alertmanager"})'
                 severity: warning
-
               #
               # Resource saturation (USE)
               #
@@ -56,7 +55,6 @@ groups:
                 description: Prometheus is dropping samples because their timestamps arrive out of order ({{ $value }} samples in the last 5 minutes), indicating a misbehaving target or clock skew.
                 query: "increase(prometheus_target_scrapes_sample_out_of_order_total[5m]) > 3"
                 severity: warning
-
               #
               # Performance and errors (RED)
               #
@@ -176,7 +174,6 @@ groups:
                 query: "prometheus_engine_queries / prometheus_engine_queries_concurrent_max > 0.8"
                 severity: warning
                 for: 5m
-
               #
               # Info, security, and config
               #
@@ -357,7 +354,6 @@ groups:
                 query: "(min_over_time(node_timex_sync_status[3m]) == 0 and node_timex_maxerror_seconds >= 16)"
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -423,7 +419,6 @@ groups:
                 description: 'Host {{ $labels.instance }} has had {{ printf "%.0f" $value }} correctable memory errors reported by EDAC in the last 1 minute.'
                 query: "(increase(node_edac_correctable_errors_total[1m]) > 0)"
                 severity: info
-
               #
               # Info, security, and config
               #
@@ -467,7 +462,6 @@ groups:
                 description: Device temperature at 80% of trip value on {{ $labels.instance }} drive {{ $labels.device }}
                 query: 'max_over_time(smartctl_device_temperature{temperature_type="current"} [10m]) >= on(device, instance) (smartctl_device_temperature{temperature_type="drive_trip"} * .80)'
                 severity: warning
-
               #
               # Performance and errors (RED)
               #
@@ -509,7 +503,6 @@ groups:
                 for: 5m
                 comments: |
                   The ipmi_up metric is per-collector. A value of 0 means the collector could not retrieve data from the BMC.
-
               #
               # Resource saturation (USE)
               #
@@ -615,7 +608,6 @@ groups:
                 for: 5m
                 comments: |
                   This rule can be very noisy in dynamic infra with legitimate container start/stop/deployment.
-
               #
               # Resource saturation (USE)
               #
@@ -656,7 +648,6 @@ groups:
                 query: '(1 - (sum(container_fs_inodes_free{name!=""}) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80 and sum(container_fs_inodes_total) BY (instance) > 0'
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -692,7 +683,6 @@ groups:
                 description: Blackbox probe has had lower uptime than 99.9% over the last 30 days, which may indicate cumulative outages or repeated flapping not caught by immediate down alerts.
                 query: 'avg_over_time(probe_success{job="blackbox-exporter"}[30d]) * 100 < 99.9'
                 severity: info
-
               #
               # Performance and errors (RED)
               #
@@ -711,7 +701,6 @@ groups:
                 query: "sum by (instance) (probe_icmp_duration_seconds) > 1"
                 severity: warning
                 for: 1m
-
               #
               # Info, security, and config
               #
@@ -771,7 +760,6 @@ groups:
                 query: "windows_time_ntp_round_trip_delay_seconds > 1"
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -784,7 +772,6 @@ groups:
                 query: 'windows_service_state{state="running"} == 0'
                 severity: critical
                 for: 1m
-
               #
               # Info, security, and config
               #
@@ -814,7 +801,6 @@ groups:
                 query: "vmware_vm_mem_usage_average / 100 >= 90 and vmware_vm_mem_usage_average / 100 < 95"
                 severity: warning
                 for: 10m
-
               #
               # Capacity and trend
               #
@@ -860,7 +846,6 @@ groups:
                   This alert triggers for all VMs and containers that are not running.
                   You may want to filter by specific guests using the `id` label, or exclude
                   intentionally stopped guests with additional label matchers.
-
               #
               # Resource saturation (USE)
               #
@@ -884,7 +869,6 @@ groups:
                 query: 'pve_disk_usage_bytes{id=~"storage/.*"} / pve_disk_size_bytes{id=~"storage/.*"} * 100 > 80 and pve_disk_size_bytes{id=~"storage/.*"} > 0'
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -892,7 +876,6 @@ groups:
                 description: 'Proxmox VE replication for {{ $labels.id }} has {{ $value }} failed sync(s).'
                 query: 'pve_replication_failed_syncs > 0'
                 severity: warning
-
               #
               # Capacity and trend
               #
@@ -950,7 +933,6 @@ groups:
                 query: "netdata_md_mismatch_cnt_unsynchronized_blocks_average > 1024"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -974,7 +956,6 @@ groups:
                 query: 'ebpf_exporter_enabled_configs == 0 or absent(ebpf_exporter_enabled_configs)'
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -1006,7 +987,6 @@ groups:
                 query: 'namedprocess_namegroup_num_procs == 0'
                 severity: warning
                 for: 5m
-
               #
               # Resource saturation (USE)
               #
@@ -1055,7 +1035,6 @@ groups:
                 for: 5m
                 comments: |
                   Filters to voluntary switches only — involuntary switches are normal under CPU contention. Threshold of 50000/s is a rough default. Adjust based on workload.
-
               #
               # Performance and errors (RED)
               #
@@ -1097,7 +1076,6 @@ groups:
                 for: 2m
                 comments: |
                   Threshold of 100 connections is arbitrary. Adjust to your workload.
-
               #
               # Performance and errors (RED)
               #
@@ -1164,7 +1142,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Resource saturation (USE)
               #
@@ -1183,7 +1160,6 @@ groups:
                 query: "max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 60 and mysql_global_variables_max_connections > 0"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -1247,7 +1223,6 @@ groups:
                 query: "rate(mysql_global_status_questions[1m]) > 10000"
                 severity: info
                 for: 2m
-
               #
               # Capacity and trend
               #
@@ -1256,7 +1231,6 @@ groups:
                 query: "mysql_global_status_wsrep_local_state != 4 and mysql_global_variables_wsrep_desync == 0"
                 severity: warning
                 for: 2m
-
               #
               # Info, security, and config
               #
@@ -1287,7 +1261,6 @@ groups:
                 description: The replication role (primary/replica) of {{ $labels.instance }} has just changed, which usually indicates a failover happened. Verify whether this was expected.
                 query: "pg_replication_is_replica and changes(pg_replication_is_replica[1m]) > 0"
                 severity: warning
-
               #
               # Resource saturation (USE)
               #
@@ -1335,7 +1308,6 @@ groups:
                 query: "sum by (instance, job, server) (pg_stat_activity_count) > min by (instance, job, server) ((pg_settings_max_connections - pg_settings_superuser_reserved_connections) * 0.8)"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -1402,7 +1374,6 @@ groups:
                 query: "rate(pg_stat_bgwriter_checkpoints_timed_total[5m]) / (rate(pg_stat_bgwriter_checkpoints_timed_total[5m]) + rate(pg_stat_bgwriter_checkpoints_req_total[5m])) < 0.5 and (rate(pg_stat_bgwriter_checkpoints_timed_total[5m]) + rate(pg_stat_bgwriter_checkpoints_req_total[5m])) > 0"
                 severity: warning
                 for: 5m
-
               #
               # Info, security, and config
               #
@@ -1434,7 +1405,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Performance and errors (RED)
               #
@@ -1461,7 +1431,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Resource saturation (USE)
               #
@@ -1475,7 +1444,6 @@ groups:
                 query: "oracledb_tablespace_used_percent > 85"
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -1567,7 +1535,6 @@ groups:
                 query: "100 * (sum without (database, user) (pgbouncer_pools_server_active_connections + pgbouncer_pools_server_idle_connections + pgbouncer_pools_server_used_connections) / clamp_min(pgbouncer_config_max_user_connections,1)) > 80"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -1628,7 +1595,6 @@ groups:
                 query: "redis_cluster_slots_fail > 0"
                 severity: warning
                 for: 5m
-
               #
               # Resource saturation (USE)
               #
@@ -1659,7 +1625,6 @@ groups:
                 query: "redis_connected_clients < 5"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -1672,7 +1637,6 @@ groups:
                 query: "redis_cluster_slots_pfail > 0"
                 severity: warning
                 for: 5m
-
               #
               # Capacity and trend
               #
@@ -1698,7 +1662,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Resource saturation (USE)
               #
@@ -1719,7 +1682,6 @@ groups:
                 query: "(memcached_current_connections / memcached_max_connections * 100) > 80 and memcached_max_connections > 0"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -1791,7 +1753,6 @@ groups:
                   mongodb_rs_myState (this node's replica set state) is exposed in default mode.
                   Restricted to == 1 (PRIMARY) so the alert fires once per election, from the new primary's series, instead of on every member state transition (e.g. a secondary's restart/resync cycle).
                   Older exporters (or --compatible-mode) instead expose mongodb_mongod_replset_my_state.
-
               #
               # Resource saturation (USE)
               #
@@ -1800,7 +1761,6 @@ groups:
                 query: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80 and (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) > 0'
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -1856,7 +1816,6 @@ groups:
                 description: MongoDB Replication set member as seen from another member of the set, is unreachable
                 query: "mongodb_replset_member_state == 8"
                 severity: critical
-
               #
               # Resource saturation (USE)
               #
@@ -1865,7 +1824,6 @@ groups:
                 query: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80 and (mongodb_connections{state="current"} + mongodb_connections{state="available"}) > 0'
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -1939,7 +1897,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Resource saturation (USE)
               #
@@ -1967,7 +1924,6 @@ groups:
                 query: "elasticsearch_filesystem_data_available_bytes / elasticsearch_filesystem_data_size_bytes * 100 < 20 and elasticsearch_filesystem_data_size_bytes > 0"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -2078,7 +2034,6 @@ groups:
                 query: "sum by (cluster, instance, node) (round((1 - (opensearch_fs_path_available_bytes / opensearch_fs_path_total_bytes)) * 100, 0.001)) > 85"
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -2155,7 +2110,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Performance and errors (RED)
               #
@@ -2231,7 +2185,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Performance and errors (RED)
               #
@@ -2306,7 +2259,6 @@ groups:
                 for: 2m
                 comments: |
                   A low key cache hit rate increases disk I/O. Threshold is workload-dependent — adjust based on your data access patterns.
-
               #
               # Info, security, and config
               #
@@ -2355,7 +2307,6 @@ groups:
                 query: "ClickHouseMetrics_ZooKeeperSession != 1"
                 severity: warning
                 for: 3m
-
               #
               # Resource saturation (USE)
               #
@@ -2398,7 +2349,6 @@ groups:
                 for: 5m
                 comments: |
                   Please replace the threshold with an appropriate value
-
               #
               # Performance and errors (RED)
               #
@@ -2441,7 +2391,6 @@ groups:
                 query: "increase(ClickHouseProfileEvents_DelayedInserts[5m]) > 10"
                 severity: warning
                 for: 2m
-
               #
               # Capacity and trend
               #
@@ -2450,7 +2399,6 @@ groups:
                 query: "ClickHouseAsyncMetrics_DiskAvailable_backups / (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) * 100 < 20 and (ClickHouseAsyncMetrics_DiskAvailable_backups + ClickHouseAsyncMetrics_DiskUsed_backups) > 0"
                 severity: warning
                 for: 2m
-
               #
               # Info, security, and config
               #
@@ -2478,7 +2426,6 @@ groups:
                 query: "couchdb_httpd_node_up == 0 or couchdb_httpd_up == 0"
                 severity: critical
                 for: 2m
-
               #
               # Resource saturation (USE)
               #
@@ -2499,7 +2446,6 @@ groups:
                 query: "process_open_fds / process_max_fds > 0.85 and process_max_fds > 0"
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -2621,7 +2567,6 @@ groups:
                 query: "max by (collection, shard) (solr_collections_shard_leader) < 1"
                 severity: critical
                 for: 2m
-
               #
               # Resource saturation (USE)
               #
@@ -2640,7 +2585,6 @@ groups:
                 query: 'min by (base_url) (solr_metrics_core_fs_bytes{item="usableSpace"}) / max by (base_url) (solr_metrics_core_fs_bytes{item="totalSpace"}) <= 0.2'
                 severity: warning
                 for: 10m
-
               #
               # Performance and errors (RED)
               #
@@ -2691,7 +2635,6 @@ groups:
                 for: 1m
                 comments: |
                   1m delay allows a restart without triggering an alert.
-
               #
               # Resource saturation (USE)
               #
@@ -2730,7 +2673,6 @@ groups:
                 query: "(sum(rate(rabbitmq_connections_closed_total[5m])) + sum(rate(rabbitmq_connections_opened_total[5m]))) / sum(rabbitmq_connections) > 0.1 and sum(rabbitmq_connections) >= 100"
                 severity: warning
                 for: 10m
-
               #
               # Performance and errors (RED)
               #
@@ -2794,7 +2736,6 @@ groups:
                 description: RabbitMQ cluster has a network partition ({{ $value }} partitions detected). Messages may be lost or duplicated.
                 query: "rabbitmq_partitions > 0"
                 severity: critical
-
               #
               # Resource saturation (USE)
               #
@@ -2808,7 +2749,6 @@ groups:
                 query: "rabbitmq_connections > 1000"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -2883,7 +2823,6 @@ groups:
                 description: "Zookeeper cluster has {{ $value }} nodes marked as leader (expected 1), indicating a split-brain"
                 query: "sum(zk_server_leader) > 1"
                 severity: critical
-
               #
               # Performance and errors (RED)
               #
@@ -2952,7 +2891,6 @@ groups:
                 comments: |
                   This metric name is path-dependent and may differ based on your BookKeeper data directory configuration.
                   Adjust the metric name to match your actual ledger directory path.
-
               #
               # Performance and errors (RED)
               #
@@ -3026,7 +2964,6 @@ groups:
                 comments: |
                   Replace job="nats" with the actual job name in your Prometheus configuration.
               # gnatsd_varz_cpu is a gauge, not a counter. Compare it directly, never wrap it in rate().
-
               #
               # Resource saturation (USE)
               #
@@ -3065,7 +3002,6 @@ groups:
                 comments: |
                   Only enable this alert if your deployment requires leaf node connections.
                   This will fire spuriously if leaf nodes are not configured.
-
               #
               # Performance and errors (RED)
               #
@@ -3147,7 +3083,6 @@ groups:
                 description: Apache down
                 query: "apache_up == 0"
                 severity: critical
-
               #
               # Performance and errors (RED)
               #
@@ -3193,7 +3128,6 @@ groups:
                 description: Server {{ $labels.server }} on {{ $labels.instance }} is repeatedly transitioning between UP and DOWN health-check states, which may indicate an unstable backend node or overly sensitive health-check thresholds.
                 query: "rate(haproxy_server_check_up_down_total[5m]) != 0"
                 severity: warning
-
               #
               # Performance and errors (RED)
               #
@@ -3252,7 +3186,6 @@ groups:
                 description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
                 query: increase(haproxy_server_check_failures_total[1m]) > 2
                 severity: warning
-
               #
               # Capacity and trend
               #
@@ -3260,7 +3193,6 @@ groups:
                 description: HAProxy has no alive active or backup backends for {{ $labels.proxy }}
                 query: haproxy_backend_active_servers + haproxy_backend_backup_servers == 0
                 severity: critical
-
               #
               # Info, security, and config
               #
@@ -3293,7 +3225,6 @@ groups:
                 query: "avg by (backend) (haproxy_backend_http_total_time_average_seconds) > 1"
                 severity: warning
                 for: 1m
-
               #
               # Performance and errors (RED)
               #
@@ -3350,7 +3281,6 @@ groups:
                 description: Some server healthcheck are failing on {{ $labels.server }} ({{ $value }} in the last 1m)
                 query: "increase(haproxy_server_check_failures_total[1m]) > 2"
                 severity: warning
-
               #
               # Info, security, and config
               #
@@ -3374,7 +3304,6 @@ groups:
                 description: All Traefik services are down
                 query: "count(traefik_service_server_up) by (service) == 0"
                 severity: critical
-
               #
               # Performance and errors (RED)
               #
@@ -3388,7 +3317,6 @@ groups:
                 query: 'sum(rate(traefik_service_requests_total{code=~"5.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5 and sum(rate(traefik_service_requests_total[3m])) by (service) > 0'
                 severity: critical
                 for: 1m
-
               #
               # Info, security, and config
               #
@@ -3416,7 +3344,6 @@ groups:
                 description: All Traefik backends are down
                 query: "count(traefik_backend_server_up) by (backend) == 0"
                 severity: critical
-
               #
               # Performance and errors (RED)
               #
@@ -3445,7 +3372,6 @@ groups:
                 description: "Caddy reverse proxy upstream {{ $labels.upstream }} is unhealthy"
                 query: "caddy_reverse_proxy_upstreams_healthy == 0"
                 severity: critical
-
               #
               # Performance and errors (RED)
               #
@@ -3475,7 +3401,6 @@ groups:
                 query: "envoy_server_live != 1"
                 severity: critical
                 for: 1m
-
               #
               # Resource saturation (USE)
               #
@@ -3492,7 +3417,6 @@ groups:
                 description: "Downstream connections are being rejected due to listener overflow on {{ $labels.instance }} ({{ $value }} in the last 5m)"
                 query: "increase(envoy_listener_downstream_cx_overflow[5m]) > 5"
                 severity: warning
-
               #
               # Performance and errors (RED)
               #
@@ -3559,7 +3483,6 @@ groups:
                 query: "envoy_cluster_outlier_detection_ejections_active > 0"
                 severity: info
                 for: 5m
-
               #
               # Info, security, and config
               #
@@ -3607,7 +3530,6 @@ groups:
                 query: 'absent(istio_build{component="pilot"})'
                 severity: critical
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -3749,7 +3671,6 @@ groups:
                 comments: |
                   process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not JVM-specific.
                   This alert will also fire for Go, Python, or any process exposing these metrics.
-
               #
               # Performance and errors (RED)
               #
@@ -3839,7 +3760,6 @@ groups:
                 query: 'go_memstats_stack_inuse_bytes > 1e9'
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -3903,7 +3823,6 @@ groups:
                 for: 5m
                 comments: |
                   Major GC rate > 5/s only fires if the app is essentially non-functional. Threshold of 2/s provides earlier detection.
-
               #
               # Performance and errors (RED)
               #
@@ -3955,7 +3874,6 @@ groups:
                 comments: |
                   process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
                   This alert will also fire for Go, JVM, or any process exposing these metrics.
-
               #
               # Performance and errors (RED)
               #
@@ -4002,7 +3920,6 @@ groups:
                 query: "flink_jobmanager_numRunningJobs == 0"
                 severity: critical
                 for: 1m
-
               #
               # Resource saturation (USE)
               #
@@ -4018,7 +3935,6 @@ groups:
                 query: "flink_jobmanager_Status_JVM_Memory_Heap_Used / flink_jobmanager_Status_JVM_Memory_Heap_Max > 0.9 and flink_jobmanager_Status_JVM_Memory_Heap_Max > 0"
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -4113,7 +4029,6 @@ groups:
                 comments: |
                   diskUsed is a gauge, not a counter — do not use rate(). Threshold of 1GB is a rough default.
                   Disk spilling indicates insufficient memory for the workload.
-
               #
               # Performance and errors (RED)
               #
@@ -4192,7 +4107,6 @@ groups:
                 query: "max without(job,name)(hadoop_namenode_missingblocks) > 0"
                 severity: critical
                 for: 5m
-
               #
               # Resource saturation (USE)
               #
@@ -4232,7 +4146,6 @@ groups:
                 description: "Available HDFS disk space is running low."
 
               # Alert rule for excessive MapReduce task failures
-
               #
               # Performance and errors (RED)
               #
@@ -4303,7 +4216,6 @@ groups:
                 severity: warning
                 comments: |
                   Threshold should be customized for each cronjob name.
-
               #
               # Resource saturation (USE)
               #
@@ -4336,7 +4248,6 @@ groups:
                 query: 'kube_node_status_condition{condition="NetworkUnavailable",status="true"} == 1'
                 severity: critical
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -4516,7 +4427,6 @@ groups:
                 description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is constantly at minimum replicas for 50% of the time. Potential cost saving here.
                 query: "max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler) > 3" # allow minimum 3 replicas running
                 severity: info
-
               #
               # Capacity and trend
               #
@@ -4525,7 +4435,6 @@ groups:
                 query: 'kube_resourcequota{type="used"} / ignoring(type) (kube_resourcequota{type="hard"} > 0) > 1'
                 severity: warning
                 for: 10m
-
               #
               # Info, security, and config
               #
@@ -4587,7 +4496,6 @@ groups:
                 description: A Consul agent is down
                 query: 'consul_health_node_status{status="critical"} == 1'
                 severity: critical
-
               #
               # Performance and errors (RED)
               #
@@ -4630,7 +4538,6 @@ groups:
                 query: "histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le)) > 1"
                 severity: critical
                 for: 2m
-
               #
               # Resource saturation (USE)
               #
@@ -4649,7 +4556,6 @@ groups:
                 query: "(last_over_time(etcd_mvcc_db_total_size_in_use_in_bytes[5m]) / last_over_time(etcd_mvcc_db_total_size_in_bytes[5m])) < 0.5 and etcd_mvcc_db_total_size_in_use_in_bytes > 104857600"
                 severity: warning
                 for: 10m
-
               #
               # Performance and errors (RED)
               #
@@ -4722,7 +4628,6 @@ groups:
                 for: 2m
               # without (instance) keeps the count scoped per etcd cluster: several clusters often share
               # a job label (main and events), and aggregating across them both misfires and masks.
-
               #
               # Capacity and trend
               #
@@ -4769,7 +4674,6 @@ groups:
                 query: 'openstack_cinder_agent_state{adminState="enabled"} == 0'
                 severity: critical
                 for: 2m
-
               #
               # Resource saturation (USE)
               #
@@ -4801,7 +4705,6 @@ groups:
                 description: "Subnet {{ $labels.subnet_name }} on network {{ $labels.network_name }} has used over 90% of its IP pool"
                 query: 'openstack_neutron_network_ip_availabilities_used / openstack_neutron_network_ip_availabilities_total > 0.9 and openstack_neutron_network_ip_availabilities_total > 0'
                 severity: warning
-
               #
               # Performance and errors (RED)
               #
@@ -4843,7 +4746,6 @@ groups:
                 comments: |
                   This alert factors in the allocation ratio to compute effective capacity.
                   The threshold of 90% is a rough default. Adjust based on your allocation ratios and workload patterns.
-
               #
               # Capacity and trend
               #
@@ -5026,7 +4928,6 @@ groups:
                 severity: warning
                 for: 5m
               # HTTP request handling
-
               #
               # Resource saturation (USE)
               #
@@ -5085,7 +4986,6 @@ groups:
                 query: "puma_active_connections / puma_max_threads * 100 > 90 and puma_max_threads > 0"
                 severity: warning
                 for: 10m
-
               #
               # Performance and errors (RED)
               #
@@ -5178,7 +5078,6 @@ groups:
                 query: "sum by (name) (sidekiq_queue_size) > 0"
                 severity: warning
                 for: 30m
-
               #
               # Info, security, and config
               #
@@ -5233,7 +5132,6 @@ groups:
                 for: 5m
                 comments: |
                   Brief throttling spikes are normal. Threshold of 0.1s/s (10% of CPU time throttled) filters out transient noise.
-
               #
               # Performance and errors (RED)
               #
@@ -5265,7 +5163,6 @@ groups:
                 query: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
                 severity: warning
                 for: 5m
-
               #
               # Info, security, and config
               #
@@ -5289,7 +5186,6 @@ groups:
                 query: 'threadpool_blockingQueueSize > 0'
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -5401,7 +5297,6 @@ groups:
                 query: ssl_probe_success == 0
                 severity: critical
                 for: 1m
-
               #
               # Info, security, and config
               #
@@ -5433,7 +5328,6 @@ groups:
                 query: 'absent(up{job="cert-manager"})'
                 severity: critical
                 for: 10m
-
               #
               # Info, security, and config
               #
@@ -5472,7 +5366,6 @@ groups:
                 description: The switch appears to be down
                 query: junos_up == 0
                 severity: critical
-
               #
               # Resource saturation (USE)
               #
@@ -5501,7 +5394,6 @@ groups:
                 query: 'sum without (pod, instance, rcode) (rate(coredns_forward_responses_total{rcode="SERVFAIL"}[5m])) / sum without (pod, instance, rcode) (rate(coredns_forward_responses_total[5m])) > 0.03'
                 severity: critical
                 for: 10m
-
               #
               # Performance and errors (RED)
               #
@@ -5560,7 +5452,6 @@ groups:
                 query: "freeswitch_up == 0"
                 severity: critical
                 for: 1m
-
               #
               # Performance and errors (RED)
               #
@@ -5590,7 +5481,6 @@ groups:
                 query: "min(vault_autopilot_healthy) by (instance) == 0"
                 severity: critical
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -5694,7 +5584,6 @@ groups:
                 query: "cloudflare_zone_pool_health_status == 0"
                 severity: critical
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -5740,7 +5629,6 @@ groups:
                 query: '(ifOperStatus{job=~"snmp.*"} == 2) and on(instance, job, ifIndex) (ifAdminStatus{job=~"snmp.*"} == 1)'
                 severity: critical
                 for: 2m
-
               #
               # Resource saturation (USE)
               #
@@ -5758,7 +5646,6 @@ groups:
                 for: 15m
                 comments: |
                   Threshold is a rough default. ifSpeed is a Gauge32 that maxes out at ~4.29 Gbps. For 10G+ interfaces, use ifHighSpeed (in Mbps) instead.
-
               #
               # Performance and errors (RED)
               #
@@ -5804,7 +5691,6 @@ groups:
                 for: 15m
                 comments: |
                   Metric name depends on Cilium version. Use cilium_unreachable_health_endpoints (older) or cilium_node_connectivity_status (1.14+).
-
               #
               # Resource saturation (USE)
               #
@@ -5819,7 +5705,6 @@ groups:
                 severity: info
                 for: 10m
                 comments: Policy denials may be expected behavior. Investigate only if unexpected traffic is being blocked.
-
               #
               # Performance and errors (RED)
               #
@@ -6007,7 +5892,6 @@ groups:
                   The threshold of 300 seconds (5 minutes) is a rough default. WireGuard peers that are idle but reachable
                   typically re-handshake every 2 minutes. Adjust based on your keepalive interval.
                   The `> 0` guard excludes peers that have never completed a handshake (covered by a separate rule).
-
               #
               # Performance and errors (RED)
               #
@@ -6056,7 +5940,6 @@ groups:
                 query: "count(ceph_mon_quorum_status == 0) <= (count(ceph_mon_metadata) - floor(count(ceph_mon_metadata) / 2 + 1))"
                 severity: warning
                 for: 2m
-
               #
               # Resource saturation (USE)
               #
@@ -6088,7 +5971,6 @@ groups:
                 query: 'ceph_health_detail{name="MON_CLOCK_SKEW"} == 1'
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -6167,7 +6049,6 @@ groups:
                 query: "ceph_healthcheck_slow_ops > 0"
                 severity: warning
                 for: 1m
-
               #
               # Capacity and trend
               #
@@ -6233,7 +6114,6 @@ groups:
                 description: OpenEBS LVM LocalPV volume group {{ $labels.instance }} is missing {{ $value }} underlying physical volume(s), which puts data at risk of loss.
                 query: "lvm_vg_missing_pv_count > 0"
                 severity: critical
-
               #
               # Performance and errors (RED)
               #
@@ -6266,7 +6146,6 @@ groups:
                 description: Minio erasure set has lost quorum, meaning MinIO can no longer guarantee reads or writes for objects in this pool/set until enough drives are restored.
                 query: "minio_cluster_health_erasure_set_status < 1"
                 severity: critical
-
               #
               # Resource saturation (USE)
               #
@@ -6286,7 +6165,6 @@ groups:
                   Uses usable capacity (post erasure-coding) rather than raw capacity, so the percentage
                   reflects how much data can actually still be stored, not the physical disk bytes
                   reserved for parity.
-
               #
               # Performance and errors (RED)
               #
@@ -6342,7 +6220,6 @@ groups:
                 comments: |
                   The threshold depends on the RDS instance class. Adjust based on your
                   instance type's max_connections parameter.
-
               #
               # Performance and errors (RED)
               #
@@ -6432,7 +6309,6 @@ groups:
                 description: "Stackdriver exporter has not successfully scraped metrics for project {{ $labels.project_id }} in the last 10 minutes."
                 query: "time() - stackdriver_monitoring_last_scrape_timestamp > 600"
                 severity: warning
-
               #
               # Capacity and trend
               #
@@ -6471,7 +6347,6 @@ groups:
                 query: "digitalocean_loadbalancer_status == 0"
                 severity: critical
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -6499,7 +6374,6 @@ groups:
                 query: "increase(digitalocean_errors_total[5m]) > 3"
                 severity: warning
                 for: 5m
-
               #
               # Capacity and trend
               #
@@ -6643,7 +6517,6 @@ groups:
                 query: '(up{job=~".*thanos-receive.*"} - 1) + on (job, instance) (sum by (job, instance) (increase(thanos_shipper_uploads_total{job=~".*thanos-receive.*"}[3h])) == 0)'
                 severity: critical
                 for: 3h
-
               #
               # Performance and errors (RED)
               #
@@ -6682,7 +6555,6 @@ groups:
                 query: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total[5m]))) * 100 > 20 and sum by (job) (rate(thanos_receive_forward_requests_total[5m])) > 0'
                 severity: info
                 for: 5m
-
               #
               # Info, security, and config
               #
@@ -6707,7 +6579,6 @@ groups:
                 query: 'thanos_sidecar_prometheus_up == 0 and on (namespace, pod) prometheus_tsdb_data_replay_duration_seconds != 0'
                 severity: critical
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -6802,7 +6673,6 @@ groups:
                 query: 'time() -  max by (job, instance, group) (prometheus_rule_group_last_evaluation_timestamp_seconds{job=~".*thanos-rule.*"})>10 * max by (job, instance, group) (prometheus_rule_group_interval_seconds{job=~".*thanos-rule.*"})'
                 severity: info
                 for: 5m
-
               #
               # Info, security, and config
               #
@@ -6883,7 +6753,6 @@ groups:
                 query: "min(time() - (loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds > 0)) by (cluster, namespace) > 10800 or max(max_over_time(loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds[3h])) by (cluster, namespace) == 0"
                 severity: critical
                 for: 1h
-
               #
               # Performance and errors (RED)
               #
@@ -6959,7 +6828,6 @@ groups:
                 query: "100 * sum by (instance, rule_group) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, rule_group) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1 and sum by (instance, rule_group) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 0"
                 severity: warning
                 for: 5m
-
               #
               # Resource saturation (USE)
               #
@@ -6968,7 +6836,6 @@ groups:
                 query: '(time() - thanos_objstore_bucket_last_successful_upload_time{job=~".+/compactor.*"} > 86400) and (thanos_objstore_bucket_last_successful_upload_time{job=~".+/compactor.*"} > 0)'
                 severity: critical
                 for: 15m
-
               #
               # Performance and errors (RED)
               #
@@ -7061,7 +6928,6 @@ groups:
                 query: "100 * (sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m]))) > 1 and sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 0"
                 severity: critical
                 for: 5m
-
               #
               # Capacity and trend
               #
@@ -7072,7 +6938,6 @@ groups:
                 for: 1h
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
-
               #
               # Info, security, and config
               #
@@ -7258,7 +7123,6 @@ groups:
                   (5m by default) on every healthy cycle. The 6m average is what makes 200s meaningful: it
                   means the block-builder is burning roughly 45% of its cycle budget. Raise the window
                   alongside consume_cycle_duration if you tune it.
-
               #
               # Info, security, and config
               #
@@ -7294,7 +7158,6 @@ groups:
                 query: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 5 and sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 0'
                 severity: warning
                 for: 5m
-
               #
               # Resource saturation (USE)
               #
@@ -7344,7 +7207,6 @@ groups:
                 query: cortex_tcp_connections / cortex_tcp_connections_limit * 100 > 80 and cortex_tcp_connections_limit > 0
                 severity: critical
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -7592,7 +7454,6 @@ groups:
                 query: 'histogram_quantile(0.99, sum by (job, route, le) (rate(cortex_request_duration_seconds_bucket{route!~"ready|debug_pprof"}[5m]))) > 2.5'
                 severity: warning
                 for: 15m
-
               #
               # Info, security, and config
               #
@@ -7625,7 +7486,6 @@ groups:
                 query: '(1 - (sum by (job) (rate({__name__=~"otelcol_exporter_send_failed_(spans|metric_points|log_records)_total"}[1m])) / (sum by (job) (rate({__name__=~"otelcol_exporter_send_failed_(spans|metric_points|log_records)_total"}[1m])) + sum by (job) (rate({__name__=~"otelcol_exporter_sent_(spans|metric_points|log_records)_total"}[1m]))))) < 0.95'
                 severity: warning
                 for: 10m
-
               #
               # Performance and errors (RED)
               #
@@ -7676,7 +7536,6 @@ groups:
                 for: 1m
                 comments: |
                   Adjust the job label regex to match the actual job name in your Prometheus scrape config.
-
               #
               # Resource saturation (USE)
               #
@@ -7685,7 +7544,6 @@ groups:
                 query: '(otelcol_process_runtime_heap_alloc_bytes / on(instance, job) otelcol_process_runtime_total_sys_memory_bytes) > 0.9'
                 severity: warning
                 for: 5m
-
               #
               # Performance and errors (RED)
               #
@@ -7803,7 +7661,6 @@ groups:
                 comments: |
                   Fires when an operation (e.g. find_traces, get_services) has received requests but none succeeded.
                   May indicate a persistent storage error or a backend that is slow to recover.
-
               #
               # Performance and errors (RED)
               #
@@ -7949,7 +7806,6 @@ groups:
                 query: "apcupsd_internal_temperature_celsius >= 40"
                 severity: warning
                 for: 2m
-
               #
               # Performance and errors (RED)
               #
@@ -8038,7 +7894,6 @@ groups:
                   The threshold (1) is in USD. The `model` label carries the resolved model-name (post-routing). 
                   PromQL `increase()` requires ≥2 datapoints with growth-difference to extrapolate positive — 
                   for brand-new counter series this needs ≥2 distinct request bursts ≥1 scrape-cycle apart.
-
               #
               # Performance and errors (RED)
               #
