@@ -55,6 +55,36 @@ Services are grouped in category. If you are not sure about the classification, 
 Field order for a rule is always `name`, `description`, `query`, `severity`, `for`, `comments` — keep new
 rules in this order even though a few legacy rules interleave `comments` earlier.
 
+### Rule ordering within an exporter
+
+Within each exporter's `rules:` list, order rules by category, not by add date or alphabetically. An
+operator scanning an exporter's page top-to-bottom should read it the way they'd triage the service
+during an incident: "is it up?" before "is it slow?" before "is it running low on something?" before
+"is this just an FYI?". The categories, in order:
+
+1. **Availability** — the instance/service/cluster is down or unreachable: liveness checks (see
+   "Service-down pattern" below), `absent()` checks, quorum/leader loss, replication broken/disconnected,
+   election/failover/split-brain. This is what a human needs to know first: is there anyone home.
+2. **Resource saturation (USE: Utilization / Saturation / Errors)** — CPU, memory, disk/filesystem,
+   network, file descriptors, connection pools. Group rules by resource (all CPU rules together, then all
+   memory rules, then all disk rules, etc.) rather than interleaving resources — this keeps a hard
+   threshold and its predictive/soft-threshold sibling adjacent (e.g. "disk almost full" next to "disk
+   predicted to fill within 24h"), instead of separated by an unrelated resource's alerts.
+3. **Performance and errors (RED: Rate / Errors / Duration)** — latency, error rate, timeouts, queue/lag
+   backlog, failed jobs, retries, GC pauses, crash-loop/restart-count alerts. The service is up and
+   resources look fine, but symptoms indicate degraded behavior.
+4. **Capacity and trend** — non-resource capacity concerns that don't fit under a specific USE resource:
+   backups/snapshots missing or outdated, quota/license approaching limits, long-term growth trends.
+5. **Info, security, and config** — config reload failures, certificate/TLS expiry, auth failures,
+   security notifications, config-change detections. Usually `severity: info` (see "Severity levels"
+   below), read last because they're awareness-only, not triage priorities.
+
+Within the same category, order by severity (`critical`, then `warning`, then `info`); ties within the
+same category and severity keep their existing relative order rather than being reshuffled arbitrarily.
+
+This convention governs new PRs and rule reorderings; it does not by itself justify rewriting existing
+descriptions, queries, or thresholds — reordering is a pure permutation of the `rules:` list.
+
 ## YAML Authoring Conventions
 
 These are patterns observed consistently across the ~940 existing rules in `_data/rules.yml` but not
