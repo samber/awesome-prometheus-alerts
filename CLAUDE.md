@@ -97,9 +97,6 @@ Use the category name as written above (`Availability`, `Resource saturation (US
 errors (RED)`, `Capacity and trend`, `Info, security, and config`). Omit the header for a category that
 has no rules in a given exporter.
 
-This convention governs new PRs and rule reorderings; it does not by itself justify rewriting existing
-descriptions, queries, or thresholds — reordering is a pure permutation of the `rules:` list.
-
 ## YAML Authoring Conventions
 
 These are patterns observed consistently across the ~940 existing rules in `_data/rules.yml` but not
