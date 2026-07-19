@@ -1603,12 +1603,13 @@ groups:
                 severity: warning
                 for: 2m
               - name: MongoDB replica set primary changed
-                description: MongoDB member {{ $labels.instance }} changed replica set state in the last 10 minutes, which may indicate a primary election or an unplanned failover.
-                query: "changes(mongodb_rs_myState[10m]) > 0"
+                description: MongoDB member {{ $labels.instance }} became the replica set primary in the last 10 minutes, which may indicate an election due to failover or instability.
+                query: "changes(mongodb_rs_myState[10m]) > 0 and mongodb_rs_myState == 1"
                 severity: warning
                 for: 2m
                 comments: |
                   mongodb_rs_myState (this node's replica set state) is exposed in default mode.
+                  Restricted to == 1 (PRIMARY) so the alert fires once per election, from the new primary's series, instead of on every member state transition (e.g. a secondary's restart/resync cycle).
                   Older exporters (or --compatible-mode) instead expose mongodb_mongod_replset_my_state.
               - name: MongoDB instance recently restarted
                 description: MongoDB instance {{ $labels.instance }} was restarted {{ $value }} seconds ago.
