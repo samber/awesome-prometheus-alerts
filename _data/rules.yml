@@ -43,11 +43,17 @@ groups:
               - name: Prometheus job missing
                 description: A Prometheus job has disappeared
                 query: 'absent(up{job="prometheus"})'
-                severity: warning
+                severity: critical
+                for: 1m
+                comments: |
+                  Replace job="prometheus" with the actual job name in your Prometheus configuration.
               - name: Prometheus AlertManager job missing
                 description: A Prometheus AlertManager job has disappeared
                 query: 'absent(up{job="alertmanager"})'
-                severity: warning
+                severity: critical
+                for: 1m
+                comments: |
+                  Replace job="alertmanager" with the actual job name in your Prometheus configuration.
               #
               # Resource saturation (USE)
               #
@@ -683,6 +689,8 @@ groups:
                 description: Blackbox probe has had lower uptime than 99.9% over the last 30 days, which may indicate cumulative outages or repeated flapping not caught by immediate down alerts.
                 query: 'avg_over_time(probe_success{job="blackbox-exporter"}[30d]) * 100 < 99.9'
                 severity: info
+                comments: |
+                  Replace job="blackbox-exporter" with the actual job name in your Prometheus configuration. The 99.9% threshold over 30d is a rough default; adjust based on your SLA.
               #
               # Performance and errors (RED)
               #
@@ -2957,10 +2965,10 @@ groups:
               # Availability
               #
               - name: Nats server down
-                description: NATS server has been down for more than 5 minutes
+                description: NATS server has disappeared from Prometheus service discovery
                 query: 'absent(up{job="nats"})'
                 severity: critical
-                for: 5m
+                for: 1m
                 comments: |
                   Replace job="nats" with the actual job name in your Prometheus configuration.
               # gnatsd_varz_cpu is a gauge, not a counter. Compare it directly, never wrap it in rate().
@@ -3526,10 +3534,12 @@ groups:
               # Availability
               #
               - name: Istio control plane component down
-                description: Istio control plane component {{ $labels.component }} has stopped reporting for over 5 minutes, disrupting service discovery, configuration propagation, and traffic management across the mesh.
+                description: Istio control plane component {{ $labels.component }} has stopped reporting, disrupting service discovery, configuration propagation, and traffic management across the mesh.
                 query: 'absent(istio_build{component="pilot"})'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  absent() fires only once every pilot replica has disappeared from service discovery; it will not catch a single replica going down in a multi-replica control plane deployment.
               #
               # Performance and errors (RED)
               #
@@ -4292,6 +4302,8 @@ groups:
                 query: 'sum(rate(apiserver_request_total{job="apiserver",code=~"(?:5..)"}[1m])) by (instance, job) / sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) * 100 > 3 and sum(rate(apiserver_request_total{job="apiserver"}[1m])) by (instance, job) > 0'
                 severity: critical
                 for: 2m
+                comments: |
+                  Replace job="apiserver" with the actual job name in your Prometheus configuration (kube-prometheus-stack uses "apiserver" by default). The 3% error rate threshold is a rough default; adjust based on your workload.
               - name: Kubernetes API client errors
                 description: "Kubernetes API client is experiencing {{ $value | humanize }}% error rate"
                 query: '(sum(rate(rest_client_requests_total{code=~"(4|5).."}[1m])) by (instance, job) / sum(rate(rest_client_requests_total[1m])) by (instance, job)) * 100 > 1 and sum(rate(rest_client_requests_total[1m])) by (instance, job) > 0'
@@ -4442,10 +4454,14 @@ groups:
                 description: A client certificate used to authenticate to the apiserver is expiring in less than 24.0 hours.
                 query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60'
                 severity: critical
+                comments: |
+                  Replace job="apiserver" with the actual job name in your Prometheus configuration (kube-prometheus-stack uses "apiserver" by default).
               - name: Kubernetes client certificate expires next week
                 description: A client certificate used to authenticate to the apiserver is expiring next week.
                 query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 7*24*60*60'
                 severity: warning
+                comments: |
+                  Replace job="apiserver" with the actual job name in your Prometheus configuration (kube-prometheus-stack uses "apiserver" by default).
 
       - name: Nomad
         logo: /images/services/nomad.svg
@@ -5163,6 +5179,8 @@ groups:
                 query: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
                 severity: warning
                 for: 5m
+                comments: |
+                  Replace job="gitaly" with the actual job name in your Prometheus configuration. The 1s p95 latency threshold is a rough default; adjust based on your workload.
               #
               # Info, security, and config
               #
@@ -5327,7 +5345,9 @@ groups:
                 description: Cert-Manager has disappeared from Prometheus service discovery. New certificates will not be able to be minted, and existing ones can't be renewed until cert-manager is back.
                 query: 'absent(up{job="cert-manager"})'
                 severity: critical
-                for: 10m
+                for: 1m
+                comments: |
+                  Replace job="cert-manager" with the actual job name in your Prometheus configuration.
               #
               # Info, security, and config
               #
@@ -6707,37 +6727,51 @@ groups:
                 description: "ThanosCompact has disappeared. Prometheus target for the component cannot be discovered."
                 query: 'absent(up{job=~".*thanos-compact.*"} == 1)'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  Adjust the job=~".*thanos-compact.*" regex to match your Prometheus job naming convention. absent() fires only once every matching replica has disappeared, not for a single instance going down.
               - name: Thanos Query Is Down
                 description: "ThanosQuery has disappeared. Prometheus target for the component cannot be discovered."
                 query: 'absent(up{job=~".*thanos-query.*"} == 1)'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  Adjust the job=~".*thanos-query.*" regex to match your Prometheus job naming convention. absent() fires only once every matching replica has disappeared, not for a single instance going down.
               - name: Thanos Receive Is Down
                 description: "ThanosReceive has disappeared. Prometheus target for the component cannot be discovered."
                 query: 'absent(up{job=~".*thanos-receive.*"} == 1)'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  Adjust the job=~".*thanos-receive.*" regex to match your Prometheus job naming convention. absent() fires only once every matching replica has disappeared, not for a single instance going down.
               - name: Thanos Rule Is Down
                 description: "ThanosRule has disappeared. Prometheus target for the component cannot be discovered."
                 query: 'absent(up{job=~".*thanos-rule.*"} == 1)'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  Adjust the job=~".*thanos-rule.*" regex to match your Prometheus job naming convention. absent() fires only once every matching replica has disappeared, not for a single instance going down.
               - name: Thanos Sidecar Is Down
                 description: "ThanosSidecar has disappeared. Prometheus target for the component cannot be discovered."
                 query: 'absent(up{job=~".*thanos-sidecar.*"} == 1)'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  Adjust the job=~".*thanos-sidecar.*" regex to match your Prometheus job naming convention. absent() fires only once every matching replica has disappeared, not for a single instance going down.
               - name: Thanos Store Is Down
                 description: "ThanosStore has disappeared. Prometheus target for the component cannot be discovered."
-                query: absent(up{job=~".*thanos-store.*"} == 1)
+                query: 'absent(up{job=~".*thanos-store.*"} == 1)'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  Adjust the job=~".*thanos-store.*" regex to match your Prometheus job naming convention. absent() fires only once every matching replica has disappeared, not for a single instance going down.
               - name: Thanos Bucket Replicate Is Down
                 description: ThanosBucketReplicate has disappeared. Prometheus target for the component cannot be discovered.
                 query: 'absent(up{job=~".*thanos-bucket-replicate.*"} == 1)'
                 severity: critical
-                for: 5m
+                for: 1m
+                comments: |
+                  Adjust the job=~".*thanos-bucket-replicate.*" regex to match your Prometheus job naming convention. absent() fires only once every matching replica has disappeared, not for a single instance going down.
 
       - name: Loki
         logo: /images/services/loki.svg
