@@ -25,6 +25,15 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
       Better Stack lets you centralize, search, and visualize your logs.
     </div>
   </a>
+  <br>
+  <a href="https://victoriametrics.com">
+    <div>
+      <img src="https://samber.github.io/awesome-prometheus-alerts/images/sponsor-victoriametrics.png" width="200" alt="VictoriaMetrics">
+    </div>
+    <div>
+      Fast, open-source time series database and drop-in Prometheus replacement.
+    </div>
+  </a>
   <hr>
 </div>
 
