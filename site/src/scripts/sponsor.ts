@@ -1,31 +1,16 @@
 export function initSponsorClickTracking(): void {
   document.querySelectorAll<HTMLAnchorElement>('a[data-sponsor-name]').forEach((a) => {
-    a.addEventListener('click', (e) => {
-      const me = e as MouseEvent;
-      const href = a.href;
-      const sponsorName = a.dataset.sponsorName!;
-      const sponsorSlot = a.dataset.sponsorSlot!;
-      const eventData = { sponsor_name: sponsorName, sponsor_url: href, sponsor_slot: sponsorSlot };
+    // Header and Footer both call this on the whole document; without this guard
+    // each link would end up with several listeners and fire duplicate events.
+    if (a.dataset.sponsorTracked) return;
+    a.dataset.sponsorTracked = '1';
 
-      // Modifier / non-primary clicks: track fire-and-forget, let browser handle navigation
-      if (me.button !== 0 || me.metaKey || me.ctrlKey || me.shiftKey) {
-        window.posthog?.capture('sponsor_clicked', eventData);
-        return;
-      }
-
-      // Plain left-click: block navigation until event is recorded
-      e.preventDefault();
-      window.posthog?.capture('sponsor_clicked', eventData);
-      // Open blank tab now (inside user gesture) to avoid popup-blocker after await
-      const w = a.target === '_blank' ? window.open('', '_blank') : null;
-      if (w) {
-        w.location.href = href;
-      } else {
-        const opened = window.open(href, '_blank');
-        if (!opened) {
-          window.location.href = href;
-        }
-      }
+    a.addEventListener('click', () => {
+      window.posthog?.capture('sponsor_clicked', {
+        sponsor_name: a.dataset.sponsorName!,
+        sponsor_url: a.href,
+        sponsor_slot: a.dataset.sponsorSlot!,
+      });
     });
   });
 }
