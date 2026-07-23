@@ -18,4 +18,10 @@ export const sponsors: Sponsor[] = [
     logo: '/images/sponsor-betterstack.png',
     description: 'Uptime monitoring and log management',
   },
+  {
+    name: 'VictoriaMetrics',
+    url: 'https://victoriametrics.com/',
+    logo: '/images/sponsor-victoriametrics.png',
+    description: 'Fast, open-source time series database and drop-in Prometheus replacement.',
+  },
 ];
