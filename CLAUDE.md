@@ -45,8 +45,9 @@ groups:
 
 Services are grouped in category. If you are not sure about the classification, ask the developer.
 
-Field order for a rule is always `name`, `description`, `query`, `severity`, `for`, `comments` — keep new
-rules in this order even though a few legacy rules interleave `comments` earlier.
+Field order for a rule is always `name`, `description`, `query`, `severity`, `for`, `comments` (`for` and
+`comments` are optional and simply skipped when absent). This is a strict invariant for every rule in the
+file, existing or new.
 
 ### Rule ordering within an exporter
 
