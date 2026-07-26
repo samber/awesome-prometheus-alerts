@@ -13,14 +13,7 @@ The project is community-driven. Most contributions are PRs adding or updating r
 ## Architecture
 
 - **`_data/rules.yml`** — The single source of truth for all alerting rules. This is the main file contributors edit. It is NOT a valid Prometheus config; the site renders each rule into copy-pasteable Prometheus alert format.
-- **`site/`** — Astro + TypeScript static site. Run `npm run dev` inside this directory to develop locally.
-- **`site/src/data/rules.ts`** — Typed wrappers and helper functions over `_data/rules.yml`.
-- **`site/src/data/site.ts`** — Shared site metadata constants (URLs, author, schema objects).
-- **`site/src/pages/`** — Astro page routes: `index.astro` (homepage), `rules/[group]/[service].astro` (per-service rule pages), `alertmanager.astro`, `blackbox-exporter.astro`, `sleep-peacefully.astro` (guides).
-- **`site/src/layouts/BaseLayout.astro`** — Root HTML layout (SEO, GA, dark mode).
-- **`site/src/layouts/GuideLayout.astro`** — Layout for guide pages (TOC, hero, related guides).
-- **`site/src/components/`** — Shared Astro components (Header, Footer, Sidebar, RuleCard, ExporterSection, etc.).
-- **`site/astro.config.mjs`** — Astro configuration (sitemap, Vite YAML plugin, base URL).
+- **`site/`** — Astro + TypeScript static site that renders the rules into browsable pages and per-exporter downloads. Its file layout and dev/build/lint commands live in **`site/CLAUDE.md`**.
 - **`dist/rules/`** — Pre-built downloadable rule files organized by service/exporter (referenced in the site for `wget` commands).
 
 ## Rules YAML Structure
@@ -157,27 +150,9 @@ Reuse these verbatim where they apply, instead of rewording:
 - Arbitrary/workload-dependent threshold: `Threshold of X is arbitrary. Adjust ... to your workload.` (or
   `... is a rough default. Adjust based on your workload.`) — see "Thresholds" below for when to add this.
 
-## Running Locally
-
-```bash
-cd site
-npm install
-npm run dev
-```
-
-Site serves at http://localhost:4321/awesome-prometheus-alerts.
-
-To build for production:
-
-```bash
-cd site
-npm run build
-npm run preview
-```
-
 ## Contributing Rules
 
-All rule changes go in `_data/rules.yml`. Each rule needs: `name`, `description`, `query` (valid PromQL), and `severity`. The `for` field is optional. Descriptions should be factual ("what") and include root cause hints ("why"). Queries must be tested against the latest exporter version. Never modify files in `dist/` — they are auto-generated on merge.
+All rule changes go in `_data/rules.yml`, following the field order and patterns in "Rules YAML Structure" and "YAML Authoring Conventions" above, validated per "Query Validation" and cross-checked against "Common Review Pitfalls" below. Never modify files in `dist/` — they are auto-generated on merge.
 
 ## Query Validation
 
@@ -247,7 +222,6 @@ These are the most frequent issues raised during code review on this repo:
   - When no capacity series exists, a percentage/ratio is still more portable than a raw count.
   Absolute thresholds are acceptable only when the metric has a workload-independent meaning (latency in seconds, error ratio, TLS days-to-expiry).
 - Alternatively, encode a service-level objective directly as the threshold when the service has one: e.g. cap replication lag at 10s, p99 latency at a target, error budget burn rate. An SLO is portable because it expresses the acceptable user-facing outcome, not an infrastructure size.
-- Alert thresholds are inherently arbitrary and depend on workload. Use `comments:` to note this when a threshold is a rough default.
 - When threshold values in a PR seem unreasonable (too high or too low), challenge them with real-world reasoning or exporter docs.
 - Watch for thresholds that are so high they only catch catastrophic scenarios and miss real problems. Examples: Go goroutine spike at 100/s (misses gradual leaks), Ruby major GC at 5/s (only fires if app is non-functional), Python gen2 GC at >1/s (extremely rare).
 - Watch for thresholds that will fire on normal healthy operation. Examples: Memcached at 90% memory is desired (it's a cache), Flink TaskManager at 90% JVM heap is normal, cache hit rate < 80% is common for cold caches.
@@ -260,13 +234,12 @@ These are the most frequent issues raised during code review on this repo:
 Three distinct scopes exist — don't confuse them:
 - Plain YAML `#` comments: source-only, for contributors reading/editing the file. Stripped at parse time, never shown on the site. Used for the file-level notice at the top of `_data/rules.yml` and occasional in-file section headers.
 - Rule-level `comments:` field: rendered as a `#` comment in the copy-pasteable snippet for that one rule. Use for non-obvious PromQL logic, threshold rationale, or an edge case specific to that rule — not for restating the description.
-
-The split is by audience, not by importance. Ask who needs the note:
-- The operator copying the snippet, to run or tune the alert (threshold rationale, version requirement, a caveat that changes how they read the alert) → `comments:` field.
-- The AI agent adapting a rule into another project's alerting config — same audience as the operator, but more likely to act on the note unattended. Flag values a downstream project will likely need to customize: `job=`/`instance=` label selectors, range windows, and thresholds that clear the bar in "Thresholds" below (not every threshold — see there for which ones actually warrant a note) — so the agent knows exactly which knobs to turn.
-- The AI agent adapting a rule into another project's alerting config — same audience as the operator, but more likely to act on the note unattended. Don't hesitate to flag values a downstream project will likely need to customize (threshold numbers, `job=`/`instance=` label selectors, range windows) so the agent knows exactly which knobs to turn.
-- The next contributor or reviewer editing the file, so they don't "fix" a rule that is already correct → plain `#` comment. Anything that would be noise inside a copy-pasted Prometheus config belongs here. Typical case: recording that a metric is a gauge despite a `_total` suffix, so nobody wraps it in `rate()` later (see the `argocd_repo_pending_request_total` and `phpfpm_processes_total` rules).
 - Exporter-level `comments:` field: rendered once before all rules under that exporter. Use for notes that apply exporter-wide (version requirements, known quirks, setup prerequisites) instead of repeating the same note on every rule. Don't state the obvious (e.g. "these metrics are specific to exporter X" — the `name`/`doc_url` already say that).
+
+The split between the two `comments:` fields and a plain `#` comment is by audience, not by importance. Ask who needs the note:
+- The operator copying the snippet, to run or tune the alert (threshold rationale, version requirement, a caveat that changes how they read the alert) → rule-level `comments:` field.
+- The AI agent adapting a rule into another project's alerting config — same audience as the operator, but more likely to act on the note unattended. Flag values a downstream project will likely need to customize: `job=`/`instance=` label selectors, range windows, and thresholds that clear the bar in "Thresholds" below (not every threshold — see there for which ones actually warrant a note) — so the agent knows exactly which knobs to turn → rule-level `comments:` field.
+- The next contributor or reviewer editing the file, so they don't "fix" a rule that is already correct → plain `#` comment. Anything that would be noise inside a copy-pasted Prometheus config belongs here. Typical case: recording that a metric is a gauge despite a `_total` suffix, so nobody wraps it in `rate()` later (see the `argocd_repo_pending_request_total` and `phpfpm_processes_total` rules).
 
 A rule or exporter block may have only **one** `comments:` key. YAML silently discards the first when there are duplicate keys in the same mapping — merge multiple paragraphs into a single `comments:` field using the multiline `|` block scalar.
 
