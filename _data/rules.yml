@@ -262,11 +262,11 @@ groups:
                 description: Disk is almost full (< 10% left)
                 query: '(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} / node_filesystem_size_bytes < .10 and on (instance, device, mountpoint) node_filesystem_readonly == 0)'
                 severity: critical
+                for: 2m
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
                   "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
                   Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
-                for: 2m
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
                 query: "(node_filesystem_files_free / node_filesystem_files < .10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) and node_filesystem_files > 0"
@@ -280,11 +280,11 @@ groups:
                 description: Filesystem will likely run out of space within the next 24 hours.
                 query: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[3h], 86400) <= 0 and node_filesystem_avail_bytes > 0 and node_filesystem_readonly == 0'
                 severity: warning
+                for: 2m
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
                   "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
                   Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
-                for: 2m
               - name: Host inodes may fill in 24 hours
                 description: Filesystem will likely run out of inodes within the next 24 hours at current write rate
                 query: 'predict_linear(node_filesystem_files_free{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[1h], 86400) <= 0 and node_filesystem_files_free > 0 and node_filesystem_readonly == 0'
@@ -337,12 +337,12 @@ groups:
               - name: Host software RAID insufficient drives
                 description: "MD RAID array {{ $labels.device }} on {{ $labels.instance }} has insufficient drives remaining."
                 query: '((node_md_disks_required - ignoring(state) node_md_disks{state="active"}) > 0)'
+                severity: critical
                 comments: |
                   Uses ignoring(state) to handle additional labels on node_md_disks.
                   Rebuilding a RAID array after a drive replacement can take a long time, during which this
                   query would still report a temporary drive deficit; adjust for a "for" duration if that
                   causes noisy alerts on your setup.
-                severity: critical
               - name: Host context switching high
                 description: Context switching is growing on the node (twice the daily average during the last 15m)
                 query: '(rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) / (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2 and rate(node_context_switches_total[1d]) > 0'
@@ -379,11 +379,15 @@ groups:
                 query: "(rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0)"
                 severity: warning
                 for: 2m
+                comments: |
+                  100ms threshold is a rough default; normal latency depends on your storage hardware (NVMe SSD vs spinning disk vs network storage) — adjust based on your baseline.
               - name: Host unusual disk write latency
                 description: Disk latency is growing (write operations > 100ms)
                 query: "(rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0)"
                 severity: warning
                 for: 2m
+                comments: |
+                  100ms threshold is a rough default; normal latency depends on your storage hardware (NVMe SSD vs spinning disk vs network storage) — adjust based on your baseline.
               - name: Host systemd service crashed
                 description: "systemd service {{ $labels.name }} crashed"
                 query: '(node_systemd_unit_state{state="failed"} == 1)'
@@ -626,10 +630,10 @@ groups:
               - name: Container High CPU utilization
                 description: 'Container CPU utilization is above 80% (current: {{ $value | printf "%.2f" }}%)'
                 query: '(sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod, container) / sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) * 100) > 80 and sum(container_spec_cpu_quota{container!=""}/container_spec_cpu_period{container!=""}) by (pod, container) > 0'
-                comments: |
-                  Only fires for containers with explicit CPU limits. Containers without limits have cpu_quota=0, which is filtered out by the guard.
                 severity: warning
                 for: 2m
+                comments: |
+                  Only fires for containers with explicit CPU limits. Containers without limits have cpu_quota=0, which is filtered out by the guard.
               - name: Container high throttle rate
                 description: "Container is being throttled ({{ $value | humanizePercentage }})"
                 query: 'sum(rate(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(rate(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 ) and sum(rate(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > 0'
@@ -650,8 +654,8 @@ groups:
                 description: Container Memory usage is above 80%
                 query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
                 severity: warning
-                comments: See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
                 for: 2m
+                comments: See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
               - name: Container Low Memory usage
                 description: Container Memory usage is under 20% for 1 week. Consider reducing the allocated memory.
                 query: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) < 20'
@@ -668,10 +672,10 @@ groups:
               - name: Container Unhealthy
                 description: Container {{ $labels.name }} on {{ $labels.instance }} has been reporting an unhealthy Docker health check status for more than 5m
                 query: 'container_health_state == 0'
-                comments: |
-                  Docker-specific health check rule. 0=unhealthy, 1=healthy, -1=no health check configured.
                 severity: warning
                 for: 5m
+                comments: |
+                  Docker-specific health check rule. 0=unhealthy, 1=healthy, -1=no health check configured.
 
       - name: Blackbox
         logo: /images/services/blackbox.svg
@@ -698,7 +702,7 @@ groups:
                 query: 'avg_over_time(probe_success{job="blackbox-exporter"}[30d]) * 100 < 99.9'
                 severity: info
                 comments: |
-                  Replace job="blackbox-exporter" with the actual job name in your Prometheus configuration. The 99.9% threshold over 30d is a rough default; adjust based on your SLA.
+                  Replace job="blackbox-exporter" with the actual job name in your Prometheus configuration. The 99.9% threshold over 30d is a rough default; adjust based on your SLO.
               #
               # Performance and errors (RED)
               #
@@ -707,16 +711,22 @@ groups:
                 query: "probe_duration_seconds > 1"
                 severity: warning
                 for: 1m
+                comments: |
+                  1s threshold is a rough default; acceptable probe duration depends on what is being probed and the network path to it — adjust based on your baseline.
               - name: Blackbox probe slow HTTP
                 description: HTTP request took more than 1s
                 query: "sum by (instance) (probe_http_duration_seconds) > 1"
                 severity: warning
                 for: 1m
+                comments: |
+                  1s threshold is a rough default; acceptable latency depends on the target endpoint and network path — adjust based on your baseline.
               - name: Blackbox probe slow ping
                 description: Blackbox ping took more than 1s
                 query: "sum by (instance) (probe_icmp_duration_seconds) > 1"
                 severity: warning
                 for: 1m
+                comments: |
+                  1s threshold is a rough default; acceptable round-trip time depends on the network path to the target — adjust based on your baseline.
               #
               # Info, security, and config
               #
@@ -776,6 +786,8 @@ groups:
                 query: "windows_time_ntp_round_trip_delay_seconds > 1"
                 severity: warning
                 for: 5m
+                comments: |
+                  1s threshold is a rough default; acceptable round-trip time depends on your network topology (local NTP server vs internet-based) — adjust based on your baseline.
               #
               # Performance and errors (RED)
               #
@@ -832,6 +844,8 @@ groups:
                 query: "(time() - vmware_vm_snapshot_timestamp_seconds) / (60 * 60 * 24) >= 7"
                 severity: warning
                 for: 5m
+                comments: |
+                  7 days is a rough default; how long a snapshot should live depends on your backup/retention policy — adjust based on your workflow.
 
       - name: Proxmox VE
         logo: /images/services/proxmox-ve.svg
@@ -1313,6 +1327,8 @@ groups:
                 query: 'avg by (datname) (pg_stat_activity_max_tx_duration{datname!~"template.*|postgres"}) > 2 * 60'
                 severity: warning
                 for: 2m
+                comments: |
+                  2 minutes is a rough default; normal transaction duration depends on your workload (OLTP vs batch/reporting queries) — adjust based on your baseline.
               - name: Postgresql low cache hit rate
                 description: PostgreSQL buffer cache hit rate for database {{ $labels.datname }} is {{ $value | humanizePercentage }}, below the 98% target, indicating heavy disk I/O; consider increasing shared_buffers.
                 query: 'sum by (datname) (rate(pg_stat_database_blks_hit{datname!~"template.*|postgres",datid!="0"}[5m])) / (sum by (datname) (rate(pg_stat_database_blks_hit{datname!~"template.*|postgres",datid!="0"}[5m])) + sum by (datname) (rate(pg_stat_database_blks_read{datname!~"template.*|postgres",datid!="0"}[5m]))) < 0.98 and (sum by (datname) (rate(pg_stat_database_blks_hit{datname!~"template.*|postgres",datid!="0"}[5m])) + sum by (datname) (rate(pg_stat_database_blks_read{datname!~"template.*|postgres",datid!="0"}[5m]))) > 0'
@@ -1407,6 +1423,8 @@ groups:
                 query: "pg_replication_lag_seconds > 5"
                 severity: warning
                 for: 30s
+                comments: |
+                  5s threshold is a rough default; acceptable lag depends on your network and replication workload — adjust based on your baseline.
               - name: Postgresql too many checkpoints requested
                 description: More than half of the checkpoints on {{ $labels.instance }} are unscheduled (requested) rather than timed, which usually means checkpoint_timeout or max_wal_size needs tuning.
                 query: "rate(pg_stat_bgwriter_checkpoints_timed_total[5m]) / (rate(pg_stat_bgwriter_checkpoints_timed_total[5m]) + rate(pg_stat_bgwriter_checkpoints_req_total[5m])) < 0.5 and (rate(pg_stat_bgwriter_checkpoints_timed_total[5m]) + rate(pg_stat_bgwriter_checkpoints_req_total[5m])) > 0"
@@ -1587,6 +1605,8 @@ groups:
                 query: "pgbouncer_pools_client_maxwait_seconds > 15"
                 severity: warning
                 for: 2m
+                comments: |
+                  15s threshold is a rough default; depends on your configured pool_size and backend database capacity — adjust based on your workload.
 
       - name: Redis
         logo: /images/services/redis.svg
@@ -1692,6 +1712,8 @@ groups:
                 description: Redis has not been backed up for 48 hours
                 query: "time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 48"
                 severity: critical
+                comments: |
+                  48 hours is a rough default; how often a backup is needed depends on your backup/retention policy and data-loss tolerance — adjust based on your workflow.
 
       - name: Memcached
         logo: /images/services/memcached.svg
@@ -2051,6 +2073,8 @@ groups:
                 query: "rate(elasticsearch_indices_search_query_time_seconds[1m]) / rate(elasticsearch_indices_search_query_total[1m]) > 1 and rate(elasticsearch_indices_search_query_total[1m]) > 0"
                 severity: warning
                 for: 5m
+                comments: |
+                  1s threshold is a rough default; normal query latency depends on your query complexity and dataset size — adjust based on your baseline.
               - name: Elasticsearch High Thread Pool Rejection Ratio
                 description: "The thread pool rejection ratio on Elasticsearch node {{ $labels.name }} (pool: {{ $labels.type }}) is above 5% (current value: {{ $value }}%), meaning the node cannot keep up with incoming requests and is dropping them."
                 query: "(rate(elasticsearch_thread_pool_rejected_count[5m]) / (rate(elasticsearch_thread_pool_rejected_count[5m]) + rate(elasticsearch_thread_pool_completed_count[5m]))) * 100 > 5 and (rate(elasticsearch_thread_pool_rejected_count[5m]) + rate(elasticsearch_thread_pool_completed_count[5m])) > 0"
@@ -2123,8 +2147,8 @@ groups:
                 severity: warning
                 for: 5m
               - name: OpenSearch has pending tasks
-                query: "opensearch_cluster_pending_tasks_number > 0"
                 description: "OpenSearch cluster {{ $labels.cluster }} has pending tasks"
+                query: "opensearch_cluster_pending_tasks_number > 0"
                 severity: warning
                 for: 5m
               - name: OpenSearch indexing is throttled
@@ -2164,6 +2188,8 @@ groups:
                 description: Meilisearch http response time is too high
                 query: "meilisearch_http_response_time_seconds > 0.5"
                 severity: warning
+                comments: |
+                  0.5s threshold is a rough default; normal response time depends on your query complexity and dataset size — adjust based on your baseline.
 
       - name: Cassandra
         logo: /images/services/cassandra.svg
@@ -2188,8 +2214,8 @@ groups:
               - name: "Cassandra connection timeouts total (Instaclustr)"
                 description: "Some connection between nodes are ending in timeout - {{ $labels.cassandra_cluster }}"
                 query: "sum by (cassandra_cluster,instance) (rate(cassandra_client_request_timeouts_total[5m])) > 5"
-                for: 2m
                 severity: critical
+                for: 2m
                 comments: |
                   5/s is a rough default; timeout volume correlates with cluster load and network conditions — adjust based on your baseline.
               - name: "Cassandra storage exceptions (Instaclustr)"
@@ -2199,28 +2225,30 @@ groups:
               - name: "Cassandra tombstone dump (Instaclustr)"
                 description: "Cassandra tombstone dump - {{ $labels.cassandra_cluster }}"
                 query: 'avg(cassandra_table_tombstones_scanned{quantile="0.99"}) by (instance,cassandra_cluster,keyspace) > 100'
-                for: 2m
                 severity: critical
+                for: 2m
+                comments: |
+                  100 is a rough default; how many tombstones get scanned depends on your deletion patterns and compaction strategy — adjust based on your data model.
               - name: "Cassandra client request unavailable write (Instaclustr)"
                 description: "Some Cassandra client requests are unavailable to write - {{ $labels.cassandra_cluster }}"
                 query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="write"}[1m]) > 0'
-                for: 2m
                 severity: critical
+                for: 2m
               - name: "Cassandra client request unavailable read (Instaclustr)"
                 description: "Some Cassandra client requests are unavailable to read - {{ $labels.cassandra_cluster }}"
                 query: 'changes(cassandra_client_request_unavailable_exceptions_total{operation="read"}[1m]) > 0'
-                for: 2m
                 severity: critical
+                for: 2m
               - name: "Cassandra client request write failure (Instaclustr)"
                 description: "Write failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
                 query: 'increase(cassandra_client_request_failures_total{operation="write"}[1m]) > 5'
-                for: 2m
                 severity: critical
+                for: 2m
               - name: "Cassandra client request read failure (Instaclustr)"
                 description: "Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}"
                 query: 'increase(cassandra_client_request_failures_total{operation="read"}[1m]) > 5'
-                for: 2m
                 severity: critical
+                for: 2m
               - name: "Cassandra many compaction tasks are pending"
                 description: "Many Cassandra compaction tasks are pending - {{ $labels.cassandra_cluster }}"
                 query: "cassandra_table_estimated_pending_compactions > 100"
@@ -2230,22 +2258,22 @@ groups:
               - name: "Cassandra commitlog pending tasks (Instaclustr)"
                 description: "Cassandra commitlog pending tasks - {{ $labels.cassandra_cluster }}"
                 query: "cassandra_commit_log_pending_tasks > 15"
-                for: 2m
                 severity: warning
+                for: 2m
                 comments: |
                   15 is a rough default; commitlog backlog scales with your write throughput — adjust based on your workload.
               - name: "Cassandra compaction executor blocked tasks (Instaclustr)"
                 description: "Some Cassandra compaction executor tasks are blocked - {{ $labels.cassandra_cluster }}"
                 query: 'cassandra_thread_pool_blocked_tasks{pool="CompactionExecutor"} > 15'
-                for: 2m
                 severity: warning
+                for: 2m
                 comments: |
                   15 is a rough default; blocked-task depth scales with compaction/write load — adjust based on your workload.
               - name: "Cassandra flush writer blocked tasks (Instaclustr)"
                 description: "Some Cassandra flush writer tasks are blocked - {{ $labels.cassandra_cluster }}"
                 query: 'cassandra_thread_pool_blocked_tasks{pool="MemtableFlushWriter"} > 15'
-                for: 2m
                 severity: warning
+                for: 2m
                 comments: |
                   15 is a rough default; blocked-task depth scales with write load — adjust based on your workload.
 
@@ -2285,6 +2313,8 @@ groups:
                 description: Too much tombstones scanned in queries
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:table:tombstonescannedhistogram:99thpercentile"} > 1000'
                 severity: critical
+                comments: |
+                  1000 is a rough default; how many tombstones get scanned depends on your deletion patterns and compaction strategy — adjust based on your data model.
               - name: Cassandra client request unavailable write (Criteo)
                 description: Write failures have occurred because too many nodes are unavailable
                 query: 'changes(cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:write:unavailables:count"}[1m]) > 0'
@@ -2313,6 +2343,8 @@ groups:
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:clientrequest:viewwrite:viewwritelatency:99thpercentile"} > 100000'
                 severity: warning
                 for: 2m
+                comments: |
+                  100000us (100ms) is a rough default; depends on your materialized-view complexity and write workload — adjust based on your baseline.
               - name: Cassandra commitlog pending tasks (Criteo)
                 description: Unexpected number of Cassandra commitlog pending tasks
                 query: 'cassandra_stats{name="org:apache:cassandra:metrics:commitlog:pendingtasks:value"} > 15'
@@ -2620,6 +2652,8 @@ groups:
                 query: 'couchdb_httpd_request_time{metric="ArithmeticMean"} > 1000'
                 severity: critical
                 for: 5m
+                comments: |
+                  1000ms threshold is a rough default; normal request latency depends on your query complexity and dataset size — adjust based on your baseline.
               - name: CouchDB Mango queries scanning too many docs
                 description: Some Mango queries are scanning too many documents, consider adding indexes
                 query: "rate(couchdb_mango_too_many_docs_scanned[5m]) > 50"
@@ -2661,6 +2695,8 @@ groups:
                 query: 'couchdb_httpd_request_time{metric="ArithmeticMean"} > 500'
                 severity: warning
                 for: 5m
+                comments: |
+                  500ms threshold is a rough default; normal request latency depends on your query complexity and dataset size — adjust based on your baseline.
 
       - name: Solr
         logo: /images/services/solr.svg
@@ -2908,9 +2944,9 @@ groups:
                 description: Exchange receive less than 5 msgs per second
                 query: 'rate(rabbitmq_exchange_messages_published_in_total{exchange="my-exchange"}[1m]) < 5'
                 severity: warning
+                for: 2m
                 comments: |
                   Indicate the exchange name in dedicated label.
-                for: 2m
 
       - name: Zookeeper
         logo: /images/services/zookeeper.svg
@@ -3008,8 +3044,8 @@ groups:
               - name: Pulsar high ledger disk usage
                 description: "Observing Ledger Disk Usage (> 75%)"
                 query: sum(bookie_ledger_dir__pulsar_data_bookkeeper_ledgers_usage) by (kubernetes_pod_name) > 75
-                for: 1h
                 severity: critical
+                for: 1h
                 comments: |
                   This metric name is path-dependent and may differ based on your BookKeeper data directory configuration.
                   Adjust the metric name to match your actual ledger directory path.
@@ -3019,63 +3055,63 @@ groups:
               - name: Pulsar subscription very high number of backlog entries
                 description: "The number of subscription backlog entries is over 100k"
                 query: sum(pulsar_subscription_back_log) by (subscription) > 100000
-                for: 1h
                 severity: critical
+                for: 1h
                 comments: |
                   100k is a rough default; backlog depth scales with your message throughput and consumer processing speed — adjust based on your workload.
               - name: Pulsar topic very large backlog storage size
                 description: "The topic backlog storage size is over 20 GB"
                 query: sum(pulsar_storage_size) by (topic) > 20*1024*1024*1024
-                for: 1h
                 severity: critical
+                for: 1h
                 comments: |
                   20GB is a rough default; scales with your message size, retention, and consumer lag — adjust based on your workload.
               - name: Pulsar high write latency
                 description: "Pulsar topic {{ $labels.topic }} has {{ $value }} storage write operations exceeding the maximum latency bucket (> 1000ms)"
                 query: sum(pulsar_storage_write_latency_le_overflow > 0) by (topic)
-                for: 1h
                 severity: critical
+                for: 1h
                 comments: |
                   pulsar_storage_write_latency_le_overflow is the overflow bucket of Pulsar's non-standard histogram.
                   It counts write operations exceeding all defined latency bounds (> 1000ms).
               - name: Pulsar read only bookies
                 description: "Observing Readonly Bookies"
                 query: count(bookie_SERVER_STATUS{} == 0) by (pod)
-                for: 5m
                 severity: critical
+                for: 5m
               - name: Pulsar high number of function errors
                 description: "Pulsar function {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)"
                 query: sum(rate(pulsar_function_user_exceptions_total[1m]) + rate(pulsar_function_system_exceptions_total[1m])) by (name) > 10
-                for: 1m
                 severity: critical
+                for: 1m
                 comments: |
                   10/s is a rough default; absolute error count scales with your function's invocation volume — adjust based on your workload.
               - name: Pulsar high number of sink errors
                 description: "Pulsar sink {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)"
                 query: sum(rate(pulsar_sink_sink_exceptions_total[1m])) by (name) > 10
-                for: 1m
                 severity: critical
+                for: 1m
                 comments: |
                   10/s is a rough default; absolute error count scales with your sink's throughput — adjust based on your workload.
               - name: Pulsar subscription high number of backlog entries
                 description: "The number of subscription backlog entries is over 5k"
                 query: sum(pulsar_subscription_back_log) by (subscription) > 5000
-                for: 1h
                 severity: warning
+                for: 1h
                 comments: |
                   5k is a rough default; backlog depth scales with your message throughput and consumer processing speed — adjust based on your workload.
               - name: Pulsar topic large backlog storage size
                 description: "The topic backlog storage size is over 5 GB"
                 query: sum(pulsar_storage_size) by (topic) > 5*1024*1024*1024
-                for: 1h
                 severity: warning
+                for: 1h
                 comments: |
                   5GB is a rough default; scales with your message size, retention, and consumer lag — adjust based on your workload.
               - name: Pulsar large message payload
                 description: "Pulsar topic {{ $labels.topic }} has {{ $value }} message entries exceeding the maximum size bucket (> 1MB)"
                 query: sum(pulsar_entry_size_le_overflow > 0) by (topic)
-                for: 1h
                 severity: warning
+                for: 1h
                 comments: |
                   pulsar_entry_size_le_overflow is the overflow bucket of Pulsar's non-standard histogram.
                   It counts message entries exceeding all defined size bounds.
@@ -3213,6 +3249,8 @@ groups:
                 query: "histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[2m])) by (host, node, le)) > 3"
                 severity: warning
                 for: 2m
+                comments: |
+                  3s threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
               - name: Nginx internal metric errors
                 description: The nginx-lua-prometheus library failed to record one or more metrics (e.g. the shared dictionary used to store metrics is full or an LRU eviction occurred), which may mean other Nginx metrics are incomplete.
                 query: "increase(nginx_metric_errors_total[5m]) > 0"
@@ -3246,6 +3284,8 @@ groups:
                 query: "increase(apache_duration_ms_total[5m]) / increase(apache_accesses_total[5m]) > 5000 and increase(apache_accesses_total[5m]) > 0"
                 severity: warning
                 for: 2m
+                comments: |
+                  5000ms threshold is a rough default; acceptable response time varies by route and your SLO — adjust based on your baseline.
               - name: Apache restart
                 description: Apache has just been restarted.
                 query: "apache_uptime_seconds_total / 60 < 1"
@@ -3266,6 +3306,8 @@ groups:
                 query: avg by (instance, proxy) (haproxy_backend_max_total_time_seconds) > 1
                 severity: warning
                 for: 1m
+                comments: |
+                  1s threshold is a rough default; acceptable latency varies by backend and your SLO — adjust based on your baseline.
               - name: HAProxy dropping logs
                 description: HAProxy {{ $labels.instance }} is dropping log messages, which usually indicates the syslog/logging backend cannot keep up or is unreachable.
                 query: "rate(haproxy_process_dropped_logs_total[5m]) != 0"
@@ -3387,6 +3429,8 @@ groups:
                 query: "avg by (backend) (haproxy_backend_http_total_time_average_seconds) > 1"
                 severity: warning
                 for: 1m
+                comments: |
+                  1s threshold is a rough default; acceptable latency varies by backend and your SLO — adjust based on your baseline.
               #
               # Performance and errors (RED)
               #
@@ -3777,12 +3821,14 @@ groups:
                 severity: warning
                 for: 1m
                 comments: |
-                  100ms threshold is a rough default; acceptable latency varies by route and your SLA — adjust based on your baseline.
+                  100ms threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
               - name: Istio latency 99 percentile
                 description: "Istio p99 request latency is {{ $value }}ms (threshold: 1000ms)."
                 query: "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, le)) > 1000"
                 severity: warning
                 for: 1m
+                comments: |
+                  1000ms threshold is a rough default; acceptable latency varies by service and your SLO — adjust based on your baseline.
 
   - name: Runtimes
     services:
@@ -4116,6 +4162,8 @@ groups:
                 description: Sidekiq jobs are taking more than 1min to be picked up. Users may be seeing delays in background processing.
                 query: "max(sidekiq_queue_latency_seconds) > 60"
                 severity: critical
+                comments: |
+                  1 minute is a rough default; acceptable pickup latency depends on the balance between your job production rate and worker capacity — adjust based on your workload.
               - name: Sidekiq queue size
                 description: Sidekiq queue {{ $labels.name }} is growing ({{ $value }} enqueued jobs)
                 query: "sidekiq_queue_enqueued_jobs > 100"
@@ -4174,11 +4222,10 @@ groups:
               - name: Flink job restart increasing
                 description: "Flink job {{ $labels.job_name }} has restarted {{ $value }} times in the last 5 minutes."
                 query: "delta(flink_jobmanager_job_numRestarts[5m]) > 1"
-                comments: |
-                  Flink exposes numRestarts as a gauge (cumulative count), so delta() is used instead of increase().
                 severity: warning
                 for: 5m
                 comments: |
+                  Flink exposes numRestarts as a gauge (cumulative count), so delta() is used instead of increase().
                   A single restart may be normal during deployments. Adjust threshold based on restart tolerance.
               - name: Flink checkpoint failures
                 description: "Flink job {{ $labels.job_name }} has {{ $value }} failed checkpoints in the last 10 minutes."
@@ -4302,10 +4349,10 @@ groups:
               # Availability
               #
               - name: Hadoop Name Node Down
-                query: up{job="hadoop-namenode"} == 0
-                for: 5m
-                severity: critical
                 description: "The Hadoop NameNode service is unavailable."
+                query: up{job="hadoop-namenode"} == 0
+                severity: critical
+                for: 5m
                 comments: |
                   When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
                   so this alert may not fire. Prefer application-level availability metrics if available.
@@ -4313,10 +4360,10 @@ groups:
 
               # Alert rule for ResourceManager availability
               - name: Hadoop Resource Manager Down
-                query: up{job="hadoop-resourcemanager"} == 0
-                for: 5m
-                severity: critical
                 description: "The Hadoop ResourceManager service is unavailable."
+                query: up{job="hadoop-resourcemanager"} == 0
+                severity: critical
+                for: 5m
                 comments: |
                   When targets are managed via service discovery, a disappeared target goes stale rather than reporting up==0,
                   so this alert may not fire. Prefer application-level availability metrics if available.
@@ -4342,17 +4389,17 @@ groups:
                 severity: warning
                 for: 15m
               - name: Hadoop Resource Manager Memory High
-                query: 100 * hadoop_resourcemanager_allocatedmb / clamp_min(hadoop_resourcemanager_availablemb + hadoop_resourcemanager_allocatedmb, 1) > 80
-                for: 15m
-                severity: warning
                 description: "The Hadoop ResourceManager is approaching its memory limit."
+                query: 100 * hadoop_resourcemanager_allocatedmb / clamp_min(hadoop_resourcemanager_availablemb + hadoop_resourcemanager_allocatedmb, 1) > 80
+                severity: warning
+                for: 15m
 
               # Alert rule for high YARN container allocation failures
               - name: Hadoop HBase Region Server Heap Low
-                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8 and hadoop_hbase_region_server_max_heap_bytes > 0
-                for: 10m
-                severity: warning
                 description: "HBase Region Servers are running low on heap space."
+                query: hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8 and hadoop_hbase_region_server_max_heap_bytes > 0
+                severity: warning
+                for: 10m
 
               # Alert rule for high HBase Write Requests latency
               - name: Hadoop Node Manager Memory High
@@ -4361,51 +4408,53 @@ groups:
                 severity: warning
                 for: 15m
               - name: Hadoop HDFS Disk Space Low
-                query: 100 * hadoop_namenode_capacityremaining / clamp_min(hadoop_namenode_capacitytotal, 1) < 20
-                for: 15m
-                severity: warning
                 description: "Available HDFS disk space is running low."
+                query: 100 * hadoop_namenode_capacityremaining / clamp_min(hadoop_namenode_capacitytotal, 1) < 20
+                severity: warning
+                for: 15m
 
               # Alert rule for excessive MapReduce task failures
               #
               # Performance and errors (RED)
               #
               - name: Hadoop Map Reduce Task Failures
-                query: increase(hadoop_mapreduce_task_failures_total[1h]) > 100
-                for: 10m
-                severity: critical
                 description: "There is an unusually high number of MapReduce task failures."
+                query: increase(hadoop_mapreduce_task_failures_total[1h]) > 100
+                severity: critical
+                for: 10m
 
               # Alert rule for high ResourceManager memory usage
               # Alert rule for NameNode availability
               - name: Hadoop Data Node Out Of Service
-                query: hadoop_namenode_numdeaddatanodes > 0
-                for: 10m
-                severity: warning
                 description: "The Hadoop DataNode is not sending heartbeats."
+                query: hadoop_namenode_numdeaddatanodes > 0
+                severity: warning
+                for: 10m
 
               # Alert rule for low HDFS disk space
               - name: Hadoop YARN Container Allocation Failures
-                query: increase(hadoop_yarn_container_allocation_failures_total[1h]) > 10
-                for: 10m
-                severity: warning
                 description: "There is a significant number of YARN container allocation failures."
+                query: increase(hadoop_yarn_container_allocation_failures_total[1h]) > 10
+                severity: warning
+                for: 10m
 
               # Alert rule for excessive HBase region server region count
               - name: Hadoop HBase Region Count High
-                query: hadoop_hbase_region_count > 5000
-                for: 15m
-                severity: warning
                 description: "The HBase cluster has an unusually high number of regions."
+                query: hadoop_hbase_region_count > 5000
+                severity: warning
+                for: 15m
                 comments: |
                   5000 is a rough default; region count scales with your cluster size and data volume — adjust based on your workload.
 
               # Alert rule for low HBase region server heap space
               - name: Hadoop HBase Write Requests Latency High
-                query: hadoop_hbase_write_requests_latency_seconds > 0.5
-                for: 10m
-                severity: warning
                 description: "HBase Write Requests are experiencing high latency."
+                query: hadoop_hbase_write_requests_latency_seconds > 0.5
+                severity: warning
+                for: 10m
+                comments: |
+                  0.5s threshold is a rough default; acceptable write latency depends on your storage backend and write workload — adjust based on your baseline.
               - name: Hadoop HDFS Volume Failures
                 description: One or more HDFS DataNode storage volumes have failed since the DataNode last started, which is an early sign of failing disks.
                 query: "max without(job,name)(hadoop_namenode_volumefailurestotal) > 0"
@@ -4625,6 +4674,8 @@ groups:
                 query: 'histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{verb!~"(?:CONNECT|WATCHLIST|WATCH|PROXY)"} [10m])) WITHOUT (subresource)) > 1'
                 severity: warning
                 for: 2m
+                comments: |
+                  1s threshold is a rough default; acceptable latency depends on your cluster size and API request volume — adjust based on your baseline.
               - name: Kubernetes Container waiting
                 description: Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been in waiting state for longer than 1 hour, for a reason other than CrashLoopBackOff (e.g. ImagePullBackOff, CreateContainerConfigError, InvalidImageName).
                 query: 'kube_pod_container_status_waiting_reason{reason!="CrashLoopBackOff"} > 0'
@@ -4654,6 +4705,8 @@ groups:
                 description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is constantly at minimum replicas for 50% of the time. Potential cost saving here.
                 query: "max(quantile_over_time(0.5, kube_horizontalpodautoscaler_status_desired_replicas[1d]) == kube_horizontalpodautoscaler_spec_min_replicas) by (horizontalpodautoscaler) > 3" # allow minimum 3 replicas running
                 severity: info
+                comments: |
+                  The 50% time-at-minimum and 3-replica floor are rough defaults; some workloads are intentionally always at minimum — adjust based on your deployment's expected scaling behavior.
               #
               # Capacity and trend
               #
@@ -4769,6 +4822,8 @@ groups:
                 query: "histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le)) > 1"
                 severity: critical
                 for: 2m
+                comments: |
+                  1s threshold is a rough default; fsync duration depends on your disk hardware (NVMe vs spinning disk vs network storage) — adjust based on your baseline.
               #
               # Resource saturation (USE)
               #
@@ -4777,11 +4832,15 @@ groups:
                 query: "histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le)) > 0.5"
                 severity: warning
                 for: 2m
+                comments: |
+                  0.5s threshold is a rough default; fsync duration depends on your disk hardware (NVMe vs spinning disk vs network storage) — adjust based on your baseline.
               - name: Etcd high commit durations
                 description: Etcd commit duration increasing, 99th percentile is over 0.25s
                 query: "histogram_quantile(0.99, sum(rate(etcd_disk_backend_commit_duration_seconds_bucket[5m])) by (instance, le)) > 0.25"
                 severity: warning
                 for: 2m
+                comments: |
+                  0.25s threshold is a rough default; commit duration depends on your disk hardware and write workload — adjust based on your baseline.
               - name: Etcd database high fragmentation ratio
                 description: Etcd database in-use size is below 50% of its allocated size ({{ $value | humanizePercentage }}), indicating fragmentation; run 'etcdctl defrag' to reclaim disk space.
                 query: "(last_over_time(etcd_mvcc_db_total_size_in_use_in_bytes[5m]) / last_over_time(etcd_mvcc_db_total_size_in_bytes[5m])) < 0.5 and etcd_mvcc_db_total_size_in_use_in_bytes > 104857600"
@@ -4847,6 +4906,8 @@ groups:
                 query: "histogram_quantile(0.99, sum(rate(etcd_network_peer_round_trip_time_seconds_bucket[5m])) by (instance, le)) > 0.15"
                 severity: warning
                 for: 2m
+                comments: |
+                  0.15s threshold is a rough default; round-trip time depends on your network topology between etcd members — adjust based on your baseline.
               - name: Etcd high number of failed proposals
                 description: "Etcd server got {{ $value }} failed proposals in the past hour"
                 query: "increase(etcd_server_proposals_failed_total[1h]) > 5"
@@ -5110,11 +5171,15 @@ groups:
                 query: "histogram_quantile(0.95, sum(rate(argocd_git_request_duration_seconds_bucket[5m])) by (le, repo)) > 30"
                 severity: warning
                 for: 10m
+                comments: |
+                  30s threshold is a rough default; depends on your repository size and network latency to the git host — adjust based on your baseline.
               - name: ArgoCD application controller slow reconciliation
                 description: The 95th percentile application reconciliation duration is above 60 seconds, which can delay drift detection and slow down sync operations across the cluster.
                 query: "histogram_quantile(0.95, sum(rate(argocd_app_reconcile_bucket[5m])) by (le)) > 60"
                 severity: warning
                 for: 10m
+                comments: |
+                  60s threshold is a rough default; depends on your number of managed apps and manifest complexity — adjust based on your workload.
 
       - name: FluxCD
         logo: /images/services/fluxcd.svg
@@ -5283,6 +5348,8 @@ groups:
                 query: "histogram_quantile(0.95, sum(rate(gitlab_ci_pipeline_creation_duration_seconds_bucket[5m])) by (le)) > 30"
                 severity: warning
                 for: 5m
+                comments: |
+                  30s threshold is a rough default; depends on your pipeline complexity and CI instance load — adjust based on your baseline.
               - name: GitLab CI pipeline failures increasing
                 description: "GitLab CI pipeline failures are increasing on {{ $labels.instance }} ({{ $value }}/s)."
                 query: "deriv(gitlab_ci_pipeline_failure_reasons[5m]) > 0.05"
@@ -5345,6 +5412,8 @@ groups:
                 query: "histogram_quantile(0.95, sum(rate(gitlab_workhorse_http_request_duration_seconds_bucket[5m])) by (le)) > 10"
                 severity: warning
                 for: 5m
+                comments: |
+                  10s threshold is a rough default; depends on your request mix (large file uploads/downloads vs typical Git operations) — adjust based on your baseline.
               - name: GitLab Workhorse high in-flight requests
                 description: "GitLab Workhorse on {{ $labels.instance }} has {{ $value }} in-flight requests."
                 query: "gitlab_workhorse_http_in_flight_requests > 100"
@@ -5657,6 +5726,8 @@ groups:
                 query: "histogram_quantile(0.99, sum(rate(coredns_dns_request_duration_seconds_bucket[5m])) without (instance, pod)) > 4"
                 severity: critical
                 for: 10m
+                comments: |
+                  4s threshold is a rough default; depends on your query volume and upstream resolver performance — adjust based on your baseline.
               - name: CoreDNS SERVFAIL Error Rate Critical
                 description: CoreDNS is returning SERVFAIL for {{ $value | humanizePercentage }} of DNS responses, meaning a large share of client queries are failing to resolve.
                 query: 'sum without (pod, instance, server, zone, view, rcode, plugin) (rate(coredns_dns_responses_total{rcode="SERVFAIL"}[5m])) / sum without (pod, instance, server, zone, view, rcode, plugin) (rate(coredns_dns_responses_total[5m])) > 0.03'
@@ -5667,6 +5738,8 @@ groups:
                 query: "histogram_quantile(0.99, sum(rate(coredns_forward_request_duration_seconds_bucket[5m])) without (pod, instance, rcode)) > 4"
                 severity: critical
                 for: 10m
+                comments: |
+                  4s threshold is a rough default; depends on your upstream resolver's performance and network path — adjust based on your baseline.
               - name: CoreDNS Forward All Upstreams Broken
                 description: CoreDNS health checks have failed for every configured upstream server, meaning forwarded DNS queries can no longer be resolved.
                 query: "sum without (pod, instance) (rate(coredns_forward_healthcheck_broken_total[5m])) > 0"
@@ -6504,6 +6577,8 @@ groups:
                 query: "cloudwatch_exporter_scrape_duration_seconds > 300"
                 severity: warning
                 for: 5m
+                comments: |
+                  5-minute threshold is a rough default; scrape time scales with how many AWS resources and metrics you are monitoring — adjust based on your monitored fleet size.
               - name: CloudWatch API high request rate
                 description: "CloudWatch exporter on {{ $labels.instance }} is making {{ $value }} API calls per minute to namespace {{ $labels.namespace }}. This can lead to high AWS costs."
                 query: "sum by (instance, namespace) (rate(cloudwatch_requests_total[5m])) * 60 > 100"
@@ -6560,6 +6635,8 @@ groups:
                 query: "stackdriver_monitoring_last_scrape_duration_seconds > 300"
                 severity: warning
                 for: 5m
+                comments: |
+                  5-minute threshold is a rough default; scrape time scales with how many GCP resources and metrics you are monitoring — adjust based on your monitored fleet size.
               - name: Stackdriver exporter scrape errors increasing
                 description: "Stackdriver exporter has had {{ $value }} scrape errors in the last 15 minutes for project {{ $labels.project_id }}."
                 query: "increase(stackdriver_monitoring_scrape_errors_total[15m]) > 5"
@@ -6743,11 +6820,15 @@ groups:
                 query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query"}[5m]))) > 40 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-query.*", handler="query"}[5m])) > 0)'
                 severity: critical
                 for: 10m
+                comments: |
+                  40s threshold is a rough default; query latency scales with your data volume and query complexity — adjust based on your baseline.
               - name: Thanos Query Range Latency High
                 description: "Thanos Query {{$labels.job}} has a 99th percentile latency of {{$value}} seconds for range queries."
                 query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-query.*", handler="query_range"}[5m]))) > 90 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-query.*", handler="query_range"}[5m])) > 0)'
                 severity: critical
                 for: 10m
+                comments: |
+                  90s threshold is a rough default; range-query latency scales with your data volume and query time range — adjust based on your baseline.
               - name: Thanos Query Grpc Server Error Rate
                 description: "Thanos Query {{$labels.job}} is failing to handle {{$value | humanize}}% of requests."
                 query: '(sum by (job) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", job=~".*thanos-query.*"}[5m]))/  sum by (job) (rate(grpc_server_started_total{job=~".*thanos-query.*"}[5m])) * 100 > 5) and sum by (job) (rate(grpc_server_started_total{job=~".*thanos-query.*"}[5m])) > 0'
@@ -6795,6 +6876,8 @@ groups:
                 query: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-receive.*", handler="receive"}[5m]))) > 10 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-receive.*", handler="receive"}[5m])) > 0)'
                 severity: critical
                 for: 10m
+                comments: |
+                  10s threshold is a rough default; ingestion latency scales with your sample throughput — adjust based on your baseline.
               - name: Thanos Receive High Replication Failures
                 description: "Thanos Receive {{$labels.job}} is failing to replicate {{$value | humanize}}% of requests."
                 query: 'thanos_receive_replication_factor > 1 and ((sum by (job) (rate(thanos_receive_replications_total{result="error"}[5m])) / sum by (job) (rate(thanos_receive_replications_total[5m]))) > (max by (job) (floor((thanos_receive_replication_factor+1)/ 2)) / max by (job) (thanos_receive_hashring_nodes))) * 100'
@@ -6850,10 +6933,10 @@ groups:
               - name: Thanos Sidecar Bucket Operations Failed
                 description: "Thanos Sidecar {{$labels.instance}} bucket operations are failing ({{ $value | humanize }}/s)."
                 query: 'sum by (job, instance) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-sidecar.*"}[5m])) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
           - name: Thanos Store
             slug: thanos-store
             rules:
@@ -6870,6 +6953,8 @@ groups:
                 query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_bucket_store_series_gate_duration_seconds_bucket[5m]))) > 2 and sum by (job) (rate(thanos_bucket_store_series_gate_duration_seconds_count[5m])) > 0)'
                 severity: warning
                 for: 10m
+                comments: |
+                  2s threshold is a rough default; gate latency scales with your query concurrency and data volume — adjust based on your baseline.
               - name: Thanos Store Bucket High Operation Failures
                 description: "Thanos Store {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations."
                 query: '(sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-store.*"}[5m])) / sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) * 100 > 5) and sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~".*thanos-store.*"}[5m])) > 0'
@@ -6880,6 +6965,8 @@ groups:
                 query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_objstore_bucket_operation_duration_seconds_bucket{job=~".*thanos-store.*"}[5m]))) > 2 and  sum by (job) (rate(thanos_objstore_bucket_operation_duration_seconds_count{job=~".*thanos-store.*"}[5m])) > 0)'
                 severity: warning
                 for: 10m
+                comments: |
+                  2s threshold is a rough default; object storage latency depends on your backend (S3 vs GCS vs local) and network path — adjust based on your baseline.
           - name: Thanos Ruler
             slug: thanos-ruler
             rules:
@@ -6929,10 +7016,10 @@ groups:
               - name: Thanos Rule High Rule Evaluation Warnings
                 description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings ({{ $value | humanize }}/s)."
                 query: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total[5m])) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: info
                 for: 15m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Thanos Rule No Evaluation For10 Intervals
                 description: "Thanos Rule {{$labels.job}} has rule groups that did not evaluate for at least 10x of their expected interval."
                 query: 'time() -  max by (job, instance, group) (prometheus_rule_group_last_evaluation_timestamp_seconds{job=~".*thanos-rule.*"})>10 * max by (job, instance, group) (prometheus_rule_group_interval_seconds{job=~".*thanos-rule.*"})'
@@ -6962,6 +7049,8 @@ groups:
                 query: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_replicate_replication_run_duration_seconds_bucket[5m]))) > 20 and  sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_count[5m])) > 0)'
                 severity: critical
                 for: 5m
+                comments: |
+                  20s threshold is a rough default; replication latency depends on your data volume and object storage backend — adjust based on your baseline.
           - name: Thanos Component Absent
             slug: thanos-component-absent
             rules:
@@ -7032,6 +7121,8 @@ groups:
                 query: "min(time() - (loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds > 0)) by (cluster, namespace) > 10800 or max(max_over_time(loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds[3h])) by (cluster, namespace) == 0"
                 severity: critical
                 for: 1h
+                comments: |
+                  3-hour threshold is a rough default; depends on your ingestion volume and configured compaction schedule — adjust based on your workload.
               #
               # Performance and errors (RED)
               #
@@ -7050,7 +7141,7 @@ groups:
                 severity: critical
                 for: 5m
                 comments: |
-                  1s p99 latency threshold is a rough default; acceptable latency varies by route and your SLA — adjust based on your baseline.
+                  1s p99 latency threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
               - name: Loki process too many restarts
                 description: A loki process had too many restarts (target {{ $labels.instance }})
                 query: changes(process_start_time_seconds{job=~".*loki.*"}[15m]) > 2
@@ -7079,6 +7170,8 @@ groups:
                 query: histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[5m])) by (namespace, job, route, le)) > 1
                 severity: critical
                 for: 5m
+                comments: |
+                  1s p99 latency threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
               - name: Promtail file not being tailed
                 description: Promtail matched a log file with its configured glob pattern but is not reading any bytes from it, which may indicate a permissions issue or a file watcher problem (instance {{ $labels.instance }}).
                 query: "promtail_file_bytes_total unless promtail_read_bytes_total"
@@ -7123,15 +7216,15 @@ groups:
               - name: Cortex notifications are being dropped
                 description: "Cortex notifications are being dropped due to errors (instance {{ $labels.instance }}, {{ $value | humanize }}/s)."
                 query: rate(cortex_prometheus_notifications_dropped_total[5m]) > 0.05
+                severity: critical
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
-                severity: critical
               - name: Cortex notification errors
                 description: "Cortex is failing when sending alert notifications (instance {{ $labels.instance }}, {{ $value | humanize }}/s)."
                 query: rate(cortex_prometheus_notifications_errors_total[5m]) > 0.05
+                severity: critical
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
-                severity: critical
               - name: Cortex ingester unhealthy
                 description: Cortex has an unhealthy ingester
                 query: cortex_ring_members{state="Unhealthy", name="ingester"} > 0
@@ -7197,6 +7290,8 @@ groups:
                 query: "(time() - cortex_compactor_last_successful_run_timestamp_seconds > 86400) and (cortex_compactor_last_successful_run_timestamp_seconds > 0)"
                 severity: critical
                 for: 15m
+                comments: |
+                  24-hour threshold is a rough default; depends on your ingestion volume and configured compaction schedule — adjust based on your workload.
               - name: Cortex Alertmanager ring check failing
                 description: Cortex Alertmanager {{ $labels.instance }} is unable to check tenant ownership via the ring, which can cause misrouted or dropped alert notifications.
                 query: "rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0.05"
@@ -7336,11 +7431,15 @@ groups:
                 query: 'min by (job, partition) (tempo_ingest_group_partition_lag_seconds{container="live-store"}) > 300'
                 severity: critical
                 for: 2m
+                comments: |
+                  300s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
               - name: Tempo live store partition lag critical
                 description: Tempo live-store {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; recent traces on this partition may be significantly delayed.
                 query: 'tempo_ingest_group_partition_lag_seconds{container="live-store"} > 1200'
                 severity: critical
                 for: 2m
+                comments: |
+                  1200s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
               - name: Tempo live store partitions unowned
                 description: "{{ $labels.job }} has live-store partitions with no owner in the partition ring; spans for those partitions are fully unqueryable."
                 query: 'max by (job) (tempo_partition_ring_partitions{name="livestore-partitions", state=~"Active|Inactive"}) > count(count by (partition, job) (tempo_live_store_partition_owned)) by (job)'
@@ -7351,6 +7450,8 @@ groups:
                 query: 'tempo_ingest_group_partition_lag_seconds{container="block-builder"} > 300'
                 severity: critical
                 for: 2m
+                comments: |
+                  300s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
               - name: Tempo backend scheduler jobs failing
                 description: 'Tempo backend-scheduler job failure rate is {{ printf "%.2f" $value }}% for {{ $labels.job }}, indicating compaction jobs are failing in the backend-scheduler/backend-worker pipeline.'
                 query: "100 * sum by (job) (increase(tempo_backend_scheduler_jobs_failed_total[5m])) / sum by (job) (increase(tempo_backend_scheduler_jobs_created_total[5m])) > 5 and sum by (job) (increase(tempo_backend_scheduler_jobs_created_total[5m])) > 0"
@@ -7361,6 +7462,8 @@ groups:
                 query: 'tempo_ingest_group_partition_lag_seconds{container="metrics-generator"} > 900'
                 severity: critical
                 for: 2m
+                comments: |
+                  900s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
               - name: Tempo block builders partitions mismatch
                 description: "{{ $labels.job }} has more live-store partitions in the partition ring than block-builders currently own, indicating stuck or misconfigured partition ownership."
                 query: 'max by (job) (tempo_partition_ring_partitions{name="livestore-partitions", state=~"Active|Inactive"}) > sum by (job) (tempo_block_builder_owned_partitions)'
@@ -7395,6 +7498,8 @@ groups:
                 query: 'tempo_ingest_group_partition_lag_seconds{container="live-store"} > 200'
                 severity: warning
                 for: 2m
+                comments: |
+                  200s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
               - name: Tempo block builder partition lag warning
                 description: Tempo block-builder {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; traces are delayed in being flushed into durable blocks.
                 query: 'avg_over_time(tempo_ingest_group_partition_lag_seconds{container="block-builder"}[6m]) > 200'
@@ -7434,6 +7539,8 @@ groups:
                 query: (time() - cortex_compactor_last_successful_run_timestamp_seconds > 86400) and cortex_compactor_last_successful_run_timestamp_seconds > 0
                 severity: critical
                 for: 15m
+                comments: |
+                  24-hour threshold is a rough default; depends on your ingestion volume and configured compaction schedule — adjust based on your workload.
               - name: Mimir ruler missed evaluations
                 description: 'Mimir ruler {{ $labels.instance }} is missing {{ printf "%.2f" $value }}% of rule group evaluations.'
                 query: '100 * sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 5 and sum by (instance, job) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 0'
@@ -7475,14 +7582,16 @@ groups:
               - name: Mimir compactor has run out of disk space
                 description: Mimir compactor {{ $labels.instance }} has run out of disk space.
                 query: delta(cortex_compactor_disk_out_of_space_errors_total[24h]) >= 1
+                severity: critical
                 comments: |
                   cortex_compactor_disk_out_of_space_errors_total is declared as gauge by Mimir despite the _total suffix, so delta() is used instead of increase().
-                severity: critical
               - name: Mimir ingester has unshipped blocks
                 description: Mimir ingester {{ $labels.instance }} compacted its TSDB head into a local block more than 1 hour ago but has not yet uploaded it to object storage.
                 query: "(time() - cortex_ingester_oldest_unshipped_block_timestamp_seconds > 3600) and (cortex_ingester_oldest_unshipped_block_timestamp_seconds > 0)"
                 severity: critical
                 for: 15m
+                comments: |
+                  1-hour threshold is a rough default; upload time depends on your object storage backend and network bandwidth — adjust based on your baseline.
               - name: Mimir reaching TCP connections limit
                 description: 'Mimir instance {{ $labels.instance }} is using {{ printf "%.0f" $value }}% of its TCP connections limit.'
                 query: cortex_tcp_connections / cortex_tcp_connections_limit * 100 > 80 and cortex_tcp_connections_limit > 0
@@ -7554,20 +7663,24 @@ groups:
               - name: Mimir store gateway has not synced bucket
                 description: Mimir store-gateway {{ $labels.instance }} has not synced the bucket for more than 30 minutes.
                 query: (time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 1800) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0
-                comments: |
-                  Threshold of 30 minutes. Adjust based on your sync interval.
                 severity: critical
                 for: 5m
+                comments: |
+                  Threshold of 30 minutes. Adjust based on your sync interval.
               - name: Mimir bucket index not updated
                 description: 'Mimir bucket index for tenant {{ $labels.user }} has not been updated for more than 35 minutes.'
                 query: min by (user, job) (time() - cortex_bucket_index_last_successful_update_timestamp_seconds) > 2100
                 severity: critical
+                comments: |
+                  35-minute threshold is a rough default; depends on your tenant activity and configured update cadence — adjust based on your workload.
               # Compactor
               - name: Mimir compactor not cleaning up blocks
                 description: Mimir compactor {{ $labels.instance }} has not cleaned up blocks in the last 6 hours.
                 query: (time() - cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 21600) and cortex_compactor_block_cleanup_last_successful_run_timestamp_seconds > 0
                 severity: critical
                 for: 1h
+                comments: |
+                  6-hour threshold is a rough default; depends on your ingestion volume and configured compaction schedule — adjust based on your workload.
               - name: Mimir compactor has consecutive failures
                 description: "Mimir compactor {{ $labels.instance }} has had {{ $value }} compaction failures in the last 2 hours."
                 query: increase(cortex_compactor_runs_failed_total{reason!="shutdown"}[2h]) > 1
@@ -7590,10 +7703,10 @@ groups:
               - name: Mimir ruler failed ring check
                 description: Mimir ruler {{ $labels.job }} is failing ring checks ({{ $value | humanize }}/s).
                 query: sum by (job) (rate(cortex_ruler_ring_check_errors_total[5m])) > 0.05
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               # Alertmanager
               - name: Mimir alertmanager sync configs failing
                 description: "Mimir alertmanager {{ $labels.job }} is failing to sync configs ({{ $value | humanize }}/s)."
@@ -7642,6 +7755,8 @@ groups:
                 query: "(time() - cortex_ingester_shipper_last_successful_upload_timestamp_seconds > 4 * 3600) and (cortex_ingester_shipper_last_successful_upload_timestamp_seconds > 0) and (rate(cortex_ingester_ingested_samples_total[5m]) > 0)"
                 severity: critical
                 for: 15m
+                comments: |
+                  4-hour threshold is a rough default; upload cadence depends on your object storage backend and network bandwidth — adjust based on your baseline.
               - name: Mimir ingester TSDB WAL corrupted
                 description: Mimir ingester in {{ $labels.job }} detected a corrupted TSDB write-ahead log, risking sample loss when the ingester restarts and replays the WAL.
                 query: "count by (job) (rate(cortex_ingester_tsdb_wal_corruptions_total[5m]) > 0) > 1"
@@ -7670,10 +7785,10 @@ groups:
               - name: Mimir store gateway too many failed operations
                 description: Mimir store-gateway {{ $labels.job }} bucket operations are failing ({{ $value | humanize }}/s).
                 query: sum by (job) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0.05
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: Mimir ring members mismatch
                 description: Mimir {{ $labels.name }} ring has inconsistent member counts across instances.
                 query: max by (name, job) (sum by (name, job, instance) (cortex_ring_members)) != min by (name, job) (sum by (name, job, instance) (cortex_ring_members))
@@ -7694,10 +7809,10 @@ groups:
               - name: Mimir compactor skipped blocks
                 description: "Mimir compactor has found {{ $value }} blocks that cannot be compacted (reason {{ $labels.reason }})."
                 query: increase(cortex_compactor_blocks_marked_for_no_compaction_total[24h]) > 0
-                comments: |
-                  Using a 24h window as compaction skips are rare events.
                 severity: warning
                 for: 5m
+                comments: |
+                  Using a 24h window as compaction skips are rare events.
               # Ruler
               - name: Mimir alertmanager initial sync failed
                 description: Mimir alertmanager {{ $labels.job }} failed initial state sync.
@@ -7737,6 +7852,8 @@ groups:
                 query: 'histogram_quantile(0.99, sum by (job, route, le) (rate(cortex_request_duration_seconds_bucket{route!~"ready|debug_pprof"}[5m]))) > 2.5'
                 severity: warning
                 for: 15m
+                comments: |
+                  2.5s threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
               #
               # Info, security, and config
               #
@@ -7833,24 +7950,24 @@ groups:
               - name: OpenTelemetry Collector receiver refused spans
                 description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s spans on {{ $labels.receiver }}."
                 query: 'rate(otelcol_receiver_refused_spans[5m]) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: OpenTelemetry Collector receiver refused metric points
                 description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s metric points on {{ $labels.receiver }}."
                 query: 'rate(otelcol_receiver_refused_metric_points[5m]) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: OpenTelemetry Collector receiver refused log records
                 description: "OpenTelemetry Collector is refusing {{ $value | humanize }}/s log records on {{ $labels.receiver }}."
                 query: 'rate(otelcol_receiver_refused_log_records[5m]) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: critical
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: OpenTelemetry Collector OTLP receiver errors
                 description: "OpenTelemetry Collector OTLP receiver is completely failing - all spans are being refused"
                 query: 'rate(otelcol_receiver_accepted_spans{receiver=~"otlp"}[5m]) == 0 and rate(otelcol_receiver_refused_spans{receiver=~"otlp"}[5m]) > 0'
@@ -7859,24 +7976,24 @@ groups:
               - name: OpenTelemetry Collector exporter failed spans
                 description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s spans via {{ $labels.exporter }}."
                 query: 'rate(otelcol_exporter_send_failed_spans[5m]) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: OpenTelemetry Collector exporter failed metric points
                 description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s metric points via {{ $labels.exporter }}."
                 query: 'rate(otelcol_exporter_send_failed_metric_points[5m]) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: OpenTelemetry Collector exporter failed log records
                 description: "OpenTelemetry Collector failing to send {{ $value | humanize }}/s log records via {{ $labels.exporter }}."
                 query: 'rate(otelcol_exporter_send_failed_log_records[5m]) > 0.05'
-                comments: |
-                  Threshold of 0.05/s avoids firing on transient single-event spikes.
                 severity: warning
                 for: 5m
+                comments: |
+                  Threshold of 0.05/s avoids firing on transient single-event spikes.
               - name: OpenTelemetry Collector exporter queue nearly full
                 description: "OpenTelemetry Collector exporter {{ $labels.exporter }} queue is over 80% full"
                 query: '(otelcol_exporter_queue_size / on(instance, job, exporter) otelcol_exporter_queue_capacity) > 0.8 and otelcol_exporter_queue_capacity > 0'
@@ -7884,19 +8001,19 @@ groups:
               - name: OpenTelemetry Collector processor refused spans
                 description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing spans ({{ $value | humanize }}/s), likely due to backpressure."
                 query: 'rate(otelcol_processor_refused_spans[5m]) > 0.05'
+                severity: warning
+                for: 5m
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
                   These processor metrics are deprecated since collector v0.110.0.
-                severity: warning
-                for: 5m
               - name: OpenTelemetry Collector processor refused metric points
                 description: "OpenTelemetry Collector processor {{ $labels.processor }} is refusing metric points ({{ $value | humanize }}/s), likely due to backpressure."
                 query: 'rate(otelcol_processor_refused_metric_points[5m]) > 0.05'
+                severity: warning
+                for: 5m
                 comments: |
                   Threshold of 0.05/s avoids firing on transient single-event spikes.
                   These processor metrics are deprecated since collector v0.110.0.
-                severity: warning
-                for: 5m
               - name: OpenTelemetry Collector exporter enqueue failed spans
                 description: OpenTelemetry Collector exporter {{ $labels.exporter }} is dropping {{ $value | humanize }}/s spans because its sending queue is full and rejects new items before they can be queued.
                 query: "rate(otelcol_exporter_enqueue_failed_spans_total[5m]) > 0.05"
@@ -8063,6 +8180,8 @@ groups:
                 query: "histogram_quantile(0.99, sum by (le, instance, job, namespace) (rate(jaeger_collector_save_latency_bucket[5m]))) > 0.5"
                 severity: warning
                 for: 5m
+                comments: |
+                  0.5s threshold is a rough default; write latency depends on your storage backend and span ingestion volume — adjust based on your baseline.
               - name: Jaeger Cassandra writes failing
                 description: Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of writes to the Cassandra storage backend, which can lead to permanent span data loss.
                 query: "100 * sum(rate(jaeger_cassandra_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_cassandra_attempts_total[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_cassandra_attempts_total[1m])) by (instance, job, namespace) > 0"
@@ -8182,8 +8301,8 @@ groups:
                 severity: warning
                 for: 5m
                 comments: |
-                  The threshold (1) is in USD. The `model` label carries the resolved model-name (post-routing). 
-                  PromQL `increase()` requires ≥2 datapoints with growth-difference to extrapolate positive — 
+                  The threshold (1) is in USD. The `model` label carries the resolved model-name (post-routing).
+                  PromQL `increase()` requires ≥2 datapoints with growth-difference to extrapolate positive —
                   for brand-new counter series this needs ≥2 distinct request bursts ≥1 scrape-cycle apart.
               #
               # Performance and errors (RED)
@@ -8200,3 +8319,5 @@ groups:
                 query: 'histogram_quantile(0.95, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le)) > 10'
                 severity: warning
                 for: 10m
+                comments: |
+                  10s threshold is a rough default; end-to-end latency depends heavily on which downstream LLM provider/model you route to — adjust based on your baseline.
