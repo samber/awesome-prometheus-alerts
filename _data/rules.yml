@@ -272,10 +272,6 @@ groups:
                 query: "(node_filesystem_files_free / node_filesystem_files < .10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) and node_filesystem_files > 0"
                 severity: critical
                 for: 2m
-              - name: Host disk IO utilization high
-                description: Disk utilization is high (> 80%)
-                query: "(rate(node_disk_io_time_seconds_total[5m]) > .80)"
-                severity: warning
               - name: Host disk may fill in 24 hours
                 description: Filesystem will likely run out of space within the next 24 hours.
                 query: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[3h], 86400) <= 0 and node_filesystem_avail_bytes > 0 and node_filesystem_readonly == 0'
