@@ -29,7 +29,7 @@
     "@eslint/js": "^10.0.1",
     "@types/js-yaml": "^4.0.0",
     "eslint": "^10.6.0",
-    "eslint-plugin-astro": "^1.7.0",
+    "eslint-plugin-astro": "^3.0.1",
     "globals": "^17.7.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1"
