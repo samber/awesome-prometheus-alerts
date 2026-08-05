@@ -177,6 +177,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 
 - [APC UPS](https://samber.github.io/awesome-prometheus-alerts/rules#apc-ups)
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
+- [OutageDeck](https://samber.github.io/awesome-prometheus-alerts/rules#outagedeck)
 
 ## 🤝 Contributing
 
