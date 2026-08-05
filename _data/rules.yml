@@ -8317,3 +8317,44 @@ groups:
                 for: 10m
                 comments: |
                   10s threshold is a rough default; end-to-end latency depends heavily on which downstream LLM provider/model you route to — adjust based on your baseline.
+
+      - name: OutageDeck
+        logo: /images/services/outagedeck.svg
+        exporters:
+          - name: OutageDeck Prometheus exporter
+            slug: outagedeck-prometheus-exporter
+            doc_url: https://github.com/outagedeck/prometheus-exporter
+            rules:
+              #
+              # Availability
+              #
+              - name: OutageDeck provider disruption
+                description: "{{ $labels.name }} is degraded or reporting a partial outage according to its official status source."
+                query: "outagedeck_provider_status_code >= 3 and outagedeck_provider_status_code < 5"
+                severity: warning
+                for: 2m
+              - name: OutageDeck provider major outage
+                description: "{{ $labels.name }} is reporting a major outage according to its official status source."
+                query: "outagedeck_provider_status_code == 5"
+                severity: critical
+                for: 2m
+              - name: OutageDeck provider status unknown
+                description: "OutageDeck cannot normalize the current status reported for {{ $labels.name }}."
+                query: "outagedeck_provider_status_code == 0"
+                severity: warning
+                for: 10m
+              - name: OutageDeck service disruption
+                description: "{{ $labels.name }} is degraded or reporting an outage according to its official status source."
+                query: "outagedeck_service_status_code >= 3"
+                severity: warning
+                for: 2m
+              - name: OutageDeck refresh failed
+                description: "The OutageDeck exporter cannot refresh {{ $labels.provider }}, usually because the API is unavailable, rate-limited, or unreachable."
+                query: "outagedeck_scrape_success == 0"
+                severity: warning
+                for: 10m
+              - name: OutageDeck source data stale
+                description: "The latest official-source observation for {{ $labels.name }} is more than 15 minutes old, so its status may no longer be current."
+                query: "outagedeck_provider_source_age_seconds > 900"
+                severity: warning
+                for: 5m
