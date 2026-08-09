@@ -443,6 +443,10 @@ groups:
               # (vm_event_item, mutated only by raw_cpu_inc), i.e. a counter that resets on reboot only.
               # increase() corrects that reset; delta() would swing negative across it — which is exactly
               # the reboot that an OOM storm tends to end in.
+              - name: Host rebooted
+                description: Node {{ $labels.instance }} uptime is less than 3 minutes.
+                query: (time() - node_boot_time_seconds) < 180
+                severity: info
 
       - name: S.M.A.R.T Device Monitoring
         logo: /images/services/s-m-a-r-t-device-monitoring.svg
