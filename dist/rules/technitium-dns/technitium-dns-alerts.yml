@@ -1,0 +1,194 @@
+# Technitium DNS alerting rules
+
+# https://github.com/guycalledseven/technitium-dns-prometheus-exporter
+
+# Two things to adjust before enabling
+# ---------------------------------------------------------------------------
+#
+# 1. Job name. Every rule matches `job=~"technitium.*"`.
+#
+# 2. Aggregations use `by (job, server)`. `server` is the exporter's own label
+#    (SERVER_LABEL in single mode, one per node in cluster mode). If several
+#    exporters share one job name, add `instance` to every `by (...)` or the
+#    rules will collapse them into each other.
+#
+# ---------------------------------------------------------------------------
+
+groups:
+
+  # =========================================================================
+  # DNS is down, or about to be
+  # =========================================================================
+  - name: technitium-availability
+    interval: 1m
+    rules:
+
+      - alert: TechnitiumExporterDown
+        expr: up{job=~"technitium.*"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Technitium exporter target is down ({{ $labels.instance }})"
+          description: >-
+            Prometheus can't scrape {{ $labels.instance }}, so every Technitium
+            alert below this one is blind until the target comes back.
+          action: >-
+            Check the exporter container is running and that port 9105 answers
+            from the Prometheus host, then read the exporter log.
+
+      - alert: TechnitiumTargetMissing
+        expr: absent(up{job=~"technitium.*"})
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No Technitium scrape target exists in Prometheus"
+          description: >-
+            Prometheus knows of no target matching job=~"technitium.*" at all.
+            The job was renamed, dropped by relabeling, or lost from service
+            discovery, and the remaining rules in this file have nothing to
+            evaluate against.
+          action: >-
+            Compare the scrape_config job name with what /targets actually
+            lists, then walk the service discovery and relabel rules that
+            could have dropped it.
+
+      - alert: TechnitiumApiUnreachable
+        expr: technitium_up{job=~"technitium.*"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Technitium API not answering for {{ $labels.server }}"
+          description: >-
+            The exporter itself is fine, but /api/dashboard/stats/get returned
+            nothing for {{ $labels.server }}. In cluster mode that is usually a
+            dead node, or a controller that can no longer proxy to one.
+          action: >-
+            The exporter log names the failing node and endpoint, so start
+            there. If the node is alive, suspect TECHNITIUM_TOKEN: a revoked
+            token, or one whose account lost Dashboard: View, looks exactly
+            like a dead node from this side. Technitium API tokens don't
+            expire, so rotation is a dead end; look instead for a deleted
+            session, a disabled account, or a session token pasted in where an
+            API token belongs.
+
+      - alert: TechnitiumRealtimeMetricsMissing
+        expr: absent_over_time(technitium_dns_realtime_queries_total{category="all",job=~"technitium.*"}[15m]) and on () (max(technitium_up{job=~"technitium.*"}) == 1)
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Technitium realtime query counters have stopped arriving"
+          description: >-
+            technitium_up still reads 1, yet technitium_dns_realtime_queries_total
+            hasn't shown up for 15 minutes. While this fires, the SERVFAIL and
+            no-queries alerts have no series left to evaluate.
+          action: >-
+            grep the exporter log for "Realtime metrics request failed". The
+            usual causes are an unreachable /api/dashboard/metrics/text, a
+            token account that no longer holds Dashboard: View, or a Technitium
+            upgrade that renamed the counters. That endpoint is documented as
+            experimental and 15.1 already renamed every one of them once.
+
+      - alert: TechnitiumExporterScrapeSlow
+        expr: technitium_scrape_duration_seconds{job=~"technitium.*"} > 5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Exporter scrape on {{ $labels.instance }} taking {{ $value | printf \"%.1f\" }}s"
+          description: >-
+            Halfway to Prometheus' 10s default scrape_timeout. Cross it and
+            every Technitium metric goes stale in the same instant, with
+            TechnitiumExporterDown firing as though the exporter had crashed.
+          action: >-
+            The API is slow far more often than the exporter is, so time
+            /api/dashboard/stats/get by hand first. In cluster mode, check each
+            name in TECHNITIUM_NODES: nodes are scraped in series, so a single
+            unresponsive one holds up every metric behind it.
+
+  # =========================================================================
+  # DNS is up but not resolving
+  # =========================================================================
+  - name: technitium-resolution
+    interval: 1m
+    rules:
+
+      - alert: TechnitiumNoQueries
+        expr: sum by (job, server) (rate(technitium_dns_realtime_queries_total{category="all",job=~"technitium.*"}[15m])) == 0
+        for: 15m
+        keep_firing_for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.server }} has served no DNS queries for 30 minutes"
+          description: >-
+            The API answers while the query counters sit frozen. Either nothing
+            is bound on port 53, a firewall ate it, or the clients gave up and
+            failed over to some other resolver a while ago.
+          action: >-
+            Run `dig @<server> example.com` from a client subnet. If it times
+            out, check the configured listening endpoints and the host firewall.
+
+      # Threshold borrowed from the CoreDNS mixin's CoreDNSErrorsHigh: 3% over
+      # 5m, held 10m.
+      #
+      # The uptime guard is there because Technitium dumps SERVFAILs while its
+      # upstreams come up. On this instance that was 82 SERVFAILs, 8.0% of all
+      # queries, in the first ~333s after a restart, then a flat 0.00% for the
+      # next five minutes. Without the guard, every DNS restart pages you.
+      - alert: TechnitiumHighServfailRate
+        expr: 100 * (sum by (job, server) (rate(technitium_dns_realtime_queries_total{category="servfail",job=~"technitium.*"}[5m])) / sum by (job, server) (rate(technitium_dns_realtime_queries_total{category="all",job=~"technitium.*"}[5m]))) > 3 and sum by (job, server) (rate(technitium_dns_realtime_queries_total{category="all",job=~"technitium.*"}[5m])) > 0.2 and on (job, server) (technitium_realtime_uptime_seconds{job=~"technitium.*"} > 600)
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $value | printf \"%.1f\" }}% SERVFAIL on {{ $labels.server }}"
+          description: >-
+            Clients are getting outright resolution failures rather than slow
+            answers.
+          action: >-
+            From the DNS host, `dig @<upstream> example.com` against each
+            upstream in turn. If they all answer, check that recursion is still
+            enabled and that DNSSEC validation isn't failing on a domain the
+            clients actually use.
+
+  # =========================================================================
+  # Blocking silently stopped
+  # =========================================================================
+  - name: technitium-blocking
+    interval: 1m
+    rules:
+
+      - alert: TechnitiumBlockListCollapsed
+        expr: technitium_dns_blocklist_zones{job=~"technitium.*"} < 0.5 * max_over_time(technitium_dns_blocklist_zones{job=~"technitium.*"}[1w]) and max_over_time(technitium_dns_blocklist_zones{job=~"technitium.*"}[1w]) > 100
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Block list on {{ $labels.server }} down to {{ $value }} zones"
+          description: >-
+            Under half the 7-day peak. The scheduled block-list download either
+            failed outright or came back truncated, and ad and tracker blocking
+            is degraded or gone.
+          action: >-
+            Fetch each block-list URL by hand from the DNS host, compare line
+            counts against what Technitium reports, then trigger a manual
+            update.
+
+      - alert: TechnitiumBlockListShrinking
+        expr: technitium_dns_blocklist_zones{job=~"technitium.*"} < 0.9 * max_over_time(technitium_dns_blocklist_zones{job=~"technitium.*"}[1w]) and technitium_dns_blocklist_zones{job=~"technitium.*"} >= 0.5 * max_over_time(technitium_dns_blocklist_zones{job=~"technitium.*"}[1w]) and max_over_time(technitium_dns_blocklist_zones{job=~"technitium.*"}[1w]) > 100
+        for: 6h
+        labels:
+          severity: info
+        annotations:
+          summary: "Block list on {{ $labels.server }} shrank to {{ $value }} zones"
+          description: >-
+            More than 10% below the 7-day peak, six hours running. With several
+            feeds configured this normally means one of them is failing or got
+            truncated upstream.
+          action: >-
+            Compare per-feed zone counts in the Technitium block-list settings
+            against their last known-good sizes.
