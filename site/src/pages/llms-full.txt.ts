@@ -17,7 +17,7 @@ export const GET: APIRoute = () => {
             .flatMap((exporter) =>
               (exporter.rules ?? []).map((rule) => {
                 const forPart = rule.for ? `, for: ${rule.for}` : '';
-                return `  - **${rule.name}** (severity: ${rule.severity}${forPart})\n    ${rule.description}\n    \`${rule.query}\``;
+                return `  - **${rule.name}** (severity: ${rule.severity}${forPart})\n    ${rule.description}`;
               })
             )
             .join('\n');

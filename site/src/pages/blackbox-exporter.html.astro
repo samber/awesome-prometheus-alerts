@@ -9,7 +9,6 @@ const canonicalUrl = `${SITE_ORIGIN}${destination}`;
   <head>
     <meta charset="utf-8" />
     <title>Redirecting…</title>
-    <meta name="robots" content="noindex,follow" />
     <link rel="canonical" href={canonicalUrl} />
     <meta http-equiv="refresh" content={`0; url=${destination}`} />
   </head>
