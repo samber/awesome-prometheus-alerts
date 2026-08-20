@@ -1,13 +1,16 @@
 ---
+import { SITE_ORIGIN } from '../data/site';
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const destination = `${base}/rules/`;
+const canonicalUrl = `${SITE_ORIGIN}${destination}`;
 ---
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Redirecting…</title>
-    <link rel="canonical" href={destination} />
+    <meta name="robots" content="noindex,follow" />
+    <link rel="canonical" href={canonicalUrl} />
     <meta http-equiv="refresh" content={`0; url=${destination}`} />
   </head>
   <body>

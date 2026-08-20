@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ServiceCard from '../../components/ServiceCard.astro';
 import CautionBanner from '../../components/CautionBanner.astro';
 import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, buildRedirectMap } from '../../data/rules';
@@ -48,8 +49,10 @@ const jsonLd = {
   </script>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Breadcrumbs items={[{ label: 'Rules' }]} base={base} />
+
     <!-- Header -->
-    <div class="mb-8">
+    <div class="mt-6 mb-8">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Prometheus Alert Rules</h1>
       <p class="text-slate-500 dark:text-slate-400">
         {totalRules} alerting rules across {totalServices} services and {data.groups.length} categories.

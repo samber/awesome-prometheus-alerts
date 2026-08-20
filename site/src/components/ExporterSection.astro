@@ -1,5 +1,5 @@
 ---
-import type { Exporter, Service } from '../data/rules';
+import type { Exporter, Rule, Service } from '../data/rules';
 import { formatExporterAsYaml, getDistUrl } from '../data/rules';
 import RuleCard from './RuleCard.astro';
 import CopyButton from './CopyButton.astro';
@@ -15,6 +15,7 @@ interface Props {
   serviceSlug: string;
   exporterIndex: number;
   showExporterNumber: boolean;
+  ruleAnchors: Map<Rule, string>;
   base: string;
 }
 
@@ -28,6 +29,7 @@ const {
   serviceSlug,
   exporterIndex,
   showExporterNumber,
+  ruleAnchors,
   base,
 } = Astro.props;
 
@@ -151,7 +153,10 @@ const exporterPrefix = showExporterNumber
   ) : (
     <div>
       {exporter.rules.map((rule, ruleIdx) => {
-        const anchorId = `rule-${groupIndex}-${serviceIndex}-${exporterIndex}-${ruleIdx + 1}`;
+        // Legacy positional anchor, kept as a secondary in-page target so links shared
+        // before rule anchors became name-based (see getRuleAnchorMap) still scroll to place.
+        const legacyAnchorId = `rule-${groupIndex}-${serviceIndex}-${exporterIndex}-${ruleIdx + 1}`;
+        const anchorId = ruleAnchors.get(rule) ?? legacyAnchorId;
         const ruleNumber = showExporterNumber
           ? `${groupIndex}.${serviceIndex}.${exporterIndex}.${ruleIdx + 1}.`
           : `${groupIndex}.${serviceIndex}.${ruleIdx + 1}.`;
@@ -159,6 +164,7 @@ const exporterPrefix = showExporterNumber
           <RuleCard
             rule={rule}
             anchorId={anchorId}
+            legacyAnchorId={legacyAnchorId !== anchorId ? legacyAnchorId : undefined}
             ruleNumber={ruleNumber}
             copyData={{
               name: 'rule_copy',

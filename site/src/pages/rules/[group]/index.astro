@@ -3,7 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import ServiceCard from '../../../components/ServiceCard.astro';
 import CautionBanner from '../../../components/CautionBanner.astro';
-import { data, getGroupSlug, getServiceSlug, getRuleCount } from '../../../data/rules';
+import { data, getGroupSlug, getServiceSlug, getRuleCount, RULES_DATA_MODIFIED } from '../../../data/rules';
 import { SITE_URL, schemaWebSite, SITE_DATE_PUBLISHED } from '../../../data/site';
 
 export function getStaticPaths() {
@@ -24,7 +24,7 @@ const serviceList = serviceNames.slice(0, 5).join(', ') + (serviceNames.length >
 const groupDesc = `Browse ${totalRules} Prometheus alerting rules for ${group.name} — ${serviceList}. Copy-paste ready YAML for ${group.name} monitoring.`;
 
 const pageUrl = `${SITE_URL}rules/${groupSlug}/`;
-const buildDate = new Date().toISOString().slice(0, 10);
+const buildDate = RULES_DATA_MODIFIED;
 
 const jsonLd = {
   '@context': 'https://schema.org',

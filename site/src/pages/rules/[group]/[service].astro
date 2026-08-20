@@ -5,7 +5,7 @@ import Sidebar from '../../../components/Sidebar.astro';
 import ExporterSection from '../../../components/ExporterSection.astro';
 import CautionBanner from '../../../components/CautionBanner.astro';
 import ServiceLogo from '../../../components/ServiceLogo.astro';
-import { data, getGroupSlug, getServiceSlug, getRuleCount, getAllServices } from '../../../data/rules';
+import { data, getGroupSlug, getServiceSlug, getRuleCount, getAllServices, getRuleAnchorMap, RULES_DATA_MODIFIED } from '../../../data/rules';
 import { SITE_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, SCHEMA_IN_LANGUAGE } from '../../../data/site';
 
 export function getStaticPaths() {
@@ -22,25 +22,14 @@ const serviceSlug = getServiceSlug(service);
 const ruleCount = getRuleCount(service);
 const groupIndex = data.groups.findIndex((g) => getGroupSlug(g) === groupSlug) + 1;
 const serviceIndex = group.services.findIndex((s) => getServiceSlug(s) === serviceSlug) + 1;
+const ruleAnchors = getRuleAnchorMap(service);
 
 // Build exporters summary for keywords (kept for <meta keywords> but removed from description)
 const exporterNames = service.exporters.map((e) => e.name).filter(Boolean).join(', ');
 // Description: lead with count + service + format signals. Exporter names go in keywords, not here.
 const metaDesc = `${ruleCount} ready-to-use Prometheus alert rules for ${service.name}. Critical and warning YAML snippets — copy-paste into your Prometheus config or wget download.`;
 
-// FAQ JSON-LD for GEO (AI search engines)
-const faqItems = service.exporters.flatMap((exp) =>
-  (exp.rules ?? []).map((rule) => ({
-    '@type': 'Question',
-    name: `What is the Prometheus alert rule for "${rule.name}"?`,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: `${rule.description} PromQL expression: ${rule.query}. Severity: ${rule.severity}${rule.for ? `. Duration: ${rule.for}` : ''}.`,
-    },
-  }))
-);
-
-const buildDate = new Date().toISOString().slice(0, 10);
+const buildDate = RULES_DATA_MODIFIED;
 const keywords = [
   'Prometheus', 'alerting rules', service.name, 'monitoring', 'PromQL',
   ...service.exporters.map((e) => e.name).filter(Boolean),
@@ -50,27 +39,18 @@ const pageUrl = `${SITE_URL}rules/${groupSlug}/${serviceSlug}/`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'TechArticle',
-      '@id': `${pageUrl}#article`,
-      headline: `${service.name} Prometheus Alert Rules (${ruleCount})`,
-      description: metaDesc,
-      about: `Prometheus monitoring for ${service.name}`,
-      url: pageUrl,
-      inLanguage: SCHEMA_IN_LANGUAGE,
-      datePublished: SITE_DATE_PUBLISHED,
-      dateModified: buildDate,
-      author: schemaAuthor,
-      publisher: schemaPublisher,
-      isPartOf: schemaWebSite,
-    },
-    ...(faqItems.length > 0 ? [{
-      '@type': 'FAQPage',
-      '@id': `${pageUrl}#faq`,
-      mainEntity: faqItems,
-    }] : []),
-  ],
+  '@type': 'TechArticle',
+  '@id': `${pageUrl}#article`,
+  headline: `${service.name} Prometheus Alert Rules (${ruleCount})`,
+  description: metaDesc,
+  about: `Prometheus monitoring for ${service.name}`,
+  url: pageUrl,
+  inLanguage: SCHEMA_IN_LANGUAGE,
+  datePublished: SITE_DATE_PUBLISHED,
+  dateModified: buildDate,
+  author: schemaAuthor,
+  publisher: schemaPublisher,
+  isPartOf: schemaWebSite,
 };
 ---
 
@@ -132,6 +112,7 @@ const jsonLd = {
             serviceSlug={serviceSlug}
             exporterIndex={expIdx + 1}
             showExporterNumber={service.exporters.length > 1}
+            ruleAnchors={ruleAnchors}
             base={base}
           />
         ))}

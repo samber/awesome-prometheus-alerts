@@ -2,6 +2,7 @@
 import rulesData from '../../../_data/rules.yml';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 export interface Rule {
   name: string;
@@ -62,6 +63,25 @@ if (logoProblems.length > 0) {
   );
 }
 
+/** Date of the last commit that touched `_data/rules.yml`, used as `dateModified` across
+ *  rule-derived pages instead of the build date — otherwise every page claims to be
+ *  modified on every deploy, whether or not its rules actually changed. File-level
+ *  granularity: any service's rule change bumps this for all of them, which is still far
+ *  more accurate than "always today". Falls back to the build date outside a git checkout
+ *  (e.g. a source tarball). */
+export const RULES_DATA_MODIFIED: string = (() => {
+  try {
+    const out = execFileSync(
+      'git',
+      ['log', '-1', '--format=%cI', '--', '_data/rules.yml'],
+      { cwd: path.resolve(process.cwd(), '..') }
+    ).toString().trim();
+    return out ? out.slice(0, 10) : new Date().toISOString().slice(0, 10);
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+})();
+
 /** Slugify a name for use in URLs — mirrors the dist/ workflow naming */
 export function toSlug(name: string): string {
   return name
@@ -76,6 +96,23 @@ export function getGroupSlug(group: Group): string {
 
 export function getServiceSlug(service: Service): string {
   return toSlug(service.name);
+}
+
+/** Map each rule to a stable, name-derived anchor id within a service page.
+ *  Name-derived (not positional) so inserting or reordering rules doesn't shift every
+ *  downstream permalink. Falls back to a numeric suffix on same-name collisions. */
+export function getRuleAnchorMap(service: Service): Map<Rule, string> {
+  const counts = new Map<string, number>();
+  const result = new Map<Rule, string>();
+  for (const exporter of service.exporters) {
+    for (const rule of exporter.rules ?? []) {
+      const base = `rule-${toSlug(rule.name)}`;
+      const n = (counts.get(base) ?? 0) + 1;
+      counts.set(base, n);
+      result.set(rule, n === 1 ? base : `${base}-${n}`);
+    }
+  }
+  return result;
 }
 
 /** CamelCase a rule name for the Prometheus alert name field */
