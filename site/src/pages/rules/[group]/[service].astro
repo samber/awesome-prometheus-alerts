@@ -28,6 +28,18 @@ const exporterNames = service.exporters.map((e) => e.name).filter(Boolean).join(
 // Description: lead with count + service + format signals. Exporter names go in keywords, not here.
 const metaDesc = `${ruleCount} ready-to-use Prometheus alert rules for ${service.name}. Critical and warning YAML snippets — copy-paste into your Prometheus config or wget download.`;
 
+// FAQ JSON-LD for GEO (AI search engines)
+const faqItems = service.exporters.flatMap((exp) =>
+  (exp.rules ?? []).map((rule) => ({
+    '@type': 'Question',
+    name: `What is the Prometheus alert rule for "${rule.name}"?`,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: `${rule.description} PromQL expression: ${rule.query}. Severity: ${rule.severity}${rule.for ? `. Duration: ${rule.for}` : ''}.`,
+    },
+  }))
+);
+
 const buildDate = RULES_DATA_MODIFIED;
 const keywords = [
   'Prometheus', 'alerting rules', service.name, 'monitoring', 'PromQL',
@@ -38,18 +50,27 @@ const pageUrl = `${SITE_URL}rules/${groupSlug}/${serviceSlug}/`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'TechArticle',
-  '@id': `${pageUrl}#article`,
-  headline: `${service.name} Prometheus Alert Rules (${ruleCount})`,
-  description: metaDesc,
-  about: `Prometheus monitoring for ${service.name}`,
-  url: pageUrl,
-  inLanguage: SCHEMA_IN_LANGUAGE,
-  datePublished: SITE_DATE_PUBLISHED,
-  dateModified: buildDate,
-  author: schemaAuthor,
-  publisher: schemaPublisher,
-  isPartOf: schemaWebSite,
+  '@graph': [
+    {
+      '@type': 'TechArticle',
+      '@id': `${pageUrl}#article`,
+      headline: `${service.name} Prometheus Alert Rules (${ruleCount})`,
+      description: metaDesc,
+      about: `Prometheus monitoring for ${service.name}`,
+      url: pageUrl,
+      inLanguage: SCHEMA_IN_LANGUAGE,
+      datePublished: SITE_DATE_PUBLISHED,
+      dateModified: buildDate,
+      author: schemaAuthor,
+      publisher: schemaPublisher,
+      isPartOf: schemaWebSite,
+    },
+    ...(faqItems.length > 0 ? [{
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      mainEntity: faqItems,
+    }] : []),
+  ],
 };
 ---
 
