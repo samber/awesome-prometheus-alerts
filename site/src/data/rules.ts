@@ -98,23 +98,6 @@ export function getServiceSlug(service: Service): string {
   return toSlug(service.name);
 }
 
-/** Map each rule to a stable, name-derived anchor id within a service page.
- *  Name-derived (not positional) so inserting or reordering rules doesn't shift every
- *  downstream permalink. Falls back to a numeric suffix on same-name collisions. */
-export function getRuleAnchorMap(service: Service): Map<Rule, string> {
-  const counts = new Map<string, number>();
-  const result = new Map<Rule, string>();
-  for (const exporter of service.exporters) {
-    for (const rule of exporter.rules ?? []) {
-      const base = `rule-${toSlug(rule.name)}`;
-      const n = (counts.get(base) ?? 0) + 1;
-      counts.set(base, n);
-      result.set(rule, n === 1 ? base : `${base}-${n}`);
-    }
-  }
-  return result;
-}
-
 /** CamelCase a rule name for the Prometheus alert name field */
 export function toCamelCase(name: string): string {
   return name

@@ -4,7 +4,10 @@ import sitemap from '@astrojs/sitemap';
 import icon from 'astro-icon';
 import { parse as parseYaml } from 'yaml';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function normalizeViteId(id) {
   const cleanId = id.split('?', 1)[0].split('#', 1)[0];
@@ -29,11 +32,42 @@ function yamlPlugin() {
   };
 }
 
+const toSlug = (name) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+/** Build redirect map: old flat /rules/{service} paths → new /rules/{group}/{service}/ paths */
+function buildRedirects(base) {
+  try {
+    const rulesPath = resolve(__dirname, '../_data/rules.yml');
+    const raw = readFileSync(rulesPath, 'utf-8');
+    const { groups } = parseYaml(raw, { merge: true, strict: false, uniqueKeys: false });
+    const redirects = {};
+    for (const group of groups) {
+      const groupSlug = toSlug(group.name);
+      for (const service of group.services) {
+        const serviceSlug = toSlug(service.name);
+        // Old anchor slug (spaces → hyphens only, no other substitutions)
+        const oldSlug = service.name.replace(/ /g, '-').toLowerCase();
+        const newPath = `${base}/rules/${groupSlug}/${serviceSlug}/`;
+        // Redirect from flat old path (without trailing slash; Astro handles the slash variant)
+        const oldPath = `${base}/rules/${oldSlug}`;
+        if (oldPath !== newPath && oldPath !== newPath.slice(0, -1)) {
+          redirects[oldPath] = { destination: newPath, status: 301 };
+        }
+      }
+    }
+    return redirects;
+  } catch {
+    return {};
+  }
+}
+
 const base = '/awesome-prometheus-alerts';
 
 export default defineConfig({
   site: 'https://samber.github.io',
   base,
+  redirects: { ...buildRedirects(base) },
   output: 'static',
   env: {
     schema: {
@@ -44,8 +78,10 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
-      /** Exclude the legacy `*.html` meta-refresh redirect stubs (src/pages/*.html.astro) from
-       *  the sitemap so Google only indexes canonical destinations, not the redirect intermediaries. */
+      /** Exclude redirect source URLs from the sitemap.
+       *  Astro generates static HTML redirect files for every entry in `redirects`, and the
+       *  sitemap plugin naively picks them up. We must explicitly filter them out so that Google
+       *  only indexes canonical destinations, not the redirect intermediaries. */
       filter: (page) => !page.includes('.html'),
       serialize(item) {
         const path = new URL(item.url).pathname;
