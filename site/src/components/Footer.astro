@@ -1,7 +1,7 @@
 ---
 import { sponsors } from '../data/sponsors';
 import { data, getGroupSlug } from '../data/rules';
-import { SITE_NAME, SITE_URL, GITHUB_URL, GITHUB_CONTRIBUTING_URL, GITHUB_LICENSE_URL, GITHUB_MIT_LICENSE_URL, AUTHOR_GITHUB_URL, TWITTER_HANDLE, LICENSE_CC_BY_NAME, LICENSE_MIT_NAME } from '../data/site';
+import { SITE_NAME, SITE_URL, GITHUB_URL, GITHUB_CONTRIBUTING_URL, GITHUB_LICENSE_URL, GITHUB_MIT_LICENSE_URL, AUTHOR_GITHUB_URL, TWITTER_HANDLE, LICENSE_CC_BY_NAME, LICENSE_MIT_NAME, SIBLING_AWESOME_LISTS } from '../data/site';
 
 interface Props {
   base: string;
@@ -82,7 +82,17 @@ const featuredGroups = data.groups.filter((g) => featuredGroupSlugs.includes(get
       </div>
     </div>
 
-    <div class="mt-10 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+    <div class="mt-10 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400 dark:text-slate-500">
+      <span class="font-semibold uppercase tracking-wider">More awesome lists</span>
+      {SIBLING_AWESOME_LISTS.map((list, i) => (
+        <>
+          {i > 0 && <span aria-hidden="true">·</span>}
+          <a href={list.url} class="hover:text-brand dark:hover:text-brand-dark transition-colors">{list.name}</a>
+        </>
+      ))}
+    </div>
+
+    <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
       <span>
         <a href={GITHUB_URL} class="hover:text-brand dark:hover:text-brand-dark transition-colors">awesome-prometheus-alerts</a>
         {' '}is maintained by{' '}
