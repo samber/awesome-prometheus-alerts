@@ -4,6 +4,10 @@
 
 Collection available here: **[https://samber.github.io/awesome-prometheus-alerts](https://samber.github.io/awesome-prometheus-alerts)**
 
+See also:
+- [awesome-user-research](https://github.com/samber/awesome-user-research): tools for Product Managers and UX Researchers.
+- [awesome-ai-native](https://github.com/samber/awesome-ai-native): products where the LLM is the product itself.
+
 <div align="center">
   <hr>
   <sup><b>Sponsored by:</b></sup>
