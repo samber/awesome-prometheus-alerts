@@ -5,18 +5,11 @@ groups:
   
   rules:
 
-    - alert: ConsulServiceHealthcheckFailed
-      expr: 'consul_catalog_service_node_healthy == 0'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: Consul service healthcheck failed (instance {{ $labels.instance }})
-        description: "Service: `{{ $labels.service_name }}` Healthcheck: `{{ $labels.service_id }}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # A brief drop below 3 peers is expected during a rolling restart or server migration;
+    # the 1m delay tolerates that without masking a genuine quorum loss.
     - alert: ConsulMissingMasterNode
       expr: 'consul_raft_peers < 3'
-      for: 0m
+      for: 1m
       labels:
         severity: critical
       annotations:
@@ -31,3 +24,30 @@ groups:
       annotations:
         summary: Consul agent unhealthy (instance {{ $labels.instance }})
         description: "A Consul agent is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ConsulServiceHealthcheckFailed
+      expr: 'consul_catalog_service_node_healthy == 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Consul service healthcheck failed (instance {{ $labels.instance }})
+        description: "Service: `{{ $labels.service_name }}` Healthcheck: `{{ $labels.service_id }}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ConsulHasNoRaftLeader
+      expr: 'consul_raft_leader != 1'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Consul has no raft leader (instance {{ $labels.instance }})
+        description: "The Consul raft cluster has no elected leader (according to {{ $labels.instance }}), meaning the cluster cannot process writes and is effectively unavailable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ConsulExporterQueryFailure
+      expr: 'consul_up != 1'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Consul exporter query failure (instance {{ $labels.instance }})
+        description: "The consul_exporter's last query against the local Consul agent failed, meaning the exported Consul metrics on {{ $labels.instance }} are stale or missing even though the exporter itself is still being scraped successfully.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

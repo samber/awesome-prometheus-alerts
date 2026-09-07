@@ -18,6 +18,7 @@ groups:
         summary: Jaeger agent HTTP server errors (instance {{ $labels.instance }})
         description: "Jaeger agent on {{ $labels.instance }} is experiencing {{ $value | humanize }}% HTTP server errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1% threshold mixes 4xx (client-driven, varies by application) and 5xx (infra-fault, should be ~0%) into one ratio. Adjust based on your 4xx baseline; a pure 5xx spike should still be investigated regardless of this threshold.
     - alert: JaegerClientRpcRequestErrors
       expr: '100 * sum(rate(jaeger_client_jaeger_rpc_http_requests{status_code=~"4xx|5xx"}[1m])) by (instance, job, namespace) / sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_client_jaeger_rpc_http_requests[1m])) by (instance, job, namespace) > 0'
       for: 15m
@@ -80,3 +81,51 @@ groups:
       annotations:
         summary: Jaeger query request failures (instance {{ $labels.instance }})
         description: "Jaeger query on {{ $labels.instance }} is failing {{ $value | humanize }}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1/s is a rough default; absolute drop count scales with your span ingestion volume — adjust based on your workload.
+    - alert: JaegerAgentUdpPacketsDropped
+      expr: 'rate(jaeger_agent_thrift_udp_server_packets_dropped_total[1m]) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger agent UDP packets dropped (instance {{ $labels.instance }})
+        description: "Jaeger agent on {{ $labels.instance }} is dropping UDP packets on its Thrift-compact span ingestion server ({{ $value }} packets/s), meaning spans are lost before they reach the collector.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1000 is a rough default; queue depth scales with your span ingestion throughput relative to collector processing capacity — adjust based on your workload.
+    - alert: JaegerCollectorQueueBacklog
+      expr: 'jaeger_collector_queue_length > 1000'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger collector queue backlog (instance {{ $labels.instance }})
+        description: "Jaeger collector on {{ $labels.instance }} has an internal span queue length of {{ $value }}, a leading indicator that the collector is falling behind on processing before spans start being dropped.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 0.5s threshold is a rough default; write latency depends on your storage backend and span ingestion volume — adjust based on your baseline.
+    - alert: JaegerCollectorSlowSpanPersistence
+      expr: 'histogram_quantile(0.99, sum by (le, instance, job, namespace) (rate(jaeger_collector_save_latency_bucket[5m]))) > 0.5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger collector slow span persistence (instance {{ $labels.instance }})
+        description: "Jaeger collector on {{ $labels.instance }} has a p99 span persistence latency of {{ $value }}s, indicating the storage backend is slow to accept span writes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerCassandraWritesFailing
+      expr: '100 * sum(rate(jaeger_cassandra_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_cassandra_attempts_total[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_cassandra_attempts_total[1m])) by (instance, job, namespace) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger Cassandra writes failing (instance {{ $labels.instance }})
+        description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of writes to the Cassandra storage backend, which can lead to permanent span data loss.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: JaegerCassandraReadsFailing
+      expr: '100 * sum(rate(jaeger_cassandra_read_errors_total[1m])) by (instance, job, namespace) / sum(rate(jaeger_cassandra_read_attempts_total[1m])) by (instance, job, namespace) > 1 and sum(rate(jaeger_cassandra_read_attempts_total[1m])) by (instance, job, namespace) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger Cassandra reads failing (instance {{ $labels.instance }})
+        description: "Jaeger on {{ $labels.instance }} is failing {{ $value | humanize }}% of reads from the Cassandra storage backend, which impacts trace query availability.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -1,0 +1,64 @@
+groups:
+
+- name: AibudaevvSipExporter
+
+  
+  rules:
+
+    - alert: SipExporterProcessingChannelSaturated
+      expr: 'sip_exporter_channel_length / sip_exporter_channel_capacity > 0.8 and sip_exporter_channel_capacity > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: SIP exporter processing channel saturated (instance {{ $labels.instance }})
+        description: "sip-exporter's packet channel is {{ $value | humanizePercentage }} full on {{ $labels.instance }}. Sustained capture load may cause packet loss.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SipExporterKernelSocketDropsHigh
+      expr: 'sum by (instance, iface) (rate(sip_exporter_socket_packets_dropped_total[5m])) / sum by (instance, iface) (rate(sip_exporter_socket_packets_received_total[5m])) > 0.01 and on (instance, iface) sum by (instance, iface) (rate(sip_exporter_socket_packets_received_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: SIP exporter kernel socket drops high (instance {{ $labels.instance }})
+        description: "sip-exporter's kernel socket is dropping {{ $value | humanizePercentage }} of received packets on {{ $labels.instance }} interface {{ $labels.iface }}. The host may not keep up with capture traffic.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 90% is a rough default. Expected SER varies by carrier mix and routing policy; adjust from your healthy baseline.
+    - alert: SipExporterSessionEstablishmentRatioDegraded
+      expr: '((sum by (instance, carrier, direction) (rate(sip_exporter_invite_200_total[5m])) or 0 * sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m]))) / (sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])) - (sum by (instance, carrier, direction) (rate(sip_exporter_invite_3xx_total[5m])) or 0 * sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m]))))) < 0.9 and on (instance, carrier, direction) sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])) >= 0.1 and on (instance, carrier, direction) (sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])) - (sum by (instance, carrier, direction) (rate(sip_exporter_invite_3xx_total[5m])) or 0 * sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])))) > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: SIP exporter session establishment ratio degraded (instance {{ $labels.instance }})
+        description: "sip-exporter's session establishment ratio is {{ $value | humanizePercentage }} on {{ $labels.instance }} for carrier {{ $labels.carrier }} direction {{ $labels.direction }}. Check SIP response codes, reachability, and routing changes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 5% is a rough default. Adjust to your codec, network baseline, and voice-quality objective.
+    - alert: SipExporterRtpPacketLossHigh
+      expr: 'sum by (instance, carrier, direction) (rate(sip_exporter_rtp_packets_lost_total[5m])) / (sum by (instance, carrier, direction) (rate(sip_exporter_rtp_packets_total[5m])) + sum by (instance, carrier, direction) (rate(sip_exporter_rtp_packets_lost_total[5m]))) > 0.05 and on (instance, carrier, direction) (sum by (instance, carrier, direction) (rate(sip_exporter_rtp_packets_total[5m])) + sum by (instance, carrier, direction) (rate(sip_exporter_rtp_packets_lost_total[5m]))) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: SIP exporter RTP packet loss high (instance {{ $labels.instance }})
+        description: "sip-exporter observes {{ $value | humanizePercentage }} RTP packet loss on {{ $labels.instance }} for carrier {{ $labels.carrier }} direction {{ $labels.direction }}. Check congestion, QoS policy, and capture placement.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 5% is a rough default. Tune it only after confirming the sensor normally observes both SIP signaling and the negotiated media path.
+    - alert: SipExporterDialogsMissingRtpHigh
+      expr: 'sum by (instance, carrier, direction) (rate(sip_exporter_sessions_missing_rtp_total[5m])) / sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])) > 0.05 and on (instance, carrier, direction) sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])) >= 0.1'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: SIP exporter dialogs missing RTP high (instance {{ $labels.instance }})
+        description: "{{ $value | humanizePercentage }} of sip-exporter dialogs on {{ $labels.instance }} for carrier {{ $labels.carrier }} direction {{ $labels.direction }} ended without observed RTP. Check SDP reachability, filtering, and capture topology.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 5% is a rough default. Tune it only after confirming both negotiated media directions normally reach the sensor.
+    - alert: SipExporterOne-wayRtpHigh
+      expr: 'sum by (instance, carrier, direction) (rate(sip_exporter_rtp_oneway_calls_total[5m])) / sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])) > 0.05 and on (instance, carrier, direction) sum by (instance, carrier, direction) (rate(sip_exporter_invite_total[5m])) >= 0.1'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: SIP exporter one-way RTP high (instance {{ $labels.instance }})
+        description: "{{ $value | humanizePercentage }} of sip-exporter dialogs on {{ $labels.instance }} for carrier {{ $labels.carrier }} direction {{ $labels.direction }} had one-way RTP. Check NAT, SDP addresses, and media-path visibility.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

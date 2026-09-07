@@ -5,24 +5,6 @@ groups:
   
   rules:
 
-    - alert: WindowsServerCollectorError
-      expr: 'windows_exporter_collector_success == 0'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: Windows Server collector Error (instance {{ $labels.instance }})
-        description: "Collector {{ $labels.collector }} was not successful\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: WindowsServerServiceStatus
-      expr: 'windows_service_status{status="ok"} != 1'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: Windows Server service Status (instance {{ $labels.instance }})
-        description: "Windows Service state is not OK\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: WindowsServerCpuUsage
       expr: '100 - (avg by (instance) (rate(windows_cpu_time_total{mode="idle"}[2m])) * 100) > 80'
       for: 0m
@@ -33,7 +15,7 @@ groups:
         description: "CPU Usage is more than 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: WindowsServerMemoryUsage
-      expr: '100 - ((windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) * 100) > 90'
+      expr: '100 - ((windows_memory_physical_free_bytes / windows_memory_physical_total_bytes) * 100) > 90'
       for: 2m
       labels:
         severity: warning
@@ -49,3 +31,49 @@ groups:
       annotations:
         summary: Windows Server disk Space Usage (instance {{ $labels.instance }})
         description: "Disk usage is more than 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: WindowsServerDiskDriveStatus
+      expr: 'windows_disk_drive_status{status="OK"} != 1'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Windows Server disk drive Status (instance {{ $labels.instance }})
+        description: "Physical disk {{ $labels.name }} on {{ $labels.instance }} is reporting a status other than OK, which can indicate an imminent physical disk failure or a degraded array member.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1s threshold is a rough default; acceptable round-trip time depends on your network topology (local NTP server vs internet-based) — adjust based on your baseline.
+    - alert: WindowsServerNtpClientDelay
+      expr: 'windows_time_ntp_round_trip_delay_seconds > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Windows Server NTP client delay (instance {{ $labels.instance }})
+        description: "NTP round-trip delay between {{ $labels.instance }} and its time source exceeds 1 second, which reduces time synchronization accuracy and may point to network issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: WindowsServerCollectorError
+      expr: 'windows_exporter_collector_success == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Windows Server collector Error (instance {{ $labels.instance }})
+        description: "Collector {{ $labels.collector }} was not successful\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: WindowsServerServiceStatus
+      expr: 'windows_service_state{state="running"} == 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Windows Server service Status (instance {{ $labels.instance }})
+        description: "Windows Service state is not OK\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: WindowsServerClockOffset
+      expr: 'windows_time_computed_time_offset_seconds > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Windows Server clock offset (instance {{ $labels.instance }})
+        description: "System clock on {{ $labels.instance }} is offset from its configured time source by more than 1 second, which can break Kerberos authentication, Active Directory replication and log correlation.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

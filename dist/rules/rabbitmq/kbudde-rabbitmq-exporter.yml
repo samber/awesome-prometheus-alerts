@@ -43,6 +43,7 @@ groups:
         summary: RabbitMQ out of memory (instance {{ $labels.instance }})
         description: "Memory available for RabbitMQ is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1000 is a rough default; connection count scales with your client/application count — adjust based on your workload.
     - alert: RabbitmqInstanceTooManyConnections
       expr: 'rabbitmq_connections > 1000'
       for: 2m
@@ -51,6 +52,26 @@ groups:
       annotations:
         summary: RabbitMQ instance too many connections (instance {{ $labels.instance }})
         description: "RabbitMQ instance has too many connections (> 1000)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Allows a short service restart.
+    - alert: RabbitmqNoConsumer
+      expr: 'rabbitmq_queue_consumers == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: RabbitMQ no consumer (instance {{ $labels.instance }})
+        description: "Queue has no consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Indicate the queue name in dedicated label.
+    - alert: RabbitmqTooManyConsumers
+      expr: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: RabbitMQ too many consumers (instance {{ $labels.instance }})
+        description: "Queue should have only 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Indicate the queue name in dedicated label.
     - alert: RabbitmqDeadLetterQueueFillingUp
@@ -81,26 +102,6 @@ groups:
       annotations:
         summary: RabbitMQ slow queue consuming (instance {{ $labels.instance }})
         description: "Queue messages are consumed slowly (> 60s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Allows a short service restart.
-    - alert: RabbitmqNoConsumer
-      expr: 'rabbitmq_queue_consumers == 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: RabbitMQ no consumer (instance {{ $labels.instance }})
-        description: "Queue has no consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Indicate the queue name in dedicated label.
-    - alert: RabbitmqTooManyConsumers
-      expr: 'rabbitmq_queue_consumers{queue="my-queue"} > 1'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: RabbitMQ too many consumers (instance {{ $labels.instance }})
-        description: "Queue should have only 1 consumer\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Indicate the exchange name in dedicated label.
     - alert: RabbitmqInactiveExchange

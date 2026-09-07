@@ -5,6 +5,15 @@ groups:
   
   rules:
 
+    - alert: VaultAutopilotUnhealthy
+      expr: 'min(vault_autopilot_healthy) by (instance) == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Vault autopilot unhealthy (instance {{ $labels.instance }})
+        description: "Vault Autopilot reports the Raft integrated storage cluster on {{ $labels.instance }} as unhealthy, which may indicate node health, quorum, or version mismatch issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: VaultSealed
       expr: 'vault_core_unsealed == 0'
       for: 1m
@@ -14,15 +23,16 @@ groups:
         summary: Vault sealed (instance {{ $labels.instance }})
         description: "Vault instance is sealed on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: VaultTooManyPendingTokens
-      expr: 'avg(vault_token_create_count - vault_token_store_count) > 0'
+    - alert: VaultClusterHealth
+      expr: 'sum(vault_core_active) < 1'
       for: 5m
       labels:
-        severity: warning
+        severity: critical
       annotations:
-        summary: Vault too many pending tokens (instance {{ $labels.instance }})
-        description: "Too many pending tokens on {{ $labels.instance }}: {{ $value }} tokens created but not yet stored.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Vault cluster health (instance {{ $labels.instance }})
+        description: "Vault cluster has no active node — the cluster cannot serve requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 3 is a rough default; some long-lived service tokens are legitimate by design — adjust based on your token issuance policy.
     - alert: VaultTooManyInfinityTokens
       expr: 'vault_token_count_by_ttl{creation_ttl="+Inf"} > 3'
       for: 5m
@@ -32,11 +42,30 @@ groups:
         summary: Vault too many infinity tokens (instance {{ $labels.instance }})
         description: "Too many non-expiring tokens on {{ $labels.instance }}: {{ $value }} tokens with infinite TTL.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: VaultClusterHealth
-      expr: 'sum(vault_core_active) / count(vault_core_active) <= 0.5 and count(vault_core_active) > 0'
-      for: 0m
+    - alert: VaultAuditLogWriteFailures
+      expr: 'sum(rate(vault_audit_log_request_failure[5m])) by (instance) > 0 or sum(rate(vault_audit_log_response_failure[5m])) by (instance) > 0'
+      for: 5m
       labels:
-        severity: critical
+        severity: warning
       annotations:
-        summary: Vault cluster health (instance {{ $labels.instance }})
-        description: "Vault cluster is not healthy: only {{ $value | humanizePercentage }} of nodes are active.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Vault audit log write failures (instance {{ $labels.instance }})
+        description: "Vault failed to write to an audit device on {{ $labels.instance }} ({{ $value | printf \"%.2f\" }} failures/s), so audit log entries may be incomplete. Check audit device connectivity, disk space, or permissions.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: VaultLowResponseSuccessRate
+      expr: '(1 - sum(rate(vault_core_response_status_code{type="5xx"}[5m])) by (instance) / sum(rate(vault_core_response_status_code[5m])) by (instance)) * 100 < 95 and sum(rate(vault_core_response_status_code{type="5xx"}[5m])) by (instance) > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Vault low response success rate (instance {{ $labels.instance }})
+        description: "Less than 95% of Vault API responses succeeded (non-5xx) on {{ $labels.instance }} (current value: {{ $value | printf \"%.1f\" }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 100 is a rough default; storage-apply backlog scales with your Raft cluster's write throughput — adjust based on your workload.
+    - alert: VaultRaftFsmPendingHigh
+      expr: 'vault_raft_storage_stats_fsm_pending > 100'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Vault raft FSM pending high (instance {{ $labels.instance }})
+        description: "Vault Raft peer {{ $labels.peer_id }} on {{ $labels.instance }} has {{ $value }} pending FSM operations, indicating a storage apply backlog on the integrated Raft storage backend.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -25,14 +25,35 @@ groups:
         summary: Mongodb replica member unhealthy (instance {{ $labels.instance }})
         description: "MongoDB replica member is not healthy\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbReplicationLag(percona)
-      expr: '(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"}) / 1000 > 10'
-      for: 0m
+    - alert: MongodbReplicaSetHasNoPrimary
+      expr: 'sum(mongodb_ss_repl_isWritablePrimary) by (job) == 0'
+      for: 1m
       labels:
         severity: critical
       annotations:
-        summary: MongoDB replication lag (Percona) (instance {{ $labels.instance }})
-        description: "Mongodb replication lag is more than 10s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: MongoDB replica set has no primary (instance {{ $labels.instance }})
+        description: "MongoDB replica set {{ $labels.job }} has no writable primary, so all writes will fail until a new primary is elected.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # mongodb_rs_myState (this node's replica set state) is exposed in default mode.
+    # Restricted to == 1 (PRIMARY) so the alert fires once per election, from the new primary's series, instead of on every member state transition (e.g. a secondary's restart/resync cycle).
+    # Older exporters (or --compatible-mode) instead expose mongodb_mongod_replset_my_state.
+    - alert: MongodbReplicaSetPrimaryChanged
+      expr: 'changes(mongodb_rs_myState[10m]) > 0 and mongodb_rs_myState == 1'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MongoDB replica set primary changed (instance {{ $labels.instance }})
+        description: "MongoDB member {{ $labels.instance }} became the replica set primary in the last 10 minutes, which may indicate an election due to failover or instability.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MongodbTooManyConnections(percona)
+      expr: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80 and (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) > 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MongoDB too many connections (Percona) (instance {{ $labels.instance }})
+        description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # This query mixes old (mongodb_mongod_*) and new (mongodb_rs_*) metric names. It requires the Percona exporter to run with --compatible-mode to expose both.
     - alert: MongodbReplicationHeadroom
@@ -44,6 +65,18 @@ groups:
         summary: MongoDB replication headroom (instance {{ $labels.instance }})
         description: "MongoDB replication headroom is <= 0\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # mongodb_rs_members_optimeDate is exposed in default mode; its value is in milliseconds, hence the /1000 to compare seconds.
+    # Older exporters (or --compatible-mode) instead expose a ready-made lag in seconds: mongodb_mongod_replset_member_replication_lag > 30.
+    - alert: MongodbReplicationLag(percona)
+      expr: '(mongodb_rs_members_optimeDate{member_state="PRIMARY"} - on (set) group_right mongodb_rs_members_optimeDate{member_state="SECONDARY"}) / 1000 > 30'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: MongoDB replication lag (Percona) (instance {{ $labels.instance }})
+        description: "Mongodb replication lag is more than 30s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 10k cursors is a rough default; cursor count scales with your concurrent client and query load — adjust based on your workload.
     - alert: MongodbNumberCursorsOpen(percona)
       expr: 'mongodb_ss_metrics_cursor_open{csr_type="total"} > 10 * 1000'
       for: 2m
@@ -53,6 +86,7 @@ groups:
         summary: MongoDB number cursors open (Percona) (instance {{ $labels.instance }})
         description: "Too many cursors opened by MongoDB for clients (> 10k)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 100 timeouts/min is a rough default; scales with your query volume and concurrency — adjust based on your workload.
     - alert: MongodbCursorsTimeouts(percona)
       expr: 'increase(mongodb_ss_metrics_cursor_timedOut[1m]) > 100'
       for: 2m
@@ -62,11 +96,33 @@ groups:
         summary: MongoDB cursors timeouts (Percona) (instance {{ $labels.instance }})
         description: "Too many cursors are timing out ({{ $value }} in the last minute)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbTooManyConnections(percona)
-      expr: 'mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) * 100 > 80 and (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) > 0'
+    # 50 is a rough default relative to MongoDB's default 128 concurrent read transactions; adjust based on your configured wiredTigerConcurrentReadTransactions and workload concurrency.
+    - alert: MongodbWiredtigerReadTicketsExhausted
+      expr: 'mongodb_ss_wt_concurrentTransactions_available{txn_rw_type="read"} < 50'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: MongoDB too many connections (Percona) (instance {{ $labels.instance }})
-        description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: MongoDB WiredTiger read tickets exhausted (instance {{ $labels.instance }})
+        description: "WiredTiger available read tickets on {{ $labels.instance }} have dropped to {{ $value }}, which causes read requests to queue and latency to spike.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 50 is a rough default relative to MongoDB's default 128 concurrent write transactions; adjust based on your configured wiredTigerConcurrentWriteTransactions and workload concurrency.
+    - alert: MongodbWiredtigerWriteTicketsExhausted
+      expr: 'mongodb_ss_wt_concurrentTransactions_available{txn_rw_type="write"} < 50'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MongoDB WiredTiger write tickets exhausted (instance {{ $labels.instance }})
+        description: "WiredTiger available write tickets on {{ $labels.instance }} have dropped to {{ $value }}, which causes write requests to queue and latency to spike.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # mongodb_ss_uptime (from serverStatus.uptime) is exposed in default mode.
+    # Older exporters (or --compatible-mode) instead expose mongodb_instance_uptime_seconds.
+    - alert: MongodbInstanceRecentlyRestarted
+      expr: 'mongodb_ss_uptime < 300'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: MongoDB instance recently restarted (instance {{ $labels.instance }})
+        description: "MongoDB instance {{ $labels.instance }} was restarted {{ $value }} seconds ago.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

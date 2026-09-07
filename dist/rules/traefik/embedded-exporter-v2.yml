@@ -14,6 +14,7 @@ groups:
         summary: Traefik service down (instance {{ $labels.instance }})
         description: "All Traefik services are down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5% 4xx rate is a rough default. Client-error rates vary widely by service (bots, API misuse, rate limits, short-lived token expiry, scanners) — adjust based on your baseline.
     - alert: TraefikHighHttp4xxErrorRateService
       expr: 'sum(rate(traefik_service_requests_total{code=~"4.*"}[3m])) by (service) / sum(rate(traefik_service_requests_total[3m])) by (service) * 100 > 5 and sum(rate(traefik_service_requests_total[3m])) by (service) > 0'
       for: 1m
@@ -31,3 +32,30 @@ groups:
       annotations:
         summary: Traefik high HTTP 5xx error rate service (instance {{ $labels.instance }})
         description: "Traefik service 5xx error rate is above 5%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TraefikCertificateExpiringImminently
+      expr: 'min by (instance, sans) (last_over_time(traefik_tls_certs_not_after[5m]) - time()) / 86400 < 7'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Traefik certificate expiring imminently (instance {{ $labels.instance }})
+        description: "TLS certificate for {{ $labels.sans }} served by Traefik instance {{ $labels.instance }} expires in less than 7 days and must be renewed urgently.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TraefikConfigReloadFailure
+      expr: 'sum(rate(traefik_config_reloads_failure_total[3m])) by (job) > 0'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Traefik config reload failure (instance {{ $labels.instance }})
+        description: "Traefik dynamic configuration reload is failing on {{ $labels.job }}, so recent routing and provider configuration changes may not be applied.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TraefikCertificateExpiringSoon
+      expr: 'min by (instance, sans) (last_over_time(traefik_tls_certs_not_after[5m]) - time()) / 86400 < 14'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Traefik certificate expiring soon (instance {{ $labels.instance }})
+        description: "TLS certificate for {{ $labels.sans }} served by Traefik instance {{ $labels.instance }} expires in less than 14 days.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

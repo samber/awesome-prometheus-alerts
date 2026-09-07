@@ -5,15 +5,7 @@ groups:
   
   rules:
 
-    - alert: SidekiqQueueSize
-      expr: 'sidekiq_queue_enqueued_jobs > 100'
-      for: 1m
-      labels:
-        severity: warning
-      annotations:
-        summary: Sidekiq queue size (instance {{ $labels.instance }})
-        description: "Sidekiq queue {{ $labels.name }} is growing ({{ $value }} enqueued jobs)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # 1 minute is a rough default; acceptable pickup latency depends on the balance between your job production rate and worker capacity — adjust based on your workload.
     - alert: SidekiqSchedulingLatencyTooHigh
       expr: 'max(sidekiq_queue_latency_seconds) > 60'
       for: 0m
@@ -22,3 +14,13 @@ groups:
       annotations:
         summary: Sidekiq scheduling latency too high (instance {{ $labels.instance }})
         description: "Sidekiq jobs are taking more than 1min to be picked up. Users may be seeing delays in background processing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 100 is a rough default; queue depth depends on the balance between job production rate and worker capacity — adjust based on your workload.
+    - alert: SidekiqQueueSize
+      expr: 'sidekiq_queue_enqueued_jobs > 100'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Sidekiq queue size (instance {{ $labels.instance }})
+        description: "Sidekiq queue {{ $labels.name }} is growing ({{ $value }} enqueued jobs)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

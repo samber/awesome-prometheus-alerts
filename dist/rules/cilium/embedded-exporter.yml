@@ -25,6 +25,88 @@ groups:
         summary: Cilium agent unreachable health endpoints (instance {{ $labels.instance }})
         description: "Cilium agent {{ $labels.pod }} cannot reach {{ $value }} health endpoint(s). Node-to-node health probes are failing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: CiliumOperatorExhaustedIpamIps
+      expr: 'sum(cilium_operator_ipam_ips{type="available"}) by () <= 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium operator exhausted IPAM IPs (instance {{ $labels.instance }})
+        description: "Cilium operator has no available IPAM IPs. New pods will fail to schedule networking.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Policy denials may be expected behavior. Investigate only if unexpected traffic is being blocked.
+    - alert: CiliumAgentHighDeniedRate
+      expr: 'sum(rate(cilium_drop_count_total{reason="Policy denied"}[1m])) by (pod) > 0'
+      for: 10m
+      labels:
+        severity: info
+      annotations:
+        summary: Cilium agent high denied rate (instance {{ $labels.instance }})
+        description: "Cilium agent {{ $labels.pod }} is dropping packets due to policy denial. Verify network policies are correct.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumAgentConntrackTableFull
+      expr: 'sum(rate(cilium_drop_count_total{reason="CT: Map insertion failed"}[5m])) by (pod) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium agent conntrack table full (instance {{ $labels.instance }})
+        description: "Cilium agent {{ $labels.pod }} conntrack table is full, causing packet drops. Increase CT map size or investigate connection leaks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumAgentNatTableFull
+      expr: 'sum(rate(cilium_drop_count_total{reason="No mapping for NAT masquerade"}[1m])) by (pod) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium agent NAT table full (instance {{ $labels.instance }})
+        description: "Cilium agent {{ $labels.pod }} NAT table is full, causing masquerade failures. Increase NAT map size or investigate.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumClustermeshRemoteClusterNotReady
+      expr: 'count(cilium_clustermesh_remote_cluster_readiness_status < 1) by (source_cluster, target_cluster) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium ClusterMesh remote cluster not ready (instance {{ $labels.instance }})
+        description: "Cilium ClusterMesh remote cluster {{ $labels.target_cluster }} is not ready from {{ $labels.source_cluster }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumClustermeshRemoteClusterFailing
+      expr: 'sum(rate(cilium_clustermesh_remote_cluster_failures[5m])) by (source_cluster, target_cluster) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium ClusterMesh remote cluster failing (instance {{ $labels.instance }})
+        description: "Cilium ClusterMesh connectivity to remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is failing ({{ $value }} failures).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumKvstoremeshRemoteClusterNotReady
+      expr: 'count(cilium_kvstoremesh_remote_cluster_readiness_status < 1) by (source_cluster, target_cluster) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium KVStoreMesh remote cluster not ready (instance {{ $labels.instance }})
+        description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} is not ready from {{ $labels.source_cluster }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumKvstoremeshRemoteClusterFailing
+      expr: 'sum(rate(cilium_kvstoremesh_remote_cluster_failures[5m])) by (source_cluster, target_cluster) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium KVStoreMesh remote cluster failing (instance {{ $labels.instance }})
+        description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is experiencing failures ({{ $value }} failures).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumKvstoremeshSyncErrors
+      expr: 'sum(rate(cilium_kvstoremesh_kvstore_sync_errors_total[5m])) by (source_cluster) > 0.05'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cilium KVStoreMesh sync errors (instance {{ $labels.instance }})
+        description: "Cilium KVStoreMesh from {{ $labels.source_cluster }} is experiencing kvstore sync errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     # Metric name depends on Cilium version. Use cilium_controllers_failing (older) or cilium_controllers_runs_total (1.14+).
     - alert: CiliumAgentFailingControllers
       expr: 'sum(cilium_controllers_failing{}) by (pod) > 0'
@@ -62,15 +144,6 @@ groups:
         summary: Cilium agent endpoint update failure (instance {{ $labels.instance }})
         description: "Cilium agent {{ $labels.pod }} is failing K8s endpoint update API calls ({{ $labels.method }} {{ $labels.return_code }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CiliumAgentEndpointCreateFailure
-      expr: 'sum(rate(cilium_api_limiter_processed_requests_total{api_call=~"endpoint-create", outcome="fail"}[1m])) by (pod, api_call) > 0.05'
-      for: 5m
-      labels:
-        severity: info
-      annotations:
-        summary: Cilium agent endpoint create failure (instance {{ $labels.instance }})
-        description: "Cilium agent {{ $labels.pod }} is failing CNI endpoint-create calls. New pods may fail to get networking.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: CiliumAgentMapOperationFailures
       expr: 'sum(rate(cilium_bpf_map_ops_total{outcome="fail"}[5m])) by (map_name, pod) > 0.05'
       for: 5m
@@ -90,15 +163,6 @@ groups:
         summary: Cilium agent BPF map pressure (instance {{ $labels.instance }})
         description: "Cilium agent {{ $labels.pod }} eBPF map {{ $labels.map_name }} is above 90% utilization. Map may become full.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CiliumAgentConntrackTableFull
-      expr: 'sum(rate(cilium_drop_count_total{reason="CT: Map insertion failed"}[5m])) by (pod) > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium agent conntrack table full (instance {{ $labels.instance }})
-        description: "Cilium agent {{ $labels.pod }} conntrack table is full, causing packet drops. Increase CT map size or investigate connection leaks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: CiliumAgentConntrackFailedGarbageCollection
       expr: 'sum(rate(cilium_datapath_conntrack_gc_runs_total{status="uncompleted"}[5m])) by (pod) > 0.05'
       for: 5m
@@ -107,25 +171,6 @@ groups:
       annotations:
         summary: Cilium agent conntrack failed garbage collection (instance {{ $labels.instance }})
         description: "Cilium agent {{ $labels.pod }} conntrack garbage collection is failing. Stale entries may accumulate.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CiliumAgentNatTableFull
-      expr: 'sum(rate(cilium_drop_count_total{reason="No mapping for NAT masquerade"}[1m])) by (pod) > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium agent NAT table full (instance {{ $labels.instance }})
-        description: "Cilium agent {{ $labels.pod }} NAT table is full, causing masquerade failures. Increase NAT map size or investigate.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Policy denials may be expected behavior. Investigate only if unexpected traffic is being blocked.
-    - alert: CiliumAgentHighDeniedRate
-      expr: 'sum(rate(cilium_drop_count_total{reason="Policy denied"}[1m])) by (pod) > 0'
-      for: 10m
-      labels:
-        severity: info
-      annotations:
-        summary: Cilium agent high denied rate (instance {{ $labels.instance }})
-        description: "Cilium agent {{ $labels.pod }} is dropping packets due to policy denial. Verify network policies are correct.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CiliumAgentHighDropRate
       expr: 'sum(rate(cilium_drop_count_total{reason!~"Policy denied"}[5m])) by (pod, reason) > 0.05'
@@ -182,15 +227,6 @@ groups:
         summary: Cilium cluster high identity allocation (instance {{ $labels.instance }})
         description: "Cilium cluster-wide identity allocation is above 80%. Approaching the maximum identity limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CiliumOperatorExhaustedIpamIps
-      expr: 'sum(cilium_operator_ipam_ips{type="available"}) by () <= 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium operator exhausted IPAM IPs (instance {{ $labels.instance }})
-        description: "Cilium operator has no available IPAM IPs. New pods will fail to schedule networking.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # Threshold of 90% is a rough default. Adjust based on your pod churn rate and IP pool size.
     - alert: CiliumOperatorLowAvailableIpamIps
       expr: 'sum(cilium_operator_ipam_ips{type!="available"}) by () / sum(cilium_operator_ipam_ips) by () > 0.9 and sum(cilium_operator_ipam_ips) by () > 0'
@@ -201,15 +237,17 @@ groups:
         summary: Cilium operator low available IPAM IPs (instance {{ $labels.instance }})
         description: "Cilium operator IPAM IP pool is over 90% utilized. Allocate more IPs to avoid exhaustion.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Some Cilium versions may not have a status label on this metric. Verify against your Cilium version.
-    - alert: CiliumOperatorIpamInterfaceCreationFailures
-      expr: 'sum(rate(cilium_operator_ipam_interface_creation_ops{status!="success"}[5m])) by () > 0.05'
+    # The status label was removed from this metric in Cilium v1.13; the counter is only
+    # incremented on interface-creation calls, so any nonzero rate here reflects operator
+    # IPAM activity, not necessarily failures specifically.
+    - alert: CiliumOperatorIpamInterfaceCreationRateHigh
+      expr: 'sum(rate(cilium_operator_ipam_interface_creation_ops[5m])) by () > 0.05'
       for: 10m
       labels:
         severity: warning
       annotations:
-        summary: Cilium operator IPAM interface creation failures (instance {{ $labels.instance }})
-        description: "Cilium operator is failing to create IPAM network interfaces. IP allocation may be impacted.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Cilium operator IPAM interface creation rate high (instance {{ $labels.instance }})
+        description: "Cilium operator is creating IPAM network interfaces at a high rate. This indicates churn and may correlate with IPAM issues depending on your Cilium version.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CiliumAgentApiErrors
       expr: 'sum(rate(cilium_agent_api_process_time_seconds_count{return_code=~"5[0-9][0-9]"}[5m])) by (pod, return_code) > 0.05'
@@ -219,60 +257,6 @@ groups:
       annotations:
         summary: Cilium agent API errors (instance {{ $labels.instance }})
         description: "Cilium agent {{ $labels.pod }} API is returning 5xx errors ({{ $labels.return_code }}). Agent may be unhealthy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CiliumAgentKubernetesClientErrors
-      expr: 'sum(rate(cilium_k8s_client_api_calls_total{endpoint!="metrics", return_code!~"2[0-9][0-9]"}[5m])) by (pod, endpoint, return_code) > 0.05'
-      for: 5m
-      labels:
-        severity: info
-      annotations:
-        summary: Cilium agent Kubernetes client errors (instance {{ $labels.instance }})
-        description: "Cilium agent {{ $labels.pod }} is receiving errors from K8s API for endpoint {{ $labels.endpoint }} ({{ $labels.return_code }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CiliumClustermeshRemoteClusterNotReady
-      expr: 'count(cilium_clustermesh_remote_cluster_readiness_status < 1) by (source_cluster, target_cluster) > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium ClusterMesh remote cluster not ready (instance {{ $labels.instance }})
-        description: "Cilium ClusterMesh remote cluster {{ $labels.target_cluster }} is not ready from {{ $labels.source_cluster }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CiliumClustermeshRemoteClusterFailing
-      expr: 'sum(cilium_clustermesh_remote_cluster_failures) by (source_cluster, target_cluster) > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium ClusterMesh remote cluster failing (instance {{ $labels.instance }})
-        description: "Cilium ClusterMesh connectivity to remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is failing ({{ $value }} failures).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CiliumKvstoremeshRemoteClusterNotReady
-      expr: 'count(cilium_kvstoremesh_remote_cluster_readiness_status < 1) by (source_cluster, target_cluster) > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium KVStoreMesh remote cluster not ready (instance {{ $labels.instance }})
-        description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} is not ready from {{ $labels.source_cluster }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CiliumKvstoremeshRemoteClusterFailing
-      expr: 'sum(cilium_kvstoremesh_remote_cluster_failures) by (source_cluster, target_cluster) > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium KVStoreMesh remote cluster failing (instance {{ $labels.instance }})
-        description: "Cilium KVStoreMesh remote cluster {{ $labels.target_cluster }} from {{ $labels.source_cluster }} is experiencing failures ({{ $value }} failures).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CiliumKvstoremeshSyncErrors
-      expr: 'sum(rate(cilium_kvstoremesh_kvstore_sync_errors_total[5m])) by (source_cluster) > 0.05'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Cilium KVStoreMesh sync errors (instance {{ $labels.instance }})
-        description: "Cilium KVStoreMesh from {{ $labels.source_cluster }} is experiencing kvstore sync errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CiliumHubbleLostEvents
       expr: 'sum(rate(hubble_lost_events_total[5m])) by (pod) > 0.05'
@@ -292,3 +276,21 @@ groups:
       annotations:
         summary: Cilium Hubble high DNS error rate (instance {{ $labels.instance }})
         description: "Cilium Hubble on {{ $labels.pod }} is observing more than 10% DNS error responses.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumAgentEndpointCreateFailure
+      expr: 'sum(rate(cilium_api_limiter_processed_requests_total{api_call=~"endpoint-create", outcome="fail"}[1m])) by (pod, api_call) > 0.05'
+      for: 5m
+      labels:
+        severity: info
+      annotations:
+        summary: Cilium agent endpoint create failure (instance {{ $labels.instance }})
+        description: "Cilium agent {{ $labels.pod }} is failing CNI endpoint-create calls. New pods may fail to get networking.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CiliumAgentKubernetesClientErrors
+      expr: 'sum(rate(cilium_k8s_client_api_calls_total{endpoint!="metrics", return_code!~"2[0-9][0-9]"}[5m])) by (pod, endpoint, return_code) > 0.05'
+      for: 5m
+      labels:
+        severity: info
+      annotations:
+        summary: Cilium agent Kubernetes client errors (instance {{ $labels.instance }})
+        description: "Cilium agent {{ $labels.pod }} is receiving errors from K8s API for endpoint {{ $labels.endpoint }} ({{ $labels.return_code }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

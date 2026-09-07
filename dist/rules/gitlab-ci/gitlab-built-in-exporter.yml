@@ -5,6 +5,37 @@ groups:
   
   rules:
 
+    - alert: GitlabPumaWorkersNotRunning
+      expr: 'puma_running_workers < puma_workers'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab Puma workers not running (instance {{ $labels.instance }})
+        description: "GitLab Puma on {{ $labels.instance }} has {{ $value }} running workers out of expected total.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 2GB may need adjustment based on your instance size.
+    # High memory usage can lead to OOM kills and service disruptions.
+    - alert: GitlabHighMemoryUsage
+      expr: 'process_resident_memory_bytes{job=~".*gitlab.*"} > 2e+9'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab high memory usage (instance {{ $labels.instance }})
+        description: "GitLab process on {{ $labels.instance }} is using {{ $value | humanize1024 }}B of RSS memory.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Heap fragmentation above 50% means a significant amount of memory is wasted.
+    # A Puma worker restart may help reclaim memory.
+    - alert: GitlabRubyHeapFragmentation
+      expr: 'ruby_gc_stat_ext_heap_fragmentation{job=~".*gitlab.*"} > 0.5'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab Ruby heap fragmentation (instance {{ $labels.instance }})
+        description: "GitLab Ruby heap fragmentation on {{ $labels.instance }} is {{ $value }}. High fragmentation wastes memory.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     # Queued connections indicate Puma workers are saturated.
     # Consider increasing puma['worker_processes'] or puma['max_threads'] in gitlab.rb.
     - alert: GitlabPumaHighQueuedConnections
@@ -16,6 +47,53 @@ groups:
         summary: GitLab Puma high queued connections (instance {{ $labels.instance }})
         description: "GitLab Puma has {{ $value }} queued connections on {{ $labels.instance }}. Requests are waiting for an available worker thread.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # When the pool is near saturation, requests may block waiting for a connection.
+    # Increase db_pool_size in gitlab.rb or investigate slow queries.
+    - alert: GitlabDatabaseConnectionPoolSaturation
+      expr: 'gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90 and gitlab_database_connection_pool_size > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab database connection pool saturation (instance {{ $labels.instance }})
+        description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) is {{ $value }}% busy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GitlabDatabaseConnectionPoolDeadConnections
+      expr: 'gitlab_database_connection_pool_dead > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab database connection pool dead connections (instance {{ $labels.instance }})
+        description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) has {{ $value }} dead connections.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GitlabDatabaseConnectionPoolWaiting
+      expr: 'gitlab_database_connection_pool_waiting > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab database connection pool waiting (instance {{ $labels.instance }})
+        description: "GitLab on {{ $labels.instance }} has {{ $value }} threads waiting for a database connection.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GitlabHighFileDescriptorUsage
+      expr: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80 and process_max_fds > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab high file descriptor usage (instance {{ $labels.instance }})
+        description: "GitLab on {{ $labels.instance }} is using {{ $value }}% of available file descriptors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GitlabPumaHighThreadPoolUtilization
+      expr: 'puma_active_connections / puma_max_threads * 100 > 90 and puma_max_threads > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab Puma high thread pool utilization (instance {{ $labels.instance }})
+        description: "GitLab Puma thread pool on {{ $labels.instance }} is {{ $value }}% utilized, indicating sustained saturation before it becomes fully blocked.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: GitlabPumaNoAvailablePoolCapacity
       expr: 'puma_pool_capacity == 0'
       for: 5m
@@ -24,15 +102,6 @@ groups:
       annotations:
         summary: GitLab Puma no available pool capacity (instance {{ $labels.instance }})
         description: "GitLab Puma pool capacity on {{ $labels.instance }} has been at 0 for 5 minutes. All threads are busy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: GitlabPumaWorkersNotRunning
-      expr: 'puma_running_workers < puma_workers'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab Puma workers not running (instance {{ $labels.instance }})
-        description: "GitLab Puma on {{ $labels.instance }} has {{ $value }} running workers out of expected total.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Threshold is 5% of all requests returning server errors.
     # Check GitLab logs at /var/log/gitlab/ for root cause.
@@ -98,35 +167,7 @@ groups:
         summary: GitLab Sidekiq high queue latency (instance {{ $labels.instance }})
         description: "GitLab Sidekiq jobs on {{ $labels.instance }} are waiting more than 60 seconds before being processed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # When the pool is near saturation, requests may block waiting for a connection.
-    # Increase db_pool_size in gitlab.rb or investigate slow queries.
-    - alert: GitlabDatabaseConnectionPoolSaturation
-      expr: 'gitlab_database_connection_pool_busy / gitlab_database_connection_pool_size * 100 > 90 and gitlab_database_connection_pool_size > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab database connection pool saturation (instance {{ $labels.instance }})
-        description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) is {{ $value }}% busy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: GitlabDatabaseConnectionPoolDeadConnections
-      expr: 'gitlab_database_connection_pool_dead > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab database connection pool dead connections (instance {{ $labels.instance }})
-        description: "GitLab database connection pool on {{ $labels.instance }} ({{ $labels.class }}) has {{ $value }} dead connections.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: GitlabDatabaseConnectionPoolWaiting
-      expr: 'gitlab_database_connection_pool_waiting > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab database connection pool waiting (instance {{ $labels.instance }})
-        description: "GitLab on {{ $labels.instance }} has {{ $value }} threads waiting for a database connection.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # 30s threshold is a rough default; depends on your pipeline complexity and CI instance load — adjust based on your baseline.
     - alert: GitlabCiPipelineCreationSlow
       expr: 'histogram_quantile(0.95, sum(rate(gitlab_ci_pipeline_creation_duration_seconds_bucket[5m])) by (le)) > 30'
       for: 5m
@@ -145,38 +186,6 @@ groups:
       annotations:
         summary: GitLab CI pipeline failures increasing (instance {{ $labels.instance }})
         description: "GitLab CI pipeline failures are increasing on {{ $labels.instance }} ({{ $value }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Frequent runner auth failures may indicate expired tokens or misconfigured runners.
-    - alert: GitlabCiRunnerAuthenticationFailures
-      expr: 'increase(gitlab_ci_runner_authentication_failure_total[5m]) > 5'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab CI runner authentication failures (instance {{ $labels.instance }})
-        description: "GitLab CI runners are experiencing authentication failures on {{ $labels.instance }} ({{ $value }} failures).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Threshold of 2GB may need adjustment based on your instance size.
-    # High memory usage can lead to OOM kills and service disruptions.
-    - alert: GitlabHighMemoryUsage
-      expr: 'process_resident_memory_bytes{job=~".*gitlab.*"} > 2e+9'
-      for: 10m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab high memory usage (instance {{ $labels.instance }})
-        description: "GitLab process on {{ $labels.instance }} is using {{ $value | humanize1024 }}B of RSS memory.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Heap fragmentation above 50% means a significant amount of memory is wasted.
-    # A Puma worker restart may help reclaim memory.
-    - alert: GitlabRubyHeapFragmentation
-      expr: 'ruby_gc_stat_ext_heap_fragmentation{job=~".*gitlab.*"} > 0.5'
-      for: 15m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab Ruby heap fragmentation (instance {{ $labels.instance }})
-        description: "GitLab Ruby heap fragmentation on {{ $labels.instance }} is {{ $value }}. High fragmentation wastes memory.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: GitlabRackUncaughtErrors
       expr: 'rate(rack_uncaught_errors_total[5m]) > 0.05'
@@ -197,15 +206,6 @@ groups:
         summary: GitLab version mismatch (instance {{ $labels.instance }})
         description: "Multiple GitLab versions are running across the fleet.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: GitlabHighFileDescriptorUsage
-      expr: 'process_open_fds{job=~".*gitlab.*"} / process_max_fds * 100 > 80 and process_max_fds > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab high file descriptor usage (instance {{ $labels.instance }})
-        description: "GitLab on {{ $labels.instance }} is using {{ $value }}% of available file descriptors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: GitlabRubyThreadsSaturated
       expr: 'sum by (instance) (gitlab_ruby_threads_running_threads) > on(instance) gitlab_ruby_threads_max_expected_threads * 1.5'
       for: 10m
@@ -214,3 +214,22 @@ groups:
       annotations:
         summary: GitLab Ruby threads saturated (instance {{ $labels.instance }})
         description: "GitLab running threads on {{ $labels.instance }} have exceeded the expected maximum ({{ $value }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GitlabSidekiqQueueNotDraining
+      expr: 'sum by (name) (sidekiq_queue_size) > 0'
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab Sidekiq queue not draining (instance {{ $labels.instance }})
+        description: "GitLab Sidekiq queue {{ $labels.name }} has had a persistent backlog of {{ $value }} jobs for 30 minutes, suggesting a stuck or crashed worker class rather than transient load.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Frequent runner auth failures may indicate expired tokens or misconfigured runners.
+    - alert: GitlabCiRunnerAuthenticationFailures
+      expr: 'increase(gitlab_ci_runner_authentication_failure_total[5m]) > 5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab CI runner authentication failures (instance {{ $labels.instance }})
+        description: "GitLab CI runners are experiencing authentication failures on {{ $labels.instance }} ({{ $value }} failures).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

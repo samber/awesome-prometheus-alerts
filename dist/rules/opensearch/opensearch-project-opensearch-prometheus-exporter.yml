@@ -5,26 +5,71 @@ groups:
   
   rules:
 
-    - alert: OpensearchIsUnhealthy
-      expr: 'opensearch_cluster_status != 0'
-      for: 0m
+    - alert: OpensearchHostCpuUsageHigh
+      expr: 'sum by (cluster, instance, node) (opensearch_os_cpu_percent) > 90'
+      for: 5m
       labels:
-        severity: critical
+        severity: warning
       annotations:
-        summary: OpenSearch is unhealthy (instance {{ $labels.instance }})
-        description: "OpenSearch cluster {{ $labels.cluster }} is unhealthy\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: OpenSearch host CPU usage high (instance {{ $labels.instance }})
+        description: "System CPU usage on OpenSearch node {{ $labels.node }} (cluster {{ $labels.cluster }}) is above 90%, which may cause search and indexing latency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpensearchProcessCpuUsageHigh
+      expr: 'sum by (cluster, instance, node) (opensearch_process_cpu_percent) > 90'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenSearch process CPU usage high (instance {{ $labels.instance }})
+        description: "CPU usage of the OpenSearch process on node {{ $labels.node }} (cluster {{ $labels.cluster }}) is above 90%, indicating heavy load on the JVM process.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpensearchHighHeapUsage
-      expr: 'opensearch_jvm_mem_heap_used_percent > 90'
-      for: 5m
+      expr: 'opensearch_jvm_mem_heap_used_percent > 75'
+      for: 10m
       labels:
         severity: warning
       annotations:
         summary: OpenSearch high heap usage (instance {{ $labels.instance }})
         description: "OpenSearch heap usage on cluster {{ $labels.cluster }} is too high\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: OpensearchDiskHighWatermarkReached
+      expr: 'sum by (cluster, instance, node) (round((1 - (opensearch_fs_path_available_bytes / opensearch_fs_path_total_bytes)) * 100, 0.001)) > 90'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenSearch disk high watermark reached (instance {{ $labels.instance }})
+        description: "Disk usage on OpenSearch node {{ $labels.node }} (cluster {{ $labels.cluster }}) is above the high watermark (90%): OpenSearch will start relocating existing shards away from this node.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpensearchDiskLowWatermarkReached
+      expr: 'sum by (cluster, instance, node) (round((1 - (opensearch_fs_path_available_bytes / opensearch_fs_path_total_bytes)) * 100, 0.001)) > 85'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenSearch disk low watermark reached (instance {{ $labels.instance }})
+        description: "Disk usage on OpenSearch node {{ $labels.node }} (cluster {{ $labels.cluster }}) is above the low watermark (85%): OpenSearch will stop allocating new shards to this node.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpensearchIsRed
+      expr: 'opensearch_cluster_status == 2'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenSearch is red (instance {{ $labels.instance }})
+        description: "OpenSearch cluster {{ $labels.cluster }} is RED: some primary shards are unassigned\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpensearchIsYellow
+      expr: 'opensearch_cluster_status == 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenSearch is yellow (instance {{ $labels.instance }})
+        description: "OpenSearch cluster {{ $labels.cluster }} is YELLOW: some replica shards are unassigned\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: OpensearchCircuitbreakerTripped
-      expr: 'opensearch_circuitbreaker_tripped_count > 0'
+      expr: 'increase(opensearch_circuitbreaker_tripped_count[5m]) > 0'
       for: 5m
       labels:
         severity: warning
@@ -58,3 +103,13 @@ groups:
       annotations:
         summary: OpenSearch has inactive shards (instance {{ $labels.instance }})
         description: "OpenSearch cluster {{ $labels.cluster }} has inactive shards\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 5% rejection ratio is a rough default; depends on your indexing throughput relative to the configured bulk thread pool/queue size — adjust based on your workload.
+    - alert: OpensearchHighBulkRejectionRate
+      expr: 'round((rate(opensearch_threadpool_threads_count{name="bulk",type="rejected"}[5m]) / rate(opensearch_threadpool_threads_count{name="bulk",type="completed"}[5m])) * 100, 0.001) > 5'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenSearch high bulk rejection rate (instance {{ $labels.instance }})
+        description: "The ratio of rejected to completed bulk indexing requests on OpenSearch node {{ $labels.node }} is {{ $value }}%, meaning the node cannot keep up with bulk indexing throughput.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -14,15 +14,6 @@ groups:
         summary: DigitalOcean droplet down (instance {{ $labels.instance }})
         description: "DigitalOcean droplet {{ $labels.name }} ({{ $labels.id }}) in {{ $labels.region }} is not running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: DigitaloceanAccountNotActive
-      expr: 'digitalocean_account_active != 1'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: DigitalOcean account not active (instance {{ $labels.instance }})
-        description: "DigitalOcean account is not active. It may be suspended or locked.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: DigitaloceanDatabaseDown
       expr: 'digitalocean_database_status == 0'
       for: 2m
@@ -50,6 +41,15 @@ groups:
         summary: DigitalOcean load balancer down (instance {{ $labels.instance }})
         description: "DigitalOcean load balancer {{ $labels.name }} ({{ $labels.ip }}) is not active.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: DigitaloceanAccountNotActive
+      expr: 'digitalocean_account_active != 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: DigitalOcean account not active (instance {{ $labels.instance }})
+        description: "DigitalOcean account is not active. It may be suspended or locked.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: DigitaloceanLoadBalancerNoBackends
       expr: 'digitalocean_loadbalancer_droplets == 0'
       for: 1m
@@ -61,7 +61,7 @@ groups:
 
     - alert: DigitaloceanFloatingIpNotAssigned
       expr: 'digitalocean_floating_ipv4_active == 0'
-      for: 0m
+      for: 10m
       labels:
         severity: warning
       annotations:
@@ -95,3 +95,13 @@ groups:
       annotations:
         summary: DigitalOcean droplet limit approaching (instance {{ $labels.instance }})
         description: "DigitalOcean account is using {{ $value }}% of its droplet quota.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # The $100 threshold is an arbitrary default. Adjust based on your budget.
+    - alert: DigitaloceanMonthlySpendHigh
+      expr: 'sum(digitalocean_droplet_price_monthly) + sum(digitalocean_volume_size_bytes) / 1024 / 1024 / 1024 / 10 + sum(digitalocean_snapshot_size_bytes) / 1024 / 1024 / 1024 / 20 > 100'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: DigitalOcean monthly spend high (instance {{ $labels.instance }})
+        description: "Estimated total DigitalOcean monthly cost (droplets + volumes + snapshots) is {{ $value }} USD, above the $100 budget threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

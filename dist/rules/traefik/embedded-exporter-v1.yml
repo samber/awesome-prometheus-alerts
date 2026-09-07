@@ -14,6 +14,7 @@ groups:
         summary: Traefik backend down (instance {{ $labels.instance }})
         description: "All Traefik backends are down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5% 4xx rate is a rough default. Client-error rates vary widely by application (bots, API misuse, rate limits, short-lived token expiry, malformed clients) — adjust based on your baseline.
     - alert: TraefikHighHttp4xxErrorRateBackend
       expr: 'sum(rate(traefik_backend_requests_total{code=~"4.*"}[3m])) by (backend) / sum(rate(traefik_backend_requests_total[3m])) by (backend) * 100 > 5 and sum(rate(traefik_backend_requests_total[3m])) by (backend) > 0'
       for: 1m

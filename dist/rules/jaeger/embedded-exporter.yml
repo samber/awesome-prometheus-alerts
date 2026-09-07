@@ -9,6 +9,28 @@ groups:
   
   rules:
 
+    # Fires when all storage operations for a given type are failing and none are succeeding.
+    # Indicates the storage backend (Cassandra, Elasticsearch, etc.) is likely unreachable or misconfigured.
+    - alert: JaegerStorageCompletelyUnavailable
+      expr: 'sum(rate(jaeger_storage_requests_total{result="err"}[1m])) by (instance, job, namespace, operation) > 0 and sum(rate(jaeger_storage_requests_total{result="ok"}[1m])) by (instance, job, namespace, operation) == 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Jaeger storage completely unavailable (instance {{ $labels.instance }})
+        description: "Jaeger on {{ $labels.instance }} has 100% storage errors for {{ $labels.operation }} — storage backend may be down.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Fires when an operation (e.g. find_traces, get_services) has received requests but none succeeded.
+    # May indicate a persistent storage error or a backend that is slow to recover.
+    - alert: JaegerNoStorageReadsSucceeding
+      expr: 'sum(increase(jaeger_storage_requests_total{result="ok"}[15m])) by (instance, job, namespace, operation) == 0 and sum(increase(jaeger_storage_requests_total[15m])) by (instance, job, namespace, operation) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Jaeger no storage reads succeeding (instance {{ $labels.instance }})
+        description: "Jaeger on {{ $labels.instance }} has no successful storage reads for {{ $labels.operation }} in the past 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: JaegerHighStorageErrorRate
       expr: '100 * sum(rate(jaeger_storage_requests_total{result="err"}[1m])) by (instance, job, namespace, operation) / sum(rate(jaeger_storage_requests_total[1m])) by (instance, job, namespace, operation) > 1 and sum(rate(jaeger_storage_requests_total[1m])) by (instance, job, namespace, operation) > 0'
       for: 5m
@@ -49,17 +71,6 @@ groups:
         summary: Jaeger query service slow responses (instance {{ $labels.instance }})
         description: "Jaeger query service on {{ $labels.instance }} p99 response latency is {{ $value | humanizeDuration }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Fires when all storage operations for a given type are failing and none are succeeding.
-    # Indicates the storage backend (Cassandra, Elasticsearch, etc.) is likely unreachable or misconfigured.
-    - alert: JaegerStorageCompletelyUnavailable
-      expr: 'sum(rate(jaeger_storage_requests_total{result="err"}[1m])) by (instance, job, namespace, operation) > 0 and sum(rate(jaeger_storage_requests_total{result="ok"}[1m])) by (instance, job, namespace, operation) == 0'
-      for: 2m
-      labels:
-        severity: critical
-      annotations:
-        summary: Jaeger storage completely unavailable (instance {{ $labels.instance }})
-        description: "Jaeger on {{ $labels.instance }} has 100% storage errors for {{ $labels.operation }} — storage backend may be down.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # Single trace retrieval (/api/traces/{traceID}) can be slower than search, especially for large traces.
     # Threshold of 5s is a rough default.
     - alert: JaegerSlowSingleTraceRetrieval
@@ -81,14 +92,3 @@ groups:
       annotations:
         summary: Jaeger service discovery errors (instance {{ $labels.instance }})
         description: "Jaeger on {{ $labels.instance }} is returning {{ $value | humanize }}% HTTP 5xx errors on the services endpoint.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Fires when an operation (e.g. find_traces, get_services) has received requests but none succeeded.
-    # May indicate a persistent storage error or a backend that is slow to recover.
-    - alert: JaegerNoStorageReadsSucceeding
-      expr: 'sum(increase(jaeger_storage_requests_total{result="ok"}[15m])) by (instance, job, namespace, operation) == 0 and sum(increase(jaeger_storage_requests_total[15m])) by (instance, job, namespace, operation) > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: Jaeger no storage reads succeeding (instance {{ $labels.instance }})
-        description: "Jaeger on {{ $labels.instance }} has no successful storage reads for {{ $labels.operation }} in the past 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -5,6 +5,44 @@ groups:
   
   rules:
 
+    - alert: ElasticsearchClusterRed
+      expr: 'elasticsearch_cluster_health_status{color="red"} == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Elasticsearch Cluster Red (instance {{ $labels.instance }})
+        description: "Elastic Cluster Red status\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1m delay allows a restart without triggering an alert.
+    - alert: ElasticsearchHealthyNodes
+      expr: 'elasticsearch_cluster_health_number_of_nodes < 3'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Elasticsearch Healthy Nodes (instance {{ $labels.instance }})
+        description: "Missing node in Elasticsearch cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1m delay allows a restart without triggering an alert.
+    - alert: ElasticsearchHealthyDataNodes
+      expr: 'elasticsearch_cluster_health_number_of_data_nodes < 3'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Elasticsearch Healthy Data Nodes (instance {{ $labels.instance }})
+        description: "Missing data node in Elasticsearch cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchHighCpuUsage
+      expr: 'elasticsearch_os_cpu_percent > 90 or elasticsearch_process_cpu_percent > 90'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Elasticsearch High CPU Usage (instance {{ $labels.instance }})
+        description: "OS or Elasticsearch process CPU usage on node {{ $labels.name }} is above 90% (current value: {{ $value }}%), which can cause thread starvation, GC pressure, and slow queries.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: ElasticsearchHeapUsageTooHigh
       expr: '(elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90 and elasticsearch_jvm_memory_max_bytes{area="heap"} > 0'
       for: 2m
@@ -41,14 +79,14 @@ groups:
         summary: Elasticsearch disk space low (instance {{ $labels.instance }})
         description: "The disk usage is over 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ElasticsearchClusterRed
-      expr: 'elasticsearch_cluster_health_status{color="red"} == 1'
-      for: 0m
+    - alert: ElasticsearchUnassignedShards
+      expr: 'elasticsearch_cluster_health_unassigned_shards > 0'
+      for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Elasticsearch Cluster Red (instance {{ $labels.instance }})
-        description: "Elastic Cluster Red status\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Elasticsearch unassigned shards (instance {{ $labels.instance }})
+        description: "Elasticsearch has unassigned shards\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchClusterYellow
       expr: 'elasticsearch_cluster_health_status{color="yellow"} == 1'
@@ -59,35 +97,6 @@ groups:
         summary: Elasticsearch Cluster Yellow (instance {{ $labels.instance }})
         description: "Elastic Cluster Yellow status\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # 1m delay allows a restart without triggering an alert.
-    - alert: ElasticsearchHealthyNodes
-      expr: 'elasticsearch_cluster_health_number_of_nodes < 3'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: Elasticsearch Healthy Nodes (instance {{ $labels.instance }})
-        description: "Missing node in Elasticsearch cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # 1m delay allows a restart without triggering an alert.
-    - alert: ElasticsearchHealthyDataNodes
-      expr: 'elasticsearch_cluster_health_number_of_data_nodes < 3'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: Elasticsearch Healthy Data Nodes (instance {{ $labels.instance }})
-        description: "Missing data node in Elasticsearch cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: ElasticsearchRelocatingShards
-      expr: 'elasticsearch_cluster_health_relocating_shards > 0'
-      for: 0m
-      labels:
-        severity: info
-      annotations:
-        summary: Elasticsearch relocating shards (instance {{ $labels.instance }})
-        description: "Elasticsearch is relocating shards\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: ElasticsearchRelocatingShardsTooLong
       expr: 'elasticsearch_cluster_health_relocating_shards > 0'
       for: 15m
@@ -96,15 +105,6 @@ groups:
       annotations:
         summary: Elasticsearch relocating shards too long (instance {{ $labels.instance }})
         description: "Elasticsearch has been relocating shards for 15min\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: ElasticsearchInitializingShards
-      expr: 'elasticsearch_cluster_health_initializing_shards > 0'
-      for: 0m
-      labels:
-        severity: info
-      annotations:
-        summary: Elasticsearch initializing shards (instance {{ $labels.instance }})
-        description: "Elasticsearch is initializing shards\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ElasticsearchInitializingShardsTooLong
       expr: 'elasticsearch_cluster_health_initializing_shards > 0'
@@ -115,15 +115,6 @@ groups:
         summary: Elasticsearch initializing shards too long (instance {{ $labels.instance }})
         description: "Elasticsearch has been initializing shards for 15 min\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ElasticsearchUnassignedShards
-      expr: 'elasticsearch_cluster_health_unassigned_shards > 0'
-      for: 2m
-      labels:
-        severity: critical
-      annotations:
-        summary: Elasticsearch unassigned shards (instance {{ $labels.instance }})
-        description: "Elasticsearch has unassigned shards\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: ElasticsearchPendingTasks
       expr: 'elasticsearch_cluster_health_number_of_pending_tasks > 0'
       for: 15m
@@ -133,6 +124,7 @@ groups:
         summary: Elasticsearch pending tasks (instance {{ $labels.instance }})
         description: "Elasticsearch has pending tasks. Cluster works slowly.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 10-minute no-activity window is a rough default; expected indexing cadence varies by application (continuous vs batch indexing) — adjust based on your workload.
     - alert: ElasticsearchNoNewDocuments
       expr: 'increase(elasticsearch_indices_indexing_index_total{es_data_node="true"}[10m]) < 1'
       for: 0m
@@ -172,6 +164,7 @@ groups:
         summary: Elasticsearch High Query Rate (instance {{ $labels.instance }})
         description: "The query rate on Elasticsearch cluster is higher than the threshold.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1s threshold is a rough default; normal query latency depends on your query complexity and dataset size — adjust based on your baseline.
     - alert: ElasticsearchHighQueryLatency
       expr: 'rate(elasticsearch_indices_search_query_time_seconds[1m]) / rate(elasticsearch_indices_search_query_total[1m]) > 1 and rate(elasticsearch_indices_search_query_total[1m]) > 0'
       for: 5m
@@ -180,3 +173,39 @@ groups:
       annotations:
         summary: Elasticsearch High Query Latency (instance {{ $labels.instance }})
         description: "The query latency on Elasticsearch cluster is higher than the threshold (current value: {{ $value }}s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchHighThreadPoolRejectionRatio
+      expr: '(rate(elasticsearch_thread_pool_rejected_count[5m]) / (rate(elasticsearch_thread_pool_rejected_count[5m]) + rate(elasticsearch_thread_pool_completed_count[5m]))) * 100 > 5 and (rate(elasticsearch_thread_pool_rejected_count[5m]) + rate(elasticsearch_thread_pool_completed_count[5m])) > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Elasticsearch High Thread Pool Rejection Ratio (instance {{ $labels.instance }})
+        description: "The thread pool rejection ratio on Elasticsearch node {{ $labels.name }} (pool: {{ $labels.type }}) is above 5% (current value: {{ $value }}%), meaning the node cannot keep up with incoming requests and is dropping them.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchCircuitBreakerTripped
+      expr: 'increase(elasticsearch_breakers_tripped[5m]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Elasticsearch Circuit Breaker Tripped (instance {{ $labels.instance }})
+        description: "The {{ $labels.breaker }} circuit breaker on Elasticsearch node {{ $labels.name }} has tripped in the last 5 minutes, meaning the node is rejecting operations to prevent a Java OutOfMemoryError.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchRelocatingShards
+      expr: 'elasticsearch_cluster_health_relocating_shards > 0'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: Elasticsearch relocating shards (instance {{ $labels.instance }})
+        description: "Elasticsearch is relocating shards\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ElasticsearchInitializingShards
+      expr: 'elasticsearch_cluster_health_initializing_shards > 0'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: Elasticsearch initializing shards (instance {{ $labels.instance }})
+        description: "Elasticsearch is initializing shards\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

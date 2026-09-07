@@ -14,6 +14,7 @@ groups:
         summary: Promtail request errors (instance {{ $labels.instance }})
         description: "The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}% errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1s p99 latency threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
     - alert: PromtailRequestLatency
       expr: 'histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[5m])) by (namespace, job, route, le)) > 1'
       for: 5m
@@ -22,3 +23,12 @@ groups:
       annotations:
         summary: Promtail request latency (instance {{ $labels.instance }})
         description: "The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}s 99th percentile latency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: PromtailFileNotBeingTailed
+      expr: 'promtail_file_bytes_total unless promtail_read_bytes_total'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Promtail file not being tailed (instance {{ $labels.instance }})
+        description: "Promtail matched a log file with its configured glob pattern but is not reading any bytes from it, which may indicate a permissions issue or a file watcher problem (instance {{ $labels.instance }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

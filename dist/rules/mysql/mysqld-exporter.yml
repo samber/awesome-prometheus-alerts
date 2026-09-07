@@ -15,6 +15,26 @@ groups:
         summary: MySQL down (instance {{ $labels.instance }})
         description: "MySQL instance is down on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1m delay allows a restart without triggering an alert.
+    - alert: MysqlSlaveIoThreadNotRunning
+      expr: '( mysql_slave_status_slave_io_running and ON (instance) mysql_slave_status_master_server_id > 0 ) == 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: MySQL Slave IO thread not running (instance {{ $labels.instance }})
+        description: "MySQL Slave IO thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1m delay allows a restart without triggering an alert.
+    - alert: MysqlSlaveSqlThreadNotRunning
+      expr: '( mysql_slave_status_slave_sql_running and ON (instance) mysql_slave_status_master_server_id > 0) == 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: MySQL Slave SQL thread not running (instance {{ $labels.instance }})
+        description: "MySQL Slave SQL thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: MysqlTooManyConnections(>80%)
       expr: 'max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 80 and mysql_global_variables_max_connections > 0'
       for: 2m
@@ -42,26 +62,6 @@ groups:
         summary: MySQL high threads running (instance {{ $labels.instance }})
         description: "More than 60% of MySQL connections are in running state on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # 1m delay allows a restart without triggering an alert.
-    - alert: MysqlSlaveIoThreadNotRunning
-      expr: '( mysql_slave_status_slave_io_running and ON (instance) mysql_slave_status_master_server_id > 0 ) == 0'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: MySQL Slave IO thread not running (instance {{ $labels.instance }})
-        description: "MySQL Slave IO thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # 1m delay allows a restart without triggering an alert.
-    - alert: MysqlSlaveSqlThreadNotRunning
-      expr: '( mysql_slave_status_slave_sql_running and ON (instance) mysql_slave_status_master_server_id > 0) == 0'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: MySQL Slave SQL thread not running (instance {{ $labels.instance }})
-        description: "MySQL Slave SQL thread not running on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: MysqlSlaveReplicationLag
       expr: '( (mysql_slave_status_seconds_behind_master - mysql_slave_status_sql_delay) and ON (instance) mysql_slave_status_master_server_id > 0 ) > 30'
       for: 1m
@@ -71,9 +71,29 @@ groups:
         summary: MySQL Slave replication lag (instance {{ $labels.instance }})
         description: "MySQL replication lag on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so delta() is used instead of increase().
+    # More reliable than seconds_behind_master since it measures actual wall-clock lag rather
+    # than a value that can freeze during long-running statements. Requires mysqld_exporter's
+    # optional --collect.heartbeat flag and a pt-heartbeat-style heartbeat table.
+    - alert: MysqlHeartbeatReplicationLag
+      expr: 'mysql_heartbeat_now_timestamp_seconds - mysql_heartbeat_stored_timestamp_seconds > 30'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: MySQL heartbeat replication lag (instance {{ $labels.instance }})
+        description: "MySQL replication lag on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlGaleraNodeNotReady
+      expr: 'mysql_global_status_wsrep_ready != 1'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: MySQL Galera node not ready (instance {{ $labels.instance }})
+        description: "Galera cluster node {{ $labels.instance }} is not ready and is not accepting reads or writes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: MysqlSlowQueries
-      expr: 'delta(mysql_global_status_slow_queries[1m]) > 0'
+      expr: 'increase(mysql_global_status_slow_queries[1m]) > 0'
       for: 2m
       labels:
         severity: warning
@@ -81,34 +101,15 @@ groups:
         summary: MySQL slow queries (instance {{ $labels.instance }})
         description: "MySQL server has some new slow queries ({{ $value }} in the last minute).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so deriv() is used instead of rate().
+    # 10 waits/s is a rough default; log-write stalls scale with your write workload and innodb_log_buffer_size — adjust based on your workload and buffer size.
     - alert: MysqlInnodbLogWaits
-      expr: 'deriv(mysql_global_status_innodb_log_waits[15m]) > 10'
+      expr: 'rate(mysql_global_status_innodb_log_waits[15m]) > 10'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: MySQL InnoDB log waits (instance {{ $labels.instance }})
         description: "MySQL innodb log writes stalling ({{ $value }} waits/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: MysqlRestarted
-      expr: 'mysql_global_status_uptime < 60'
-      for: 0m
-      labels:
-        severity: info
-      annotations:
-        summary: MySQL restarted (instance {{ $labels.instance }})
-        description: "MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # mysqld_exporter exposes SHOW GLOBAL STATUS variables as untyped/gauge, so deriv() is used instead of irate().
-    - alert: MysqlHighQps
-      expr: 'deriv(mysql_global_status_questions[1m]) > 10000'
-      for: 2m
-      labels:
-        severity: info
-      annotations:
-        summary: MySQL High QPS (instance {{ $labels.instance }})
-        description: "MySQL is being overload with unusual QPS (> 10k QPS).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: MysqlTooManyOpenFiles
       expr: 'mysql_global_status_innodb_num_open_files / mysql_global_variables_open_files_limit * 100 > 75 and mysql_global_variables_open_files_limit > 0'
@@ -119,15 +120,7 @@ groups:
         summary: MySQL too many open files (instance {{ $labels.instance }})
         description: "MySQL has too many open files, consider increase variables open_files_limit on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MysqlInnodbForceRecoveryIsEnabled
-      expr: 'mysql_global_variables_innodb_force_recovery != 0'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: MySQL InnoDB Force Recovery is enabled (instance {{ $labels.instance }})
-        description: "MySQL InnoDB force recovery is enabled on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # 50000 is a rough default; undo log length grows with long-running transactions and write volume — adjust based on your transaction patterns.
     - alert: MysqlInnodbHistory_lenTooLong
       expr: 'mysql_info_schema_innodb_metrics_transaction_trx_rseg_history_len > 50000'
       for: 2m
@@ -136,3 +129,50 @@ groups:
       annotations:
         summary: MySQL InnoDB history_len too long (instance {{ $labels.instance }})
         description: "MySQL history_len (undo log) too long on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 100-entry queue is a rough default; catch-up speed depends on your cluster's write throughput and network bandwidth — adjust based on your workload.
+    - alert: MysqlGaleraDonorFallingBehind
+      expr: 'mysql_global_status_wsrep_local_state == 2 and mysql_global_status_wsrep_local_recv_queue > 100'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL Galera donor falling behind (instance {{ $labels.instance }})
+        description: "Galera donor node {{ $labels.instance }} serving a state transfer has a growing receive queue ({{ $value }} entries), indicating it is falling behind the rest of the cluster.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlRestarted
+      expr: 'mysql_global_status_uptime < 60'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: MySQL restarted (instance {{ $labels.instance }})
+        description: "MySQL has just been restarted, less than one minute ago on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 10k QPS is a rough default; normal query volume scales with your application traffic — adjust based on your baseline.
+    - alert: MysqlHighQps
+      expr: 'rate(mysql_global_status_questions[1m]) > 10000'
+      for: 2m
+      labels:
+        severity: info
+      annotations:
+        summary: MySQL High QPS (instance {{ $labels.instance }})
+        description: "MySQL is being overload with unusual QPS (> 10k QPS).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlGaleraNodeOutOfSync
+      expr: 'mysql_global_status_wsrep_local_state != 4 and mysql_global_variables_wsrep_desync == 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL Galera node out of sync (instance {{ $labels.instance }})
+        description: "Galera node {{ $labels.instance }} has unexpectedly fallen out of the Synced state (wsrep_local_state != 4), excluding nodes intentionally desynced for a state transfer or backup.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MysqlInnodbForceRecoveryIsEnabled
+      expr: 'mysql_global_variables_innodb_force_recovery != 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MySQL InnoDB Force Recovery is enabled (instance {{ $labels.instance }})
+        description: "MySQL InnoDB force recovery is enabled on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -5,6 +5,15 @@ groups:
   
   rules:
 
+    - alert: ThanosReceiveNoUpload
+      expr: '(up{job=~".*thanos-receive.*"} - 1) + on (job, instance) (sum by (job, instance) (increase(thanos_shipper_uploads_total{job=~".*thanos-receive.*"}[3h])) == 0)'
+      for: 3h
+      labels:
+        severity: critical
+      annotations:
+        summary: Thanos Receive No Upload (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.instance}} has not uploaded latest data to object storage.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: ThanosReceiveHttpRequestErrorRateHigh
       expr: '(sum by (job) (rate(http_requests_total{code=~"5..", job=~".*thanos-receive.*", handler="receive"}[5m]))/  sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m]))) * 100 > 5 and sum by (job) (rate(http_requests_total{job=~".*thanos-receive.*", handler="receive"}[5m])) > 0'
       for: 5m
@@ -14,6 +23,7 @@ groups:
         summary: Thanos Receive Http Request Error Rate High (instance {{ $labels.instance }})
         description: "Thanos Receive {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 10s threshold is a rough default; ingestion latency scales with your sample throughput — adjust based on your baseline.
     - alert: ThanosReceiveHttpRequestLatencyHigh
       expr: '(histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~".*thanos-receive.*", handler="receive"}[5m]))) > 10 and sum by (job) (rate(http_request_duration_seconds_count{job=~".*thanos-receive.*", handler="receive"}[5m])) > 0)'
       for: 10m
@@ -32,15 +42,6 @@ groups:
         summary: Thanos Receive High Replication Failures (instance {{ $labels.instance }})
         description: "Thanos Receive {{$labels.job}} is failing to replicate {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ThanosReceiveHighForwardRequestFailures
-      expr: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total[5m]))) * 100 > 20 and sum by (job) (rate(thanos_receive_forward_requests_total[5m])) > 0'
-      for: 5m
-      labels:
-        severity: info
-      annotations:
-        summary: Thanos Receive High Forward Request Failures (instance {{ $labels.instance }})
-        description: "Thanos Receive {{$labels.job}} is failing to forward {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: ThanosReceiveHighHashringFileRefreshFailures
       expr: '(sum by (job) (rate(thanos_receive_hashrings_file_errors_total[5m])) / sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total[5m])) > 0) and sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total[5m])) > 0'
       for: 15m
@@ -49,6 +50,33 @@ groups:
       annotations:
         summary: Thanos Receive High Hashring File Refresh Failures (instance {{ $labels.instance }})
         description: "Thanos Receive {{$labels.job}} is failing to refresh hashring file, {{$value | humanize}} of attempts failed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveLimitsHighMetaMonitoringQueriesFailureRate
+      expr: '(sum by (job) (increase(thanos_receive_metamonitoring_failed_queries_total[5m])) / 20) * 100 > 20'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Receive Limits High Meta Monitoring Queries Failure Rate (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} is failing to execute {{ $value | humanize }}% of its meta-monitoring queries.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveTenantLimitedByHeadSeries
+      expr: 'sum by (job, tenant) (increase(thanos_receive_head_series_limited_requests_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Thanos Receive Tenant Limited By Head Series (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} is rejecting write requests from tenant {{$labels.tenant}} because it has exceeded its configured head series limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ThanosReceiveHighForwardRequestFailures
+      expr: '(sum by (job) (rate(thanos_receive_forward_requests_total{result="error"}[5m]))/  sum by (job) (rate(thanos_receive_forward_requests_total[5m]))) * 100 > 20 and sum by (job) (rate(thanos_receive_forward_requests_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: info
+      annotations:
+        summary: Thanos Receive High Forward Request Failures (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} is failing to forward {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosReceiveConfigReloadFailure
       expr: 'avg by (job) (thanos_receive_config_last_reload_successful) != 1'
@@ -59,11 +87,11 @@ groups:
         summary: Thanos Receive Config Reload Failure (instance {{ $labels.instance }})
         description: "Thanos Receive {{$labels.job}} has not been able to reload hashring configurations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ThanosReceiveNoUpload
-      expr: '(up{job=~".*thanos-receive.*"} - 1) + on (job, instance) (sum by (job, instance) (increase(thanos_shipper_uploads_total{job=~".*thanos-receive.*"}[3h])) == 0)'
-      for: 3h
+    - alert: ThanosReceiveLimitsConfigReloadFailure
+      expr: 'sum by (job) (increase(thanos_receive_limits_config_reload_err_total[5m])) > 0'
+      for: 5m
       labels:
-        severity: critical
+        severity: warning
       annotations:
-        summary: Thanos Receive No Upload (instance {{ $labels.instance }})
-        description: "Thanos Receive {{$labels.instance}} has not uploaded latest data to object storage.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Thanos Receive Limits Config Reload Failure (instance {{ $labels.instance }})
+        description: "Thanos Receive {{$labels.job}} has not been able to reload the per-tenant limits configuration file.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

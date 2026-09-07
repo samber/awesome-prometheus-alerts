@@ -35,25 +35,6 @@ groups:
         summary: Container High CPU utilization (instance {{ $labels.instance }})
         description: "Container CPU utilization is above 80% (current: {{ $value | printf \"%.2f\" }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
-    - alert: ContainerHighMemoryUsage
-      expr: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: Container High Memory usage (instance {{ $labels.instance }})
-        description: "Container Memory usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: ContainerVolumeUsage
-      expr: '(1 - (sum(container_fs_inodes_free{name!=""}) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80 and sum(container_fs_inodes_total) BY (instance) > 0'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: Container Volume usage (instance {{ $labels.instance }})
-        description: "Container Volume usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: ContainerHighThrottleRate
       expr: 'sum(rate(container_cpu_cfs_throttled_periods_total{container!=""}[5m])) by (container, pod, namespace) / sum(rate(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > ( 25 / 100 ) and sum(rate(container_cpu_cfs_periods_total[5m])) by (container, pod, namespace) > 0'
       for: 5m
@@ -63,6 +44,7 @@ groups:
         summary: Container high throttle rate (instance {{ $labels.instance }})
         description: "Container is being throttled ({{ $value | humanizePercentage }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 25 percentage-point threshold is a rough default; acceptable CPU volatility depends on your workload's nature (bursty batch jobs vs steady services) — adjust based on your baseline.
     - alert: ContainerHighLowChangeCpuUsage
       expr: '(abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m] offset 1m)) * 100)) or abs((sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[1m])) * 100) - (sum by (instance, name) (rate(container_cpu_usage_seconds_total{name!=""}[5m] offset 1m)) * 100))) > 25'
       for: 0m
@@ -81,6 +63,16 @@ groups:
         summary: Container Low CPU utilization (instance {{ $labels.instance }})
         description: "Container CPU utilization is under 20% for 1 week. Consider reducing the allocated CPU. (current: {{ $value | printf \"%.2f\" }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
+    - alert: ContainerHighMemoryUsage
+      expr: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Container High Memory usage (instance {{ $labels.instance }})
+        description: "Container Memory usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: ContainerLowMemoryUsage
       expr: '(sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) < 20'
       for: 7d
@@ -89,3 +81,22 @@ groups:
       annotations:
         summary: Container Low Memory usage (instance {{ $labels.instance }})
         description: "Container Memory usage is under 20% for 1 week. Consider reducing the allocated memory.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ContainerVolumeUsage
+      expr: '(1 - (sum(container_fs_inodes_free{name!=""}) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80 and sum(container_fs_inodes_total) BY (instance) > 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Container Volume usage (instance {{ $labels.instance }})
+        description: "Container Volume usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Docker-specific health check rule. 0=unhealthy, 1=healthy, -1=no health check configured.
+    - alert: ContainerUnhealthy
+      expr: 'container_health_state == 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Container Unhealthy (instance {{ $labels.instance }})
+        description: "Container {{ $labels.name }} on {{ $labels.instance }} has been reporting an unhealthy Docker health check status for more than 5m\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

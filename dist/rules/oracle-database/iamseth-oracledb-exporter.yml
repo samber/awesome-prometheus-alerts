@@ -15,6 +15,24 @@ groups:
         summary: Oracle DB down (instance {{ $labels.instance }})
         description: "Oracle Database instance is down on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: OracleDbTablespaceFull(>95%)
+      expr: 'oracledb_tablespace_used_percent > 95'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Oracle DB tablespace full (> 95%) (instance {{ $labels.instance }})
+        description: "Oracle Database tablespace {{ $labels.tablespace }} is critically full on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OracleDbTablespaceReachingCapacity(>85%)
+      expr: 'oracledb_tablespace_used_percent > 85'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Oracle DB tablespace reaching capacity (> 85%) (instance {{ $labels.instance }})
+        description: "Oracle Database tablespace {{ $labels.tablespace }} is above 85% usage on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     # Threshold is workload-dependent. Adjust 85% to suit your environment.
     - alert: OracleDbSessionsReachingLimit(>85%)
       expr: 'oracledb_resource_current_utilization{resource_name="sessions"} / oracledb_resource_limit_value{resource_name="sessions"} * 100 > 85 and oracledb_resource_limit_value{resource_name="sessions"} > 0'
@@ -34,24 +52,6 @@ groups:
       annotations:
         summary: Oracle DB processes reaching limit (> 85%) (instance {{ $labels.instance }})
         description: "Oracle Database process utilization is above 85% on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: OracleDbTablespaceReachingCapacity(>85%)
-      expr: 'oracledb_tablespace_used_percent > 85'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: Oracle DB tablespace reaching capacity (> 85%) (instance {{ $labels.instance }})
-        description: "Oracle Database tablespace {{ $labels.tablespace }} is above 85% usage on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: OracleDbTablespaceFull(>95%)
-      expr: 'oracledb_tablespace_used_percent > 95'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Oracle DB tablespace full (> 95%) (instance {{ $labels.instance }})
-        description: "Oracle Database tablespace {{ $labels.tablespace }} is critically full on {{ $labels.instance }} (current value: {{ $value }}%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # A high rollback rate (>20%) often indicates application-level issues such as deadlocks, constraint violations, or poorly designed transactions.
     - alert: OracleDbHighUserRollbacks

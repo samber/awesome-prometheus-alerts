@@ -14,6 +14,7 @@ groups:
         summary: Thanos Bucket Replicate Error Rate (instance {{ $labels.instance }})
         description: "Thanos Replicate is failing to run, {{$value | humanize}}% of attempts failed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 20s threshold is a rough default; replication latency depends on your data volume and object storage backend — adjust based on your baseline.
     - alert: ThanosBucketReplicateRunLatency
       expr: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_replicate_replication_run_duration_seconds_bucket[5m]))) > 20 and  sum by (job) (rate(thanos_replicate_replication_run_duration_seconds_count[5m])) > 0)'
       for: 5m

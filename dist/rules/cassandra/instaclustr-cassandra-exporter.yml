@@ -15,42 +15,7 @@ groups:
         summary: Cassandra Node is unavailable (instance {{ $labels.instance }})
         description: "Cassandra Node is unavailable - {{ $labels.cassandra_cluster }} {{ $labels.exported_endpoint }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: CassandraManyCompactionTasksArePending
-      expr: 'cassandra_table_estimated_pending_compactions > 100'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: Cassandra many compaction tasks are pending (instance {{ $labels.instance }})
-        description: "Many Cassandra compaction tasks are pending - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CassandraCommitlogPendingTasks(instaclustr)
-      expr: 'cassandra_commit_log_pending_tasks > 15'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: Cassandra commitlog pending tasks (Instaclustr) (instance {{ $labels.instance }})
-        description: "Cassandra commitlog pending tasks - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CassandraCompactionExecutorBlockedTasks(instaclustr)
-      expr: 'cassandra_thread_pool_blocked_tasks{pool="CompactionExecutor"} > 15'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: Cassandra compaction executor blocked tasks (Instaclustr) (instance {{ $labels.instance }})
-        description: "Some Cassandra compaction executor tasks are blocked - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: CassandraFlushWriterBlockedTasks(instaclustr)
-      expr: 'cassandra_thread_pool_blocked_tasks{pool="MemtableFlushWriter"} > 15'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: Cassandra flush writer blocked tasks (Instaclustr) (instance {{ $labels.instance }})
-        description: "Some Cassandra flush writer tasks are blocked - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # 5/s is a rough default; timeout volume correlates with cluster load and network conditions — adjust based on your baseline.
     - alert: CassandraConnectionTimeoutsTotal(instaclustr)
       expr: 'sum by (cassandra_cluster,instance) (rate(cassandra_client_request_timeouts_total[5m])) > 5'
       for: 2m
@@ -69,6 +34,7 @@ groups:
         summary: Cassandra storage exceptions (Instaclustr) (instance {{ $labels.instance }})
         description: "Something is going wrong with cassandra storage - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 100 is a rough default; how many tombstones get scanned depends on your deletion patterns and compaction strategy — adjust based on your data model.
     - alert: CassandraTombstoneDump(instaclustr)
       expr: 'avg(cassandra_table_tombstones_scanned{quantile="0.99"}) by (instance,cassandra_cluster,keyspace) > 100'
       for: 2m
@@ -113,3 +79,43 @@ groups:
       annotations:
         summary: Cassandra client request read failure (Instaclustr) (instance {{ $labels.instance }})
         description: "Read failures have occurred, ensure there are not too many unavailable nodes - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 100 is a rough default; pending compactions scale with your write throughput and table count — adjust based on your workload, or add nodes to increase I/O capacity.
+    - alert: CassandraManyCompactionTasksArePending
+      expr: 'cassandra_table_estimated_pending_compactions > 100'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cassandra many compaction tasks are pending (instance {{ $labels.instance }})
+        description: "Many Cassandra compaction tasks are pending - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 15 is a rough default; commitlog backlog scales with your write throughput — adjust based on your workload.
+    - alert: CassandraCommitlogPendingTasks(instaclustr)
+      expr: 'cassandra_commit_log_pending_tasks > 15'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cassandra commitlog pending tasks (Instaclustr) (instance {{ $labels.instance }})
+        description: "Cassandra commitlog pending tasks - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 15 is a rough default; blocked-task depth scales with compaction/write load — adjust based on your workload.
+    - alert: CassandraCompactionExecutorBlockedTasks(instaclustr)
+      expr: 'cassandra_thread_pool_blocked_tasks{pool="CompactionExecutor"} > 15'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cassandra compaction executor blocked tasks (Instaclustr) (instance {{ $labels.instance }})
+        description: "Some Cassandra compaction executor tasks are blocked - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 15 is a rough default; blocked-task depth scales with write load — adjust based on your workload.
+    - alert: CassandraFlushWriterBlockedTasks(instaclustr)
+      expr: 'cassandra_thread_pool_blocked_tasks{pool="MemtableFlushWriter"} > 15'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cassandra flush writer blocked tasks (Instaclustr) (instance {{ $labels.instance }})
+        description: "Some Cassandra flush writer tasks are blocked - {{ $labels.cassandra_cluster }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

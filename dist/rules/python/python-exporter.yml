@@ -14,25 +14,6 @@ groups:
         summary: Python GC objects uncollectable (instance {{ $labels.instance }})
         description: "Python has uncollectable objects ({{ $value }}), potential memory leak via reference cycles\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: PythonGcCollectionsHigh
-      expr: 'rate(python_gc_objects_collected_total[5m]) > 10000'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: Python GC collections high (instance {{ $labels.instance }})
-        description: "Python GC is collecting too many objects (> 10k/s), high allocation pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
-    - alert: PythonFileDescriptorsExhaustion
-      expr: '(process_open_fds / process_max_fds) * 100 > 90 and process_max_fds > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: Python file descriptors exhaustion (instance {{ $labels.instance }})
-        description: "Python process is running out of file descriptors (> 90% used)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # Gen2 collection rate > 1/s is very high. In most applications, gen2 runs are infrequent. Adjust threshold based on your workload.
     - alert: PythonGcGeneration2CollectionsHigh
       expr: 'rate(python_gc_collections_total{generation="2"}[5m]) > 1'
@@ -52,3 +33,24 @@ groups:
       annotations:
         summary: Python virtual memory high (instance {{ $labels.instance }})
         description: "Python process virtual memory is high (> 4GB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # process_open_fds and process_max_fds are generic metrics from the Prometheus client library, not Python-specific.
+    # This alert will also fire for Go, JVM, or any process exposing these metrics.
+    - alert: PythonFileDescriptorsExhaustion
+      expr: '(process_open_fds / process_max_fds) * 100 > 90 and process_max_fds > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Python file descriptors exhaustion (instance {{ $labels.instance }})
+        description: "Python process is running out of file descriptors (> 90% used)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 10k/s is a rough default; scales with your app's object churn and allocation rate — adjust based on your workload.
+    - alert: PythonGcCollectionsHigh
+      expr: 'rate(python_gc_objects_collected_total[5m]) > 10000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Python GC collections high (instance {{ $labels.instance }})
+        description: "Python GC is collecting too many objects (> 10k/s), high allocation pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

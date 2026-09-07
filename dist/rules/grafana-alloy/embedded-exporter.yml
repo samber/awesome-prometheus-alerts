@@ -13,3 +13,57 @@ groups:
       annotations:
         summary: Grafana Alloy service down (instance {{ $labels.instance }})
         description: "Alloy on instance {{ $labels.instance }} is not responding or has stopped running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GrafanaAlloyOpentelemetryExporterFailingToSendData
+      expr: '(1 - (sum by (job) (rate({__name__=~"otelcol_exporter_send_failed_(spans|metric_points|log_records)_total"}[1m])) / (sum by (job) (rate({__name__=~"otelcol_exporter_send_failed_(spans|metric_points|log_records)_total"}[1m])) + sum by (job) (rate({__name__=~"otelcol_exporter_sent_(spans|metric_points|log_records)_total"}[1m]))))) < 0.95'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Grafana Alloy OpenTelemetry exporter failing to send data (instance {{ $labels.instance }})
+        description: "The OpenTelemetry exporter in Alloy under job {{ $labels.job }} has a success rate below 95% for sending spans, metrics, or logs to their destination, meaning telemetry data delivery is failing, possibly due to a payload issue or an unreachable endpoint.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GrafanaAlloyOpentelemetryReceiverRefusingData
+      expr: '(1 - (sum by (job) (rate({__name__=~"otelcol_receiver_refused_(spans|metric_points|log_records)_total"}[1m])) / (sum by (job) (rate({__name__=~"otelcol_receiver_refused_(spans|metric_points|log_records)_total"}[1m])) + sum by (job) (rate({__name__=~"otelcol_receiver_accepted_(spans|metric_points|log_records)_total"}[1m]))))) < 0.95'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Grafana Alloy OpenTelemetry receiver refusing data (instance {{ $labels.instance }})
+        description: "The OpenTelemetry receiver in Alloy under job {{ $labels.job }} has a success rate below 95% for pushing spans, metrics, or logs into the pipeline, meaning telemetry data is being dropped, possibly due to limits imposed by otelcol.processor.memory_limiter.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GrafanaAlloyUnhealthyComponents
+      expr: 'sum by (job) (alloy_component_controller_running_components{health_type!="healthy"}) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Grafana Alloy unhealthy components (instance {{ $labels.instance }})
+        description: "One or more Alloy pipeline components (receivers, exporters, processors, discovery, etc.) under job {{ $labels.job }} are reporting a non-healthy status, even though the Alloy process itself is still running.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GrafanaAlloySlowComponentEvaluations
+      expr: 'sum by (job, component_path, component_id) (rate(alloy_component_evaluation_slow_seconds[10m])) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Grafana Alloy slow component evaluations (instance {{ $labels.instance }})
+        description: "Component {{ $labels.component_id }} at path {{ $labels.component_path }} under job {{ $labels.job }} is taking too long to evaluate, which can lead to stale scrape targets or delayed pipeline processing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GrafanaAlloyClusterNotConverging
+      expr: 'stddev by (job) (sum without (state) (cluster_node_peers)) != 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Grafana Alloy cluster not converging (instance {{ $labels.instance }})
+        description: "Alloy cluster nodes under job {{ $labels.job }} report a different number of peers, meaning the gossip-based cluster is not converging.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GrafanaAlloyClusterNodeUnhealthy
+      expr: 'cluster_node_gossip_health_score > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Grafana Alloy cluster node unhealthy (instance {{ $labels.instance }})
+        description: "Alloy node under job {{ $labels.job }} is reporting a gossip protocol health score above 0, indicating clustering issues that may prevent the node from properly participating in the cluster.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

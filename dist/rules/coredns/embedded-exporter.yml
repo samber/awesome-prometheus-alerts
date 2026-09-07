@@ -5,6 +5,15 @@ groups:
   
   rules:
 
+    - alert: CorednsForwardPluginServfailRateCritical
+      expr: 'sum without (pod, instance, rcode) (rate(coredns_forward_responses_total{rcode="SERVFAIL"}[5m])) / sum without (pod, instance, rcode) (rate(coredns_forward_responses_total[5m])) > 0.03'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: CoreDNS Forward Plugin SERVFAIL Rate Critical (instance {{ $labels.instance }})
+        description: "CoreDNS is returning SERVFAIL for {{ $value | humanizePercentage }} of requests forwarded to upstream {{ $labels.to }}, indicating the upstream resolver is largely unreachable or broken.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: CorednsPanicCount
       expr: 'increase(coredns_panics_total[1m]) > 0'
       for: 0m
@@ -13,3 +22,68 @@ groups:
       annotations:
         summary: CoreDNS Panic Count (instance {{ $labels.instance }})
         description: "Number of CoreDNS panics encountered\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 4s threshold is a rough default; depends on your query volume and upstream resolver performance — adjust based on your baseline.
+    - alert: CorednsHighQueryLatency
+      expr: 'histogram_quantile(0.99, sum(rate(coredns_dns_request_duration_seconds_bucket[5m])) without (instance, pod)) > 4'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: CoreDNS High Query Latency (instance {{ $labels.instance }})
+        description: "CoreDNS 99th percentile request duration on server {{ $labels.server }} zone {{ $labels.zone }} is {{ $value }}s, indicating the resolver is overloaded or struggling to answer queries in time.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CorednsServfailErrorRateCritical
+      expr: 'sum without (pod, instance, server, zone, view, rcode, plugin) (rate(coredns_dns_responses_total{rcode="SERVFAIL"}[5m])) / sum without (pod, instance, server, zone, view, rcode, plugin) (rate(coredns_dns_responses_total[5m])) > 0.03'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: CoreDNS SERVFAIL Error Rate Critical (instance {{ $labels.instance }})
+        description: "CoreDNS is returning SERVFAIL for {{ $value | humanizePercentage }} of DNS responses, meaning a large share of client queries are failing to resolve.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 4s threshold is a rough default; depends on your upstream resolver's performance and network path — adjust based on your baseline.
+    - alert: CorednsForwardPluginHighLatency
+      expr: 'histogram_quantile(0.99, sum(rate(coredns_forward_request_duration_seconds_bucket[5m])) without (pod, instance, rcode)) > 4'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: CoreDNS Forward Plugin High Latency (instance {{ $labels.instance }})
+        description: "CoreDNS 99th percentile latency forwarding requests to upstream {{ $labels.to }} is {{ $value }}s, indicating the upstream resolver is slow or overloaded.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CorednsForwardAllUpstreamsBroken
+      expr: 'sum without (pod, instance) (rate(coredns_forward_healthcheck_broken_total[5m])) > 0'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: CoreDNS Forward All Upstreams Broken (instance {{ $labels.instance }})
+        description: "CoreDNS health checks have failed for every configured upstream server, meaning forwarded DNS queries can no longer be resolved.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CorednsServfailErrorRateHigh
+      expr: 'sum without (pod, instance, server, zone, view, rcode, plugin) (rate(coredns_dns_responses_total{rcode="SERVFAIL"}[5m])) / sum without (pod, instance, server, zone, view, rcode, plugin) (rate(coredns_dns_responses_total[5m])) > 0.01'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: CoreDNS SERVFAIL Error Rate High (instance {{ $labels.instance }})
+        description: "CoreDNS is returning SERVFAIL for {{ $value | humanizePercentage }} of DNS responses, meaning client queries are failing to resolve.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CorednsForwardPluginServfailRateHigh
+      expr: 'sum without (pod, instance, rcode) (rate(coredns_forward_responses_total{rcode="SERVFAIL"}[5m])) / sum without (pod, instance, rcode) (rate(coredns_forward_responses_total[5m])) > 0.01'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: CoreDNS Forward Plugin SERVFAIL Rate High (instance {{ $labels.instance }})
+        description: "CoreDNS is returning SERVFAIL for {{ $value | humanizePercentage }} of requests forwarded to upstream {{ $labels.to }}, indicating the upstream resolver is unhealthy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CorednsForwardUpstreamHealthcheckFailing
+      expr: 'sum without (pod, instance) (rate(coredns_forward_healthcheck_failures_total[5m])) > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: CoreDNS Forward Upstream Healthcheck Failing (instance {{ $labels.instance }})
+        description: "CoreDNS health checks are failing for upstream server {{ $labels.to }}, which may be removed from the forwarding rotation if it stays unhealthy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

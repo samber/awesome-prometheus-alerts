@@ -5,6 +5,36 @@ groups:
   
   rules:
 
+    - alert: SpinnakerThreadPoolExhaustion
+      expr: 'threadpool_blockingQueueSize > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Spinnaker thread pool exhaustion (instance {{ $labels.instance }})
+        description: "Orca message handler thread pool has {{ $value }} blocked threads on {{ $labels.instance }}. Pipeline execution throughput is degraded.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 0.05/s is a rough default; absolute dead-letter volume scales with your overall task throughput — adjust based on your workload.
+    - alert: SpinnakerDeadMessages
+      expr: 'rate(queue_dead_messages_total[5m]) > 0.05'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Spinnaker dead messages (instance {{ $labels.instance }})
+        description: "Orca is producing dead-lettered messages ({{ $value | humanize }}/s). These are tasks that exhausted all retries and will not be executed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # When this threshold is exceeded, Igor stops triggering pipelines for the affected monitor.
+    # See https://kb.armory.io/s/article/Hitting-Igor-s-caching-thresholds
+    - alert: SpinnakerPollingMonitorItemsOverThreshold
+      expr: 'sum by (monitor, partition) (pollingMonitor_itemsOverThreshold) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Spinnaker polling monitor items over threshold (instance {{ $labels.instance }})
+        description: "Igor polling monitor {{ $labels.monitor }} for {{ $labels.partition }} has exceeded its item threshold, preventing pipeline triggers.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: SpinnakerCircuitBreakerOpen
       expr: 'resilience4j_circuitbreaker_state{state="open"} == 1'
       for: 5m
@@ -35,15 +65,6 @@ groups:
         summary: Spinnaker Orca queue message lag high (instance {{ $labels.instance }})
         description: "Orca queue message lag is {{ $value }}s. Pipeline stages are waiting too long before being processed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: SpinnakerDeadMessages
-      expr: 'rate(queue_dead_messages_total[5m]) > 0.05'
-      for: 2m
-      labels:
-        severity: critical
-      annotations:
-        summary: Spinnaker dead messages (instance {{ $labels.instance }})
-        description: "Orca is producing dead-lettered messages ({{ $value | humanize }}/s). These are tasks that exhausted all retries and will not be executed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # Zombies are pipeline executions that are running but have lost their queue entry.
     # See https://spinnaker.io/docs/guides/runbooks/orca-zombie-executions/
     - alert: SpinnakerZombieExecutions
@@ -54,26 +75,6 @@ groups:
       annotations:
         summary: Spinnaker zombie executions (instance {{ $labels.instance }})
         description: "Zombie pipeline executions rate is {{ $value | humanize }}/s. These are executions with no corresponding queue messages.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: SpinnakerThreadPoolExhaustion
-      expr: 'threadpool_blockingQueueSize > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: Spinnaker thread pool exhaustion (instance {{ $labels.instance }})
-        description: "Orca message handler thread pool has {{ $value }} blocked threads on {{ $labels.instance }}. Pipeline execution throughput is degraded.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # When this threshold is exceeded, Igor stops triggering pipelines for the affected monitor.
-    # See https://kb.armory.io/s/article/Hitting-Igor-s-caching-thresholds
-    - alert: SpinnakerPollingMonitorItemsOverThreshold
-      expr: 'sum by (monitor, partition) (pollingMonitor_itemsOverThreshold) > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Spinnaker polling monitor items over threshold (instance {{ $labels.instance }})
-        description: "Igor polling monitor {{ $labels.monitor }} for {{ $labels.partition }} has exceeded its item threshold, preventing pipeline triggers.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SpinnakerPollingMonitorFailures
       expr: 'rate(pollingMonitor_failed_total[5m]) > 0.05'
@@ -94,6 +95,7 @@ groups:
         summary: Spinnaker high API error rate (instance {{ $labels.instance }})
         description: "Spinnaker API 5xx error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 0.05/s is a rough default; throttling volume correlates with your configured rate limit and client request volume — adjust based on your workload.
     - alert: SpinnakerApiRateLimitThrottling
       expr: 'rate(rateLimitThrottling_total[5m]) > 0.05'
       for: 2m

@@ -32,15 +32,6 @@ groups:
         summary: Jenkins healthcheck (instance {{ $labels.instance }})
         description: "Jenkins healthcheck score: {{$value}}. Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: JenkinsOutdatedPlugins
-      expr: 'sum(jenkins_plugins_withUpdate) by (instance) > 3'
-      for: 1d
-      labels:
-        severity: warning
-      annotations:
-        summary: Jenkins outdated plugins (instance {{ $labels.instance }})
-        description: "{{ $value }} plugins need update\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: JenkinsBuildsHealthScore
       expr: 'default_jenkins_builds_health_score < 1'
       for: 0m
@@ -49,6 +40,16 @@ groups:
       annotations:
         summary: Jenkins builds health score (instance {{ $labels.instance }})
         description: "Healthcheck failure for `{{$labels.instance}}` in realm {{$labels.realm}}/{{$labels.env}} ({{$labels.region}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 3 is a rough default; depends on your team's plugin update cadence and patching policy — adjust based on your maintenance workflow.
+    - alert: JenkinsOutdatedPlugins
+      expr: 'sum(jenkins_plugins_withUpdate) by (instance) > 3'
+      for: 1d
+      labels:
+        severity: warning
+      annotations:
+        summary: Jenkins outdated plugins (instance {{ $labels.instance }})
+        description: "{{ $value }} plugins need update\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: JenkinsRunFailureTotal
       expr: 'increase(jenkins_runs_failure_total[1h]) > 100'

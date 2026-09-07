@@ -5,8 +5,73 @@ groups:
   # CloudWatch metrics are exported as aws_{namespace}_{metric_name}_{statistic} gauges.
   # The rules below cover both exporter health and common AWS service alerts.
   # Adjust thresholds and label filters to match your CloudWatch exporter configuration.
+  # CloudWatch-sourced metrics carry the original CloudWatch data timestamp (delayed by
+  # delay_seconds, default 600s/10m), not the scrape time — the AWS service alerts below use
+  # "offset 10m" to account for this. Adjust the offset if you changed delay_seconds.
   
   rules:
+
+    # Requires EC2 CPUUtilization metric configured in the CloudWatch exporter.
+    - alert: AwsEc2HighCpuUtilization
+      expr: 'aws_ec2_cpuutilization_average offset 10m > 90'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: AWS EC2 high CPU utilization (instance {{ $labels.instance }})
+        description: "EC2 instance {{ $labels.instance_id }} CPU utilization is above 90% ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Requires RDS CPUUtilization metric configured in the CloudWatch exporter.
+    - alert: AwsRdsHighCpuUtilization
+      expr: 'aws_rds_cpuutilization_average offset 10m > 90'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: AWS RDS high CPU utilization (instance {{ $labels.instance }})
+        description: "RDS instance {{ $labels.dbinstance_identifier }} CPU utilization is above 90% ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Requires RDS FreeStorageSpace metric. The threshold of 2GB is a rough default.
+    # Adjust based on your database size.
+    - alert: AwsRdsLowFreeStorageSpace
+      expr: 'aws_rds_free_storage_space_average offset 10m < 2000000000'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: AWS RDS low free storage space (instance {{ $labels.instance }})
+        description: "RDS instance {{ $labels.dbinstance_identifier }} has less than 2GB free storage ({{ $value }} bytes remaining).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # The threshold depends on the RDS instance class. Adjust based on your
+    # instance type's max_connections parameter.
+    - alert: AwsRdsHighDatabaseConnections
+      expr: 'aws_rds_database_connections_average offset 10m > 100'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: AWS RDS high database connections (instance {{ $labels.instance }})
+        description: "RDS instance {{ $labels.dbinstance_identifier }} has {{ $value }} active connections.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Requires ApplicationELB UnHealthyHostCount metric.
+    - alert: AwsAlbUnhealthyTargets
+      expr: 'aws_applicationelb_unhealthy_host_count_average offset 10m > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: AWS ALB unhealthy targets (instance {{ $labels.instance }})
+        description: "ALB {{ $labels.load_balancer }} has {{ $value }} unhealthy target(s) in target group {{ $labels.target_group }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Requires ApplicationELB HTTPCode_ELB_5XX_Count and RequestCount metrics.
+    - alert: AwsAlbHigh5xxErrorRate
+      expr: '(aws_applicationelb_httpcode_elb_5_xx_count_sum offset 10m / aws_applicationelb_request_count_sum offset 10m) * 100 > 5 and aws_applicationelb_request_count_sum offset 10m > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: AWS ALB high 5xx error rate (instance {{ $labels.instance }})
+        description: "ALB {{ $labels.load_balancer }} 5xx error rate is above 5% ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CloudwatchExporterScrapeError
       expr: 'cloudwatch_exporter_scrape_error > 0'
@@ -17,6 +82,7 @@ groups:
         summary: CloudWatch exporter scrape error (instance {{ $labels.instance }})
         description: "CloudWatch exporter on {{ $labels.instance }} failed to scrape metrics from AWS CloudWatch API.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5-minute threshold is a rough default; scrape time scales with how many AWS resources and metrics you are monitoring — adjust based on your monitored fleet size.
     - alert: CloudwatchExporterSlowScrape
       expr: 'cloudwatch_exporter_scrape_duration_seconds > 300'
       for: 5m
@@ -37,52 +103,10 @@ groups:
         summary: CloudWatch API high request rate (instance {{ $labels.instance }})
         description: "CloudWatch exporter on {{ $labels.instance }} is making {{ $value }} API calls per minute to namespace {{ $labels.namespace }}. This can lead to high AWS costs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Requires EC2 CPUUtilization metric configured in the CloudWatch exporter.
-    - alert: AwsEc2HighCpuUtilization
-      expr: 'aws_ec2_cpuutilization_average > 90'
-      for: 15m
-      labels:
-        severity: warning
-      annotations:
-        summary: AWS EC2 high CPU utilization (instance {{ $labels.instance }})
-        description: "EC2 instance {{ $labels.instance_id }} CPU utilization is above 90% ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Requires RDS FreeStorageSpace metric. The threshold of 2GB is a rough default.
-    # Adjust based on your database size.
-    - alert: AwsRdsLowFreeStorageSpace
-      expr: 'aws_rds_free_storage_space_average < 2000000000'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: AWS RDS low free storage space (instance {{ $labels.instance }})
-        description: "RDS instance {{ $labels.dbinstance_identifier }} has less than 2GB free storage ({{ $value }} bytes remaining).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Requires RDS CPUUtilization metric configured in the CloudWatch exporter.
-    - alert: AwsRdsHighCpuUtilization
-      expr: 'aws_rds_cpuutilization_average > 90'
-      for: 15m
-      labels:
-        severity: warning
-      annotations:
-        summary: AWS RDS high CPU utilization (instance {{ $labels.instance }})
-        description: "RDS instance {{ $labels.dbinstance_identifier }} CPU utilization is above 90% ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # The threshold depends on the RDS instance class. Adjust based on your
-    # instance type's max_connections parameter.
-    - alert: AwsRdsHighDatabaseConnections
-      expr: 'aws_rds_database_connections_average > 100'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: AWS RDS high database connections (instance {{ $labels.instance }})
-        description: "RDS instance {{ $labels.dbinstance_identifier }} has {{ $value }} active connections.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # Requires SQS ApproximateNumberOfMessagesVisible metric. The threshold of 1000
     # is a rough default. Adjust based on your expected queue depth.
     - alert: AwsSqsQueueMessagesVisible
-      expr: 'aws_sqs_approximate_number_of_messages_visible_average > 1000'
+      expr: 'aws_sqs_approximate_number_of_messages_visible_average offset 10m > 1000'
       for: 10m
       labels:
         severity: warning
@@ -92,7 +116,7 @@ groups:
 
     # Requires SQS ApproximateAgeOfOldestMessage metric.
     - alert: AwsSqsMessageAgeTooOld
-      expr: 'aws_sqs_approximate_age_of_oldest_message_maximum > 3600'
+      expr: 'aws_sqs_approximate_age_of_oldest_message_maximum offset 10m > 3600'
       for: 0m
       labels:
         severity: warning
@@ -100,29 +124,9 @@ groups:
         summary: AWS SQS message age too old (instance {{ $labels.instance }})
         description: "SQS queue {{ $labels.queue_name }} has messages older than 1 hour ({{ $value }}s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Requires ApplicationELB UnHealthyHostCount metric.
-    - alert: AwsAlbUnhealthyTargets
-      expr: 'aws_applicationelb_unhealthy_host_count_average > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: AWS ALB unhealthy targets (instance {{ $labels.instance }})
-        description: "ALB {{ $labels.load_balancer }} has {{ $value }} unhealthy target(s) in target group {{ $labels.target_group }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Requires ApplicationELB HTTPCode_ELB_5XX_Count and RequestCount metrics.
-    - alert: AwsAlbHigh5xxErrorRate
-      expr: '(aws_applicationelb_httpcode_elb_5_xx_count_sum / aws_applicationelb_request_count_sum) * 100 > 5 and aws_applicationelb_request_count_sum > 0'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: AWS ALB high 5xx error rate (instance {{ $labels.instance }})
-        description: "ALB {{ $labels.load_balancer }} 5xx error rate is above 5% ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # Requires ApplicationELB TargetResponseTime metric.
     - alert: AwsAlbHighTargetResponseTime
-      expr: 'aws_applicationelb_target_response_time_average > 2'
+      expr: 'aws_applicationelb_target_response_time_average offset 10m > 2'
       for: 5m
       labels:
         severity: warning
@@ -132,7 +136,7 @@ groups:
 
     # Requires Lambda Errors and Invocations metrics.
     - alert: AwsLambdaHighErrorRate
-      expr: '(aws_lambda_errors_sum / aws_lambda_invocations_sum) * 100 > 5 and aws_lambda_invocations_sum > 0'
+      expr: '(aws_lambda_errors_sum offset 10m / aws_lambda_invocations_sum offset 10m) * 100 > 5 and aws_lambda_invocations_sum offset 10m > 0'
       for: 5m
       labels:
         severity: warning

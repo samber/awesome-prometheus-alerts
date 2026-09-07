@@ -14,6 +14,7 @@ groups:
         summary: Juniper switch down (instance {{ $labels.instance }})
         description: "The switch appears to be down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 0.90GiB/s assumes a ~1Gbps-class interface; adjust to match your interface's actual configured speed (use ifHighSpeed for 10G+ interfaces).
     - alert: JuniperCriticalBandwidthUsage1gib
       expr: 'rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.90'
       for: 1m
@@ -23,6 +24,7 @@ groups:
         summary: Juniper critical Bandwidth Usage 1GiB (instance {{ $labels.instance }})
         description: "Interface is highly saturated. (> 0.90GiB/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 0.80GiB/s assumes a ~1Gbps-class interface; adjust to match your interface's actual configured speed (use ifHighSpeed for 10G+ interfaces).
     - alert: JuniperWarningBandwidthUsage1gib
       expr: 'rate(junos_interface_transmit_bytes[1m]) * 8 > 1e+9 * 0.80'
       for: 1m

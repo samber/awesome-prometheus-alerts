@@ -32,15 +32,14 @@ groups:
         summary: Thanos Rule High Rule Evaluation Failures (instance {{ $labels.instance }})
         description: "Thanos Rule {{$labels.instance}} is failing to evaluate {{$value | humanize}}% of rules.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Threshold of 0.05/s avoids firing on transient single-event spikes.
-    - alert: ThanosRuleHighRuleEvaluationWarnings
-      expr: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total[5m])) > 0.05'
-      for: 15m
+    - alert: ThanosNoRuleEvaluations
+      expr: 'sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) <= 0  and sum by (job, instance) (thanos_rule_loaded_rules) > 0'
+      for: 5m
       labels:
-        severity: info
+        severity: critical
       annotations:
-        summary: Thanos Rule High Rule Evaluation Warnings (instance {{ $labels.instance }})
-        description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Thanos No Rule Evaluations (instance {{ $labels.instance }})
+        description: "Thanos Rule {{$labels.instance}} did not perform any rule evaluations in the past 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ThanosRuleRuleEvaluationLatencyHigh
       expr: '(sum by (job, instance, rule_group) (prometheus_rule_group_last_duration_seconds{job=~".*thanos-rule.*"}) > sum by (job, instance, rule_group) (prometheus_rule_group_interval_seconds{job=~".*thanos-rule.*"}))'
@@ -60,15 +59,6 @@ groups:
         summary: Thanos Rule Grpc Error Rate (instance {{ $labels.instance }})
         description: "Thanos Rule {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ThanosRuleConfigReloadFailure
-      expr: 'avg by (job, instance) (thanos_rule_config_last_reload_successful) != 1'
-      for: 5m
-      labels:
-        severity: info
-      annotations:
-        summary: Thanos Rule Config Reload Failure (instance {{ $labels.instance }})
-        description: "Thanos Rule {{$labels.job}} has not been able to reload its configuration.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: ThanosRuleQueryHighDNSFailures
       expr: '(sum by (job, instance) (rate(thanos_rule_query_apis_dns_failures_total[5m])) / sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total[5m])) * 100 > 1) and sum by (job, instance) (rate(thanos_rule_query_apis_dns_lookups_total[5m])) > 0'
       for: 15m
@@ -87,6 +77,16 @@ groups:
         summary: Thanos Rule Alertmanager High D N S Failures (instance {{ $labels.instance }})
         description: "Thanos Rule {{$labels.instance}} has {{$value | humanize}}% of failing DNS queries for Alertmanager endpoints.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
+    - alert: ThanosRuleHighRuleEvaluationWarnings
+      expr: 'sum by (job, instance) (rate(thanos_rule_evaluation_with_warnings_total[5m])) > 0.05'
+      for: 15m
+      labels:
+        severity: info
+      annotations:
+        summary: Thanos Rule High Rule Evaluation Warnings (instance {{ $labels.instance }})
+        description: "Thanos Rule {{$labels.instance}} has high number of evaluation warnings ({{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: ThanosRuleNoEvaluationFor10Intervals
       expr: 'time() -  max by (job, instance, group) (prometheus_rule_group_last_evaluation_timestamp_seconds{job=~".*thanos-rule.*"})>10 * max by (job, instance, group) (prometheus_rule_group_interval_seconds{job=~".*thanos-rule.*"})'
       for: 5m
@@ -96,11 +96,11 @@ groups:
         summary: Thanos Rule No Evaluation For10 Intervals (instance {{ $labels.instance }})
         description: "Thanos Rule {{$labels.job}} has rule groups that did not evaluate for at least 10x of their expected interval.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: ThanosNoRuleEvaluations
-      expr: 'sum by (job, instance) (rate(prometheus_rule_evaluations_total{job=~".*thanos-rule.*"}[5m])) <= 0  and sum by (job, instance) (thanos_rule_loaded_rules) > 0'
+    - alert: ThanosRuleConfigReloadFailure
+      expr: 'avg by (job, instance) (thanos_rule_config_last_reload_successful) != 1'
       for: 5m
       labels:
-        severity: critical
+        severity: info
       annotations:
-        summary: Thanos No Rule Evaluations (instance {{ $labels.instance }})
-        description: "Thanos Rule {{$labels.instance}} did not perform any rule evaluations in the past 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Thanos Rule Config Reload Failure (instance {{ $labels.instance }})
+        description: "Thanos Rule {{$labels.job}} has not been able to reload its configuration.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

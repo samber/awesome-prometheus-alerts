@@ -14,6 +14,7 @@ groups:
         summary: Thanos Store Grpc Error Rate (instance {{ $labels.instance }})
         description: "Thanos Store {{$labels.job}} is failing to handle {{$value | humanize}}% of requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 2s threshold is a rough default; gate latency scales with your query concurrency and data volume — adjust based on your baseline.
     - alert: ThanosStoreSeriesGateLatencyHigh
       expr: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_bucket_store_series_gate_duration_seconds_bucket[5m]))) > 2 and sum by (job) (rate(thanos_bucket_store_series_gate_duration_seconds_count[5m])) > 0)'
       for: 10m
@@ -32,6 +33,7 @@ groups:
         summary: Thanos Store Bucket High Operation Failures (instance {{ $labels.instance }})
         description: "Thanos Store {{$labels.job}} Bucket is failing to execute {{$value | humanize}}% of operations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 2s threshold is a rough default; object storage latency depends on your backend (S3 vs GCS vs local) and network path — adjust based on your baseline.
     - alert: ThanosStoreObjstoreOperationLatencyHigh
       expr: '(histogram_quantile(0.99, sum by (job, le) (rate(thanos_objstore_bucket_operation_duration_seconds_bucket{job=~".*thanos-store.*"}[5m]))) > 2 and  sum by (job) (rate(thanos_objstore_bucket_operation_duration_seconds_count{job=~".*thanos-store.*"}[5m])) > 0)'
       for: 10m

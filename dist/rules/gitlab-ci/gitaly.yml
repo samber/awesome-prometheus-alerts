@@ -5,15 +5,15 @@ groups:
   
   rules:
 
-    # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
-    - alert: GitlabGitalyHighGrpcErrorRate
-      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown|DataLoss"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
+    # Brief throttling spikes are normal. Threshold of 0.1s/s (10% of CPU time throttled) filters out transient noise.
+    - alert: GitlabGitalyCpuThrottled
+      expr: 'rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0.1'
       for: 5m
       labels:
         severity: warning
       annotations:
-        summary: GitLab Gitaly high gRPC error rate (instance {{ $labels.instance }})
-        description: "Gitaly on {{ $labels.instance }} is returning more than 5% gRPC errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: GitLab Gitaly CPU throttled (instance {{ $labels.instance }})
+        description: "Gitaly processes on {{ $labels.instance }} are being CPU throttled by cgroups.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # ResourceExhausted errors from Gitaly mean Git operations are being rejected due to
     # concurrency limits. This directly impacts users trying to push, pull, or clone.
@@ -26,34 +26,6 @@ groups:
         summary: GitLab Gitaly resource exhausted (instance {{ $labels.instance }})
         description: "Gitaly on {{ $labels.instance }} is returning ResourceExhausted errors, indicating overload ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: GitlabGitalyHighRpcLatency
-      expr: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab Gitaly high RPC latency (instance {{ $labels.instance }})
-        description: "Gitaly on {{ $labels.instance }} p95 unary RPC latency exceeds 1 second ({{ $value }}s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Brief throttling spikes are normal. Threshold of 0.1s/s (10% of CPU time throttled) filters out transient noise.
-    - alert: GitlabGitalyCpuThrottled
-      expr: 'rate(gitaly_cgroup_cpu_cfs_throttled_seconds_total[5m]) > 0.1'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab Gitaly CPU throttled (instance {{ $labels.instance }})
-        description: "Gitaly processes on {{ $labels.instance }} are being CPU throttled by cgroups.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: GitlabGitalyAuthenticationFailures
-      expr: 'increase(gitaly_authentications_total{status="failed"}[5m]) > 3'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: GitLab Gitaly authentication failures (instance {{ $labels.instance }})
-        description: "Gitaly on {{ $labels.instance }} has authentication failures ({{ $value }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # When the circuit breaker trips to "open" state, Git operations (push, pull, clone) will fail.
     # Check Gitaly service health and logs.
     - alert: GitlabGitalyCircuitBreakerTripped
@@ -64,3 +36,33 @@ groups:
       annotations:
         summary: GitLab Gitaly circuit breaker tripped (instance {{ $labels.instance }})
         description: "Gitaly circuit breaker has tripped on {{ $labels.instance }}. Git operations are failing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Counts server-side failures only. NotFound, AlreadyExists and Cancelled are normal gRPC
+    # responses and are deliberately excluded from the error rate.
+    - alert: GitlabGitalyHighGrpcErrorRate
+      expr: 'sum(rate(grpc_server_handled_total{job="gitaly",grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown|DataLoss"}[5m])) / sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab Gitaly high gRPC error rate (instance {{ $labels.instance }})
+        description: "Gitaly on {{ $labels.instance }} is returning more than 5% gRPC errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Replace job="gitaly" with the actual job name in your Prometheus configuration. The 1s p95 latency threshold is a rough default; adjust based on your workload.
+    - alert: GitlabGitalyHighRpcLatency
+      expr: 'histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])) by (le)) > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab Gitaly high RPC latency (instance {{ $labels.instance }})
+        description: "Gitaly on {{ $labels.instance }} p95 unary RPC latency exceeds 1 second ({{ $value }}s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: GitlabGitalyAuthenticationFailures
+      expr: 'increase(gitaly_authentications_total{status="denied"}[5m]) > 3'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: GitLab Gitaly authentication failures (instance {{ $labels.instance }})
+        description: "Gitaly on {{ $labels.instance }} has authentication failures ({{ $value }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

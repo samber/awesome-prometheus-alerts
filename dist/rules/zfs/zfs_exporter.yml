@@ -5,15 +5,6 @@ groups:
   
   rules:
 
-    - alert: ZfsPoolOutOfSpace
-      expr: 'zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and zfs_pool_readonly == 0 and zfs_pool_size_bytes > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: ZFS pool out of space (instance {{ $labels.instance }})
-        description: "ZFS pool {{ $labels.pool }} is almost full (< 10% left).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # 0: ONLINE
     # 1: DEGRADED
     # 2: FAULTED
@@ -29,6 +20,15 @@ groups:
       annotations:
         summary: ZFS pool unhealthy (instance {{ $labels.instance }})
         description: "ZFS pool state is {{ $value }}. See comments for more information.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ZfsPoolOutOfSpace
+      expr: 'zfs_pool_free_bytes * 100 / zfs_pool_size_bytes < 10 and zfs_pool_readonly == 0 and zfs_pool_size_bytes > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: ZFS pool out of space (instance {{ $labels.instance }})
+        description: "ZFS pool {{ $labels.pool }} is almost full (< 10% left).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ZfsCollectorFailed
       expr: 'zfs_scrape_collector_success != 1'

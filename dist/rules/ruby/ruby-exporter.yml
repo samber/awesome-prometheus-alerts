@@ -15,6 +15,7 @@ groups:
         summary: Ruby heap live slots high (instance {{ $labels.instance }})
         description: "Ruby heap has too many live slots (> 500k), heap bloat\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 500k is a rough default; scales with your configured heap size and allocation patterns — adjust based on your workload.
     - alert: RubyHeapFreeSlotsHigh
       expr: 'ruby_heap_free_slots > 500000'
       for: 5m
@@ -34,6 +35,7 @@ groups:
         summary: Ruby major GC rate high (instance {{ $labels.instance }})
         description: "Ruby is performing too many major GC cycles, indicating memory pressure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1GB is a rough default; RSS scales with your app's memory footprint (worker count, dependencies, data processing) — adjust based on your workload.
     - alert: RubyRssHigh
       expr: 'ruby_rss > 1e9'
       for: 5m
@@ -43,6 +45,7 @@ groups:
         summary: Ruby RSS high (instance {{ $labels.instance }})
         description: "Ruby process RSS is high (> 1GB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 100k/s is a rough default; scales with your app's object allocation rate — adjust based on your workload.
     - alert: RubyAllocatedObjectsSpike
       expr: 'rate(ruby_allocated_objects_total[5m]) > 100000'
       for: 5m

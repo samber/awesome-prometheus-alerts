@@ -17,6 +17,7 @@ groups:
         summary: LiteLLM provider spend over budget (instance {{ $labels.instance }})
         description: "Cumulative spend for an LLM provider has exceeded the daily budget threshold. Replace the regex `(claude-|anthropic/).*` with your provider's model-name pattern. Useful as a soft-warning when `provider_budget_config` hard-cap is unavailable or disabled.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5% threshold is a rough default; failures mix downstream provider outages (infra-side) with client-side auth/quota issues, and baselines vary by which LLM provider/model you route to — adjust based on your baseline.
     - alert: LitellmProxyFailedRequestsRateHigh
       expr: 'sum(rate(litellm_proxy_failed_requests_metric_total[5m])) / sum(rate(litellm_proxy_total_requests_metric_total[5m])) > 0.05'
       for: 10m
@@ -26,6 +27,7 @@ groups:
         summary: LiteLLM proxy failed requests rate high (instance {{ $labels.instance }})
         description: "LiteLLM proxy is returning failed responses to clients (>5% error rate over 5min). Investigate downstream LLM provider availability or auth issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 10s threshold is a rough default; end-to-end latency depends heavily on which downstream LLM provider/model you route to — adjust based on your baseline.
     - alert: LitellmRequestLatencyP95High
       expr: 'histogram_quantile(0.95, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le)) > 10'
       for: 10m

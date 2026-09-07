@@ -5,6 +5,25 @@ groups:
   
   rules:
 
+    - alert: MongodbReplicationStatus8
+      expr: 'mongodb_replset_member_state == 8'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: MongoDB replication Status 8 (instance {{ $labels.instance }})
+        description: "MongoDB Replication set member as seen from another member of the set, is unreachable\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MongodbTooManyConnections(dcu)
+      expr: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80 and (mongodb_connections{state="current"} + mongodb_connections{state="available"}) > 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: MongoDB too many connections (DCU) (instance {{ $labels.instance }})
+        description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 10s threshold is a rough default; acceptable lag depends on your network and replication workload — adjust based on your baseline.
     - alert: MongodbReplicationLag(dcu)
       expr: 'avg(mongodb_replset_member_optime_date{state="PRIMARY"}) - avg(mongodb_replset_member_optime_date{state="SECONDARY"}) > 10'
       for: 0m
@@ -32,15 +51,6 @@ groups:
         summary: MongoDB replication Status 6 (instance {{ $labels.instance }})
         description: "MongoDB Replication set member as seen from another member of the set, is not yet known\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: MongodbReplicationStatus8
-      expr: 'mongodb_replset_member_state == 8'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: MongoDB replication Status 8 (instance {{ $labels.instance }})
-        description: "MongoDB Replication set member as seen from another member of the set, is unreachable\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: MongodbReplicationStatus9
       expr: 'mongodb_replset_member_state == 9'
       for: 0m
@@ -59,6 +69,7 @@ groups:
         summary: MongoDB replication Status 10 (instance {{ $labels.instance }})
         description: "MongoDB Replication set member was once in a replica set but was subsequently removed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 10k cursors is a rough default; cursor count scales with your concurrent client and query load — adjust based on your workload.
     - alert: MongodbNumberCursorsOpen(dcu)
       expr: 'mongodb_metrics_cursor_open{state="total_open"} > 10000'
       for: 2m
@@ -68,6 +79,7 @@ groups:
         summary: MongoDB number cursors open (DCU) (instance {{ $labels.instance }})
         description: "Too many cursors opened by MongoDB for clients (> 10k)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 100 timeouts/min is a rough default; scales with your query volume and concurrency — adjust based on your workload.
     - alert: MongodbCursorsTimeouts(dcu)
       expr: 'increase(mongodb_metrics_cursor_timed_out_total[1m]) > 100'
       for: 2m
@@ -76,12 +88,3 @@ groups:
       annotations:
         summary: MongoDB cursors timeouts (DCU) (instance {{ $labels.instance }})
         description: "Too many cursors are timing out ({{ $value }} in the last minute)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: MongodbTooManyConnections(dcu)
-      expr: 'mongodb_connections{state="current"} / (mongodb_connections{state="current"} + mongodb_connections{state="available"}) * 100 > 80 and (mongodb_connections{state="current"} + mongodb_connections{state="available"}) > 0'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: MongoDB too many connections (DCU) (instance {{ $labels.instance }})
-        description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

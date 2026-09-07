@@ -5,15 +5,18 @@ groups:
   
   rules:
 
-    - alert: PulsarSubscriptionHighNumberOfBacklogEntries
-      expr: 'sum(pulsar_subscription_back_log) by (subscription) > 5000'
+    # This metric name is path-dependent and may differ based on your BookKeeper data directory configuration.
+    # Adjust the metric name to match your actual ledger directory path.
+    - alert: PulsarHighLedgerDiskUsage
+      expr: 'sum(bookie_ledger_dir__pulsar_data_bookkeeper_ledgers_usage) by (kubernetes_pod_name) > 75'
       for: 1h
       labels:
-        severity: warning
+        severity: critical
       annotations:
-        summary: Pulsar subscription high number of backlog entries (instance {{ $labels.instance }})
-        description: "The number of subscription backlog entries is over 5k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Pulsar high ledger disk usage (instance {{ $labels.instance }})
+        description: "Observing Ledger Disk Usage (> 75%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 100k is a rough default; backlog depth scales with your message throughput and consumer processing speed — adjust based on your workload.
     - alert: PulsarSubscriptionVeryHighNumberOfBacklogEntries
       expr: 'sum(pulsar_subscription_back_log) by (subscription) > 100000'
       for: 1h
@@ -23,15 +26,7 @@ groups:
         summary: Pulsar subscription very high number of backlog entries (instance {{ $labels.instance }})
         description: "The number of subscription backlog entries is over 100k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: PulsarTopicLargeBacklogStorageSize
-      expr: 'sum(pulsar_storage_size) by (topic) > 5*1024*1024*1024'
-      for: 1h
-      labels:
-        severity: warning
-      annotations:
-        summary: Pulsar topic large backlog storage size (instance {{ $labels.instance }})
-        description: "The topic backlog storage size is over 5 GB\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # 20GB is a rough default; scales with your message size, retention, and consumer lag — adjust based on your workload.
     - alert: PulsarTopicVeryLargeBacklogStorageSize
       expr: 'sum(pulsar_storage_size) by (topic) > 20*1024*1024*1024'
       for: 1h
@@ -52,6 +47,55 @@ groups:
         summary: Pulsar high write latency (instance {{ $labels.instance }})
         description: "Pulsar topic {{ $labels.topic }} has {{ $value }} storage write operations exceeding the maximum latency bucket (> 1000ms)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: PulsarReadOnlyBookies
+      expr: 'count(bookie_SERVER_STATUS{} == 0) by (pod)'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar read only bookies (instance {{ $labels.instance }})
+        description: "Observing Readonly Bookies\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 10/s is a rough default; absolute error count scales with your function's invocation volume — adjust based on your workload.
+    - alert: PulsarHighNumberOfFunctionErrors
+      expr: 'sum(rate(pulsar_function_user_exceptions_total[1m]) + rate(pulsar_function_system_exceptions_total[1m])) by (name) > 10'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar high number of function errors (instance {{ $labels.instance }})
+        description: "Pulsar function {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 10/s is a rough default; absolute error count scales with your sink's throughput — adjust based on your workload.
+    - alert: PulsarHighNumberOfSinkErrors
+      expr: 'sum(rate(pulsar_sink_sink_exceptions_total[1m])) by (name) > 10'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Pulsar high number of sink errors (instance {{ $labels.instance }})
+        description: "Pulsar sink {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 5k is a rough default; backlog depth scales with your message throughput and consumer processing speed — adjust based on your workload.
+    - alert: PulsarSubscriptionHighNumberOfBacklogEntries
+      expr: 'sum(pulsar_subscription_back_log) by (subscription) > 5000'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Pulsar subscription high number of backlog entries (instance {{ $labels.instance }})
+        description: "The number of subscription backlog entries is over 5k\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 5GB is a rough default; scales with your message size, retention, and consumer lag — adjust based on your workload.
+    - alert: PulsarTopicLargeBacklogStorageSize
+      expr: 'sum(pulsar_storage_size) by (topic) > 5*1024*1024*1024'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Pulsar topic large backlog storage size (instance {{ $labels.instance }})
+        description: "The topic backlog storage size is over 5 GB\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     # pulsar_entry_size_le_overflow is the overflow bucket of Pulsar's non-standard histogram.
     # It counts message entries exceeding all defined size bounds.
     - alert: PulsarLargeMessagePayload
@@ -62,41 +106,3 @@ groups:
       annotations:
         summary: Pulsar large message payload (instance {{ $labels.instance }})
         description: "Pulsar topic {{ $labels.topic }} has {{ $value }} message entries exceeding the maximum size bucket (> 1MB)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # This metric name is path-dependent and may differ based on your BookKeeper data directory configuration.
-    # Adjust the metric name to match your actual ledger directory path.
-    - alert: PulsarHighLedgerDiskUsage
-      expr: 'sum(bookie_ledger_dir__pulsar_data_bookkeeper_ledgers_usage) by (kubernetes_pod_name) > 75'
-      for: 1h
-      labels:
-        severity: critical
-      annotations:
-        summary: Pulsar high ledger disk usage (instance {{ $labels.instance }})
-        description: "Observing Ledger Disk Usage (> 75%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: PulsarReadOnlyBookies
-      expr: 'count(bookie_SERVER_STATUS{} == 0) by (pod)'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Pulsar read only bookies (instance {{ $labels.instance }})
-        description: "Observing Readonly Bookies\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: PulsarHighNumberOfFunctionErrors
-      expr: 'sum(rate(pulsar_function_user_exceptions_total[1m]) + rate(pulsar_function_system_exceptions_total[1m])) by (name) > 10'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: Pulsar high number of function errors (instance {{ $labels.instance }})
-        description: "Pulsar function {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: PulsarHighNumberOfSinkErrors
-      expr: 'sum(rate(pulsar_sink_sink_exceptions_total[1m])) by (name) > 10'
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: Pulsar high number of sink errors (instance {{ $labels.instance }})
-        description: "Pulsar sink {{ $labels.name }} has more than 10 errors per second ({{ $value | printf \"%.2f\" }}/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

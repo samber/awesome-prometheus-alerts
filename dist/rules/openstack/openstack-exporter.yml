@@ -71,43 +71,6 @@ groups:
         summary: OpenStack hypervisor high disk usage (instance {{ $labels.instance }})
         description: "Hypervisor {{ $labels.hostname }} local disk usage is above 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # A value of -1 for limits_vcpus_max means unlimited quota (no limit set).
-    - alert: OpenstackNovaTenantVcpuQuotaNearlyExhausted
-      expr: 'openstack_nova_limits_vcpus_used / openstack_nova_limits_vcpus_max > 0.9 and openstack_nova_limits_vcpus_max > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: OpenStack Nova tenant vCPU quota nearly exhausted (instance {{ $labels.instance }})
-        description: "Tenant {{ $labels.tenant }} has used over 90% of its vCPU quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: OpenstackNovaTenantMemoryQuotaNearlyExhausted
-      expr: 'openstack_nova_limits_memory_used / openstack_nova_limits_memory_max > 0.9 and openstack_nova_limits_memory_max > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: OpenStack Nova tenant memory quota nearly exhausted (instance {{ $labels.instance }})
-        description: "Tenant {{ $labels.tenant }} has used over 90% of its memory quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: OpenstackNovaTenantInstanceQuotaNearlyExhausted
-      expr: 'openstack_nova_limits_instances_used / openstack_nova_limits_instances_max > 0.9 and openstack_nova_limits_instances_max > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: OpenStack Nova tenant instance quota nearly exhausted (instance {{ $labels.instance }})
-        description: "Tenant {{ $labels.tenant }} has used over 90% of its instance quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: OpenstackCinderTenantVolumeQuotaNearlyExhausted
-      expr: 'openstack_cinder_limits_volume_used_gb / openstack_cinder_limits_volume_max_gb > 0.9 and openstack_cinder_limits_volume_max_gb > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: OpenStack Cinder tenant volume quota nearly exhausted (instance {{ $labels.instance }})
-        description: "Tenant {{ $labels.tenant }} has used over 90% of its volume storage quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: OpenstackCinderPoolLowFreeCapacity
       expr: 'openstack_cinder_pool_capacity_free_gb / openstack_cinder_pool_capacity_total_gb < 0.1 and openstack_cinder_pool_capacity_total_gb > 0'
       for: 5m
@@ -116,6 +79,15 @@ groups:
       annotations:
         summary: OpenStack Cinder pool low free capacity (instance {{ $labels.instance }})
         description: "Cinder storage pool {{ $labels.name }} has less than 10% free capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNeutronSubnetIpPoolExhaustion
+      expr: 'openstack_neutron_network_ip_availabilities_used / openstack_neutron_network_ip_availabilities_total > 0.9 and openstack_neutron_network_ip_availabilities_total > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Neutron subnet IP pool exhaustion (instance {{ $labels.instance }})
+        description: "Subnet {{ $labels.subnet_name }} on network {{ $labels.network_name }} has used over 90% of its IP pool\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpenstackNeutronFloatingIpsAssociatedButNotActive
       expr: 'openstack_neutron_floating_ips_associated_not_active > 0'
@@ -134,15 +106,6 @@ groups:
       annotations:
         summary: OpenStack Neutron routers not active (instance {{ $labels.instance }})
         description: "{{ $value }} Neutron routers are not in ACTIVE state\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: OpenstackNeutronSubnetIpPoolExhaustion
-      expr: 'openstack_neutron_network_ip_availabilities_used / openstack_neutron_network_ip_availabilities_total > 0.9 and openstack_neutron_network_ip_availabilities_total > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: OpenStack Neutron subnet IP pool exhaustion (instance {{ $labels.instance }})
-        description: "Subnet {{ $labels.subnet_name }} on network {{ $labels.network_name }} has used over 90% of its IP pool\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: OpenstackNeutronPortsWithoutIps
       expr: 'openstack_neutron_ports_no_ips > 0'
@@ -190,3 +153,40 @@ groups:
       annotations:
         summary: OpenStack placement resource high usage (instance {{ $labels.instance }})
         description: "Resource {{ $labels.resourcetype }} on host {{ $labels.hostname }} usage exceeds 90% of its allocation\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # A value of -1 for limits_vcpus_max means unlimited quota (no limit set).
+    - alert: OpenstackNovaTenantVcpuQuotaNearlyExhausted
+      expr: 'openstack_nova_limits_vcpus_used / openstack_nova_limits_vcpus_max > 0.9 and openstack_nova_limits_vcpus_max > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Nova tenant vCPU quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its vCPU quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNovaTenantMemoryQuotaNearlyExhausted
+      expr: 'openstack_nova_limits_memory_used / openstack_nova_limits_memory_max > 0.9 and openstack_nova_limits_memory_max > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Nova tenant memory quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its memory quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackNovaTenantInstanceQuotaNearlyExhausted
+      expr: 'openstack_nova_limits_instances_used / openstack_nova_limits_instances_max > 0.9 and openstack_nova_limits_instances_max > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Nova tenant instance quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its instance quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenstackCinderTenantVolumeQuotaNearlyExhausted
+      expr: 'openstack_cinder_limits_volume_used_gb / openstack_cinder_limits_volume_max_gb > 0.9 and openstack_cinder_limits_volume_max_gb > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenStack Cinder tenant volume quota nearly exhausted (instance {{ $labels.instance }})
+        description: "Tenant {{ $labels.tenant }} has used over 90% of its volume storage quota\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

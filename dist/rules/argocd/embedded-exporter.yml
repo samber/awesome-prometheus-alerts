@@ -15,10 +15,76 @@ groups:
         description: "Service {{ $labels.name }} run by argo is currently not in sync.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ArgocdServiceUnhealthy
-      expr: 'argocd_app_info{health_status!="Healthy"} != 0'
+      expr: 'argocd_app_info{health_status!~"Healthy|Progressing"} != 0'
       for: 15m
       labels:
         severity: warning
       annotations:
         summary: ArgoCD service unhealthy (instance {{ $labels.instance }})
         description: "Service {{ $labels.name }} run by argo is currently not healthy.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ArgocdApplicationSyncFailed
+      expr: 'sum(increase(argocd_app_sync_total{phase!="Succeeded"}[10m])) by (name, phase, project) > 0'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD application sync failed (instance {{ $labels.instance }})
+        description: "ArgoCD application {{ $labels.name }} failed to sync (phase {{ $labels.phase }}) in project {{ $labels.project }}, check the application controller logs for the root cause.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ArgocdClusterConnectionError
+      expr: 'argocd_cluster_connection_status < 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD cluster connection error (instance {{ $labels.instance }})
+        description: "ArgoCD lost connection to the managed Kubernetes cluster {{ $labels.server }}, sync operations targeting this cluster will fail until connectivity is restored.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ArgocdGitFetchFailures
+      expr: 'sum(rate(argocd_git_fetch_fail_total[5m])) by (repo) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD git fetch failures (instance {{ $labels.instance }})
+        description: "ArgoCD is failing to fetch git repository {{ $labels.repo }}, which will block application sync and manifest generation.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ArgocdHighGrpcErrorRate
+      expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[5m])) / sum(rate(grpc_server_handled_total[5m])) * 100 > 5 and sum(rate(grpc_server_handled_total[5m])) > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD high gRPC error rate (instance {{ $labels.instance }})
+        description: "More than 5% of gRPC requests handled by ArgoCD are failing ({{ $value | humanize }}%), indicating degraded health of the API server or repo server.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 50 is a rough default; scales with your number of managed apps and sync frequency — adjust based on your workload.
+    - alert: ArgocdRepoServerTooManyPendingRequests
+      expr: 'argocd_repo_pending_request_total > 50'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD repo server too many pending requests (instance {{ $labels.instance }})
+        description: "ArgoCD repo server has more than 50 requests pending on the repository lock for {{ $labels.repo }}, indicating the repo server is overloaded and manifest generation is being delayed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 30s threshold is a rough default; depends on your repository size and network latency to the git host — adjust based on your baseline.
+    - alert: ArgocdRepoServerSlowGitOperations
+      expr: 'histogram_quantile(0.95, sum(rate(argocd_git_request_duration_seconds_bucket[5m])) by (le, repo)) > 30'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD repo server slow git operations (instance {{ $labels.instance }})
+        description: "The 95th percentile duration of git operations against repository {{ $labels.repo }} is above 30 seconds, which can be caused by a large repository, network latency, or an overloaded repo server.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 60s threshold is a rough default; depends on your number of managed apps and manifest complexity — adjust based on your workload.
+    - alert: ArgocdApplicationControllerSlowReconciliation
+      expr: 'histogram_quantile(0.95, sum(rate(argocd_app_reconcile_bucket[5m])) by (le)) > 60'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: ArgoCD application controller slow reconciliation (instance {{ $labels.instance }})
+        description: "The 95th percentile application reconciliation duration is above 60 seconds, which can delay drift detection and slow down sync operations across the cluster.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

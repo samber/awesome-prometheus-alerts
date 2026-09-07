@@ -14,24 +14,6 @@ groups:
         summary: Blackbox probe failed (instance {{ $labels.instance }})
         description: "Probe failed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: BlackboxConfigurationReloadFailure
-      expr: 'blackbox_exporter_config_last_reload_successful != 1'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: Blackbox configuration reload failure (instance {{ $labels.instance }})
-        description: "Blackbox configuration reload failure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: BlackboxSlowProbe
-      expr: 'probe_duration_seconds > 1'
-      for: 1m
-      labels:
-        severity: warning
-      annotations:
-        summary: Blackbox slow probe (instance {{ $labels.instance }})
-        description: "Blackbox probe took more than 1s to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: BlackboxProbeHttpFailure
       expr: 'probe_http_status_code <= 199 OR probe_http_status_code >= 400'
       for: 1m
@@ -41,14 +23,45 @@ groups:
         summary: Blackbox probe HTTP failure (instance {{ $labels.instance }})
         description: "HTTP status code is not 200-399\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: BlackboxSslCertificateWillExpireSoon
-      expr: '3 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 20'
+    # Replace job="blackbox-exporter" with the actual job name in your Prometheus configuration. The 99.9% threshold over 30d is a rough default; adjust based on your SLO.
+    - alert: BlackboxProbeLowUptime
+      expr: 'avg_over_time(probe_success{job="blackbox-exporter"}[30d]) * 100 < 99.9'
       for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: Blackbox probe low uptime (instance {{ $labels.instance }})
+        description: "Blackbox probe has had lower uptime than 99.9% over the last 30 days, which may indicate cumulative outages or repeated flapping not caught by immediate down alerts.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1s threshold is a rough default; acceptable probe duration depends on what is being probed and the network path to it — adjust based on your baseline.
+    - alert: BlackboxSlowProbe
+      expr: 'probe_duration_seconds > 1'
+      for: 1m
       labels:
         severity: warning
       annotations:
-        summary: Blackbox SSL certificate will expire soon (instance {{ $labels.instance }})
-        description: "SSL certificate expires in less than 20 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Blackbox slow probe (instance {{ $labels.instance }})
+        description: "Blackbox probe took more than 1s to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1s threshold is a rough default; acceptable latency depends on the target endpoint and network path — adjust based on your baseline.
+    - alert: BlackboxProbeSlowHttp
+      expr: 'sum by (instance) (probe_http_duration_seconds) > 1'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Blackbox probe slow HTTP (instance {{ $labels.instance }})
+        description: "HTTP request took more than 1s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1s threshold is a rough default; acceptable round-trip time depends on the network path to the target — adjust based on your baseline.
+    - alert: BlackboxProbeSlowPing
+      expr: 'sum by (instance) (probe_icmp_duration_seconds) > 1'
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Blackbox probe slow ping (instance {{ $labels.instance }})
+        description: "Blackbox ping took more than 1s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: BlackboxSslCertificateWillExpireVerySoon
       expr: '0 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 3'
@@ -72,20 +85,20 @@ groups:
         summary: Blackbox SSL certificate expired (instance {{ $labels.instance }})
         description: "SSL certificate has expired already\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: BlackboxProbeSlowHttp
-      expr: 'probe_http_duration_seconds > 1'
-      for: 1m
+    - alert: BlackboxConfigurationReloadFailure
+      expr: 'blackbox_exporter_config_last_reload_successful != 1'
+      for: 0m
       labels:
         severity: warning
       annotations:
-        summary: Blackbox probe slow HTTP (instance {{ $labels.instance }})
-        description: "HTTP request took more than 1s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Blackbox configuration reload failure (instance {{ $labels.instance }})
+        description: "Blackbox configuration reload failure\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: BlackboxProbeSlowPing
-      expr: 'probe_icmp_duration_seconds > 1'
-      for: 1m
+    - alert: BlackboxSslCertificateWillExpireSoon
+      expr: '3 <= round((last_over_time(probe_ssl_earliest_cert_expiry[10m]) - time()) / 86400, 0.1) < 20'
+      for: 0m
       labels:
         severity: warning
       annotations:
-        summary: Blackbox probe slow ping (instance {{ $labels.instance }})
-        description: "Blackbox ping took more than 1s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Blackbox SSL certificate will expire soon (instance {{ $labels.instance }})
+        description: "SSL certificate expires in less than 20 days\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

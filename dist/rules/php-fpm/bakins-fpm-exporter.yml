@@ -13,3 +13,31 @@ groups:
       annotations:
         summary: PHP-FPM max-children reached (instance {{ $labels.instance }})
         description: "PHP-FPM reached max children on {{ $labels.instance }} ({{ $value }} times in the last 5m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: Php-fpmListenQueueSaturation
+      expr: 'sum(phpfpm_listen_queue_connections) by (instance) / sum(phpfpm_listen_queue_length_connections) by (instance) > 0.8'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: PHP-FPM listen queue saturation (instance {{ $labels.instance }})
+        description: "PHP-FPM listen queue on {{ $labels.instance }} is at {{ $value | humanizePercentage }} of the socket backlog length, new connections may soon be queued or dropped.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: Php-fpmBusyProcessRatioHigh
+      expr: '(sum(phpfpm_processes_total{state="active"}) by (instance) * 100) / sum(phpfpm_processes_total) by (instance) > 80'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: PHP-FPM busy process ratio high (instance {{ $labels.instance }})
+        description: "{{ $value }}% of PHP-FPM processes are active (busy) on {{ $labels.instance }}, the pool is approaching its max_children capacity.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # If this fires too often or too rarely, tune your PHP-FPM request_slowlog_timeout setting (which defines what counts as "slow") rather than this 10% ratio threshold.
+    - alert: Php-fpmSlowRequestsRatio
+      expr: 'sum(rate(phpfpm_slow_requests_total[5m])) by (instance) / sum(rate(phpfpm_accepted_connections_total[5m])) by (instance) > 0.1 and sum(rate(phpfpm_accepted_connections_total[5m])) by (instance) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: PHP-FPM slow requests ratio (instance {{ $labels.instance }})
+        description: "{{ $value | humanizePercentage }} of accepted connections on {{ $labels.instance }} exceed request_slowlog_timeout, indicating degraded PHP-FPM response times.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

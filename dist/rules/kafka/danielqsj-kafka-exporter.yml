@@ -5,6 +5,7 @@ groups:
   
   rules:
 
+    # 3 is a rough default matching Kafka's common replication factor; adjust to match your topic's actual configured replication factor.
     - alert: KafkaTopicsReplicas
       expr: 'min(kafka_topic_partition_in_sync_replica) by (topic) < 3'
       for: 0m
@@ -14,6 +15,7 @@ groups:
         summary: Kafka topics replicas (instance {{ $labels.instance }})
         description: "Kafka topic {{ $labels.topic }} has fewer than 3 in-sync replicas ({{ $value }}), data durability is at risk.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 10000 messages is a rough default; scales with your message production and consumption rate — adjust based on your workload.
     - alert: KafkaConsumerGroupLag
       expr: 'sum(kafka_consumergroup_lag) by (consumergroup) > 10000'
       for: 1m
@@ -22,3 +24,12 @@ groups:
       annotations:
         summary: Kafka consumer group lag (instance {{ $labels.instance }})
         description: "Kafka consumer group {{ $labels.consumergroup }} is lagging behind ({{ $value }} messages)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: KafkaConsumerGroupLagIncreasing
+      expr: 'sum by (topic, consumergroup) (delta(kafka_consumergroup_lag{topic!="__consumer_offsets",consumergroup!=""}[5m])) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Kafka consumer group lag increasing (instance {{ $labels.instance }})
+        description: "Kafka consumer group {{ $labels.consumergroup }} lag on topic {{ $labels.topic }} is continuously increasing over the last 15 minutes, meaning the consumer is falling further behind even though the absolute lag threshold hasn't been crossed yet.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

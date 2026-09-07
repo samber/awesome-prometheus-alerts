@@ -5,6 +5,24 @@ groups:
   
   rules:
 
+    - alert: ApcUpsLowBatteryVoltage
+      expr: '(apcupsd_battery_volts / apcupsd_battery_nominal_volts) < 0.95 and apcupsd_battery_nominal_volts > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: APC UPS low battery voltage (instance {{ $labels.instance }})
+        description: "Battery voltage is lower than nominal (< 95%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ApcUpsHighTemperature
+      expr: 'apcupsd_internal_temperature_celsius >= 40'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: APC UPS high temperature (instance {{ $labels.instance }})
+        description: "Internal temperature is high ({{$value}}°C)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: ApcUpsBatteryNearlyEmpty
       expr: 'apcupsd_battery_charge_percent < 10'
       for: 0m
@@ -31,24 +49,6 @@ groups:
       annotations:
         summary: APC UPS AC input outage (instance {{ $labels.instance }})
         description: "UPS now running on battery (since {{$value | humanizeDuration}})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: ApcUpsLowBatteryVoltage
-      expr: '(apcupsd_battery_volts / apcupsd_battery_nominal_volts) < 0.95 and apcupsd_battery_nominal_volts > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: APC UPS low battery voltage (instance {{ $labels.instance }})
-        description: "Battery voltage is lower than nominal (< 95%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: ApcUpsHighTemperature
-      expr: 'apcupsd_internal_temperature_celsius >= 40'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: APC UPS high temperature (instance {{ $labels.instance }})
-        description: "Internal temperature is high ({{$value}}°C)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: ApcUpsHighLoad
       expr: 'apcupsd_ups_load_percent > 80'

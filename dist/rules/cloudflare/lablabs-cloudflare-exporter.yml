@@ -5,14 +5,14 @@ groups:
   
   rules:
 
-    - alert: CloudflareHttp4xxErrorRate
-      expr: '(sum by(zone) (rate(cloudflare_zone_requests_status{status=~"^4.."}[15m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[15m]))) * 100 > 5 and sum by (zone) (rate(cloudflare_zone_requests_status[15m])) > 0'
-      for: 0m
+    - alert: CloudflareLoadBalancerPoolUnhealthy
+      expr: 'cloudflare_zone_pool_health_status == 0'
+      for: 2m
       labels:
-        severity: warning
+        severity: critical
       annotations:
-        summary: Cloudflare http 4xx error rate (instance {{ $labels.instance }})
-        description: "Cloudflare high HTTP 4xx error rate (> 5% for domain {{ $labels.zone }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Cloudflare load balancer pool unhealthy (instance {{ $labels.instance }})
+        description: "Cloudflare load balancer pool {{ $labels.pool_name }} for zone {{ $labels.zone }} is reporting as unhealthy, meaning origin servers behind this pool may be unreachable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: CloudflareHttp5xxErrorRate
       expr: '(sum by (zone) (rate(cloudflare_zone_requests_status{status=~"^5.."}[5m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[5m]))) * 100 > 5 and sum by (zone) (rate(cloudflare_zone_requests_status[5m])) > 0'
@@ -22,3 +22,32 @@ groups:
       annotations:
         summary: Cloudflare http 5xx error rate (instance {{ $labels.instance }})
         description: "Cloudflare high HTTP 5xx error rate (> 5% for domain {{ $labels.zone }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 5% 4xx rate is a rough default. Client-error rates vary widely by application (bots, API misuse, rate limits, short-lived token expiry, malformed clients) — adjust based on your baseline.
+    - alert: CloudflareHttp4xxErrorRate
+      expr: '(sum by(zone) (rate(cloudflare_zone_requests_status{status=~"^4.."}[15m])) / on (zone) sum by (zone) (rate(cloudflare_zone_requests_status[15m]))) * 100 > 5 and sum by (zone) (rate(cloudflare_zone_requests_status[15m])) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cloudflare http 4xx error rate (instance {{ $labels.instance }})
+        description: "Cloudflare high HTTP 4xx error rate (> 5% for domain {{ $labels.zone }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 3 threats per 5m is a rough default; adjust based on your zone's typical traffic and threat baseline.
+    - alert: CloudflareHighThreatCount
+      expr: 'sum by (zone) (increase(cloudflare_zone_threats_total[5m])) > 3'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cloudflare high threat count (instance {{ $labels.instance }})
+        description: "Cloudflare zone {{ $labels.zone }} recorded {{ $value }} threats (WAF/DDoS blocks) in the last 5 minutes, which may indicate an ongoing attack.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CloudflareHighRequestRate
+      expr: 'sum by (zone) (100 * (rate(cloudflare_zone_requests_total[10m]) / clamp_min(rate(cloudflare_zone_requests_total[50m] offset 10m), 1))) > 150'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cloudflare high request rate (instance {{ $labels.instance }})
+        description: "Cloudflare zone {{ $labels.zone }} request rate over the last 10 minutes is {{ $value }}% of the preceding 50-minute baseline, indicating an abnormal traffic spike (possible DDoS or misconfigured client).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

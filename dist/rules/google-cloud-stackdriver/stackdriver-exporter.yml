@@ -16,6 +16,7 @@ groups:
         summary: Stackdriver exporter scrape error (instance {{ $labels.instance }})
         description: "Stackdriver exporter failed to scrape metrics from Google Cloud Monitoring API for project {{ $labels.project_id }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5-minute threshold is a rough default; scrape time scales with how many GCP resources and metrics you are monitoring — adjust based on your monitored fleet size.
     - alert: StackdriverExporterSlowScrape
       expr: 'stackdriver_monitoring_last_scrape_duration_seconds > 300'
       for: 5m
@@ -34,15 +35,6 @@ groups:
         summary: Stackdriver exporter scrape errors increasing (instance {{ $labels.instance }})
         description: "Stackdriver exporter has had {{ $value }} scrape errors in the last 15 minutes for project {{ $labels.project_id }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: StackdriverExporterHighApiCalls
-      expr: 'rate(stackdriver_monitoring_api_calls_total[5m]) * 60 > 100'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: Stackdriver exporter high API calls (instance {{ $labels.instance }})
-        description: "Stackdriver exporter is making {{ $value }} API calls per minute for project {{ $labels.project_id }}. This may hit Google Cloud Monitoring API quotas.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: StackdriverExporterScrapeStale
       expr: 'time() - stackdriver_monitoring_last_scrape_timestamp > 600'
       for: 0m
@@ -51,3 +43,13 @@ groups:
       annotations:
         summary: Stackdriver exporter scrape stale (instance {{ $labels.instance }})
         description: "Stackdriver exporter has not successfully scraped metrics for project {{ $labels.project_id }} in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 100 calls/min is a rough default; adjust to match your actual Google Cloud Monitoring API quota and how many metrics/resources you monitor.
+    - alert: StackdriverExporterHighApiCalls
+      expr: 'rate(stackdriver_monitoring_api_calls_total[5m]) * 60 > 100'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Stackdriver exporter high API calls (instance {{ $labels.instance }})
+        description: "Stackdriver exporter is making {{ $value }} API calls per minute for project {{ $labels.project_id }}. This may hit Google Cloud Monitoring API quotas.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -5,15 +5,6 @@ groups:
   
   rules:
 
-    - alert: CortexRulerConfigurationReloadFailure
-      expr: 'cortex_ruler_config_last_reload_successful != 1'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: Cortex ruler configuration reload failure (instance {{ $labels.instance }})
-        description: "Cortex ruler configuration reload failure (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: CortexNotConnectedToAlertmanager
       expr: 'cortex_prometheus_notifications_alertmanagers_discovered < 1'
       for: 0m
@@ -22,6 +13,34 @@ groups:
       annotations:
         summary: Cortex not connected to Alertmanager (instance {{ $labels.instance }})
         description: "Cortex not connected to Alertmanager (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
+    - alert: CortexAlertmanagerStateReplicationFailing
+      expr: 'rate(cortex_alertmanager_state_replication_failed_total[5m]) > 0.05'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex Alertmanager state replication failing (instance {{ $labels.instance }})
+        description: "Cortex Alertmanager {{ $labels.instance }} is failing to replicate its state to replicas, risking loss of silence/notification state on failover.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexRulerMissedEvaluations
+      expr: '100 * sum by (instance, rule_group) (rate(cortex_prometheus_rule_group_iterations_missed_total[5m])) / sum by (instance, rule_group) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 1 and sum by (instance, rule_group) (rate(cortex_prometheus_rule_group_iterations_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cortex ruler missed evaluations (instance {{ $labels.instance }})
+        description: "Cortex ruler {{ $labels.instance }} is missing {{ printf \"%.2f\" $value }}% of evaluation iterations for rule group {{ $labels.rule_group }}, meaning alerting/recording rules are not evaluated on schedule.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexCompactorHasNotUploadedBlocks
+      expr: '(time() - thanos_objstore_bucket_last_successful_upload_time{job=~".+/compactor.*"} > 86400) and (thanos_objstore_bucket_last_successful_upload_time{job=~".+/compactor.*"} > 0)'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex compactor has not uploaded blocks (instance {{ $labels.instance }})
+        description: "Cortex compactor {{ $labels.instance }} has not uploaded any compacted block to storage in the last 24 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Threshold of 0.05/s avoids firing on transient single-event spikes.
     - alert: CortexNotificationsAreBeingDropped
@@ -43,20 +62,165 @@ groups:
         summary: Cortex notification errors (instance {{ $labels.instance }})
         description: "Cortex is failing when sending alert notifications (instance {{ $labels.instance }}, {{ $value | humanize }}/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # for: 5m tolerates transient ring-membership flapping during rolling restarts and deploys.
     - alert: CortexIngesterUnhealthy
       expr: 'cortex_ring_members{state="Unhealthy", name="ingester"} > 0'
-      for: 0m
+      for: 5m
       labels:
         severity: critical
       annotations:
         summary: Cortex ingester unhealthy (instance {{ $labels.instance }})
         description: "Cortex has an unhealthy ingester\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold is > 1 rather than > 0: a single momentarily queued query for 5 minutes
+    # doesn't necessarily indicate a stuck query-frontend.
     - alert: CortexFrontendQueriesStuck
-      expr: 'sum by (job) (cortex_query_frontend_queue_length) > 0'
+      expr: 'sum by (job) (cortex_query_frontend_queue_length) > 1'
       for: 5m
       labels:
         severity: critical
       annotations:
         summary: Cortex frontend queries stuck (instance {{ $labels.instance }})
         description: "There are queued up queries in query-frontend.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexRequestErrors
+      expr: '100 * sum by (job, route) (rate(cortex_request_duration_seconds_count{status_code=~"5..", route!="ready"}[5m])) / sum by (job, route) (rate(cortex_request_duration_seconds_count{route!="ready"}[5m])) > 1 and sum by (job, route) (rate(cortex_request_duration_seconds_count{route!="ready"}[5m])) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex request errors (instance {{ $labels.instance }})
+        description: "Cortex {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}% errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexKvStoreFailure
+      expr: '(sum by (pod, kv_name) (rate(cortex_kv_request_duration_seconds_count{status_code!~"2.+"}[5m])) / sum by (pod, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m]))) == 1 and sum by (pod, kv_name) (rate(cortex_kv_request_duration_seconds_count[5m])) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex KV store failure (instance {{ $labels.instance }})
+        description: "Cortex {{ $labels.pod }} is failing to talk to the ring KV store {{ $labels.kv_name }} (etcd/consul/memberlist), which ring-based components rely on to coordinate.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexQuery-schedulerQueriesStuck
+      expr: 'sum by (job) (cortex_query_scheduler_queue_length) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex query-scheduler queries stuck (instance {{ $labels.instance }})
+        description: "There are {{ $value }} queued up queries in Cortex query-scheduler {{ $labels.job }}, indicating queriers are not keeping up or are unavailable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexIngesterHasNotShippedBlocks
+      expr: '(min by (instance) (time() - thanos_objstore_bucket_last_successful_upload_time{job=~".+/ingester.*"}) > 14400) and (max by (instance) (thanos_objstore_bucket_last_successful_upload_time{job=~".+/ingester.*"}) > 0) and (max by (instance) (rate(cortex_ingester_ingested_samples_total[4h])) > 0)'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex ingester has not shipped blocks (instance {{ $labels.instance }})
+        description: "Cortex ingester {{ $labels.instance }} has not shipped any TSDB block to long-term storage in the last 4 hours despite ingesting samples, risking data loss if it crashes before flushing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexIngesterTsdbWalCorrupted
+      expr: 'rate(cortex_ingester_tsdb_wal_corruptions_total[5m]) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex ingester TSDB WAL corrupted (instance {{ $labels.instance }})
+        description: "Cortex ingester {{ $labels.instance }} detected a corrupted TSDB WAL or checkpoint, which can lead to loss of unflushed samples.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
+    - alert: CortexIngesterTsdbWalWritesFailing
+      expr: 'rate(cortex_ingester_tsdb_wal_writes_failed_total[1m]) > 0.05'
+      for: 3m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex ingester TSDB WAL writes failing (instance {{ $labels.instance }})
+        description: "Cortex ingester {{ $labels.instance }} is failing to write samples to the TSDB WAL, which protects against data loss on crash/restart.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
+    - alert: CortexIngesterTsdbHeadCompactionFailing
+      expr: 'rate(cortex_ingester_tsdb_compactions_failed_total[5m]) > 0.05'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex ingester TSDB head compaction failing (instance {{ $labels.instance }})
+        description: "Cortex ingester {{ $labels.instance }} is failing to compact its TSDB head into a block, which should never happen repeatedly and may lead to unbounded memory growth.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 30 minutes. Adjust based on your sync interval.
+    - alert: CortexStore-gatewayBucketSyncFailure
+      expr: '(time() - cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 1800) and cortex_bucket_stores_blocks_last_successful_sync_timestamp_seconds{component="store-gateway"} > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex store-gateway bucket sync failure (instance {{ $labels.instance }})
+        description: "Cortex store-gateway {{ $labels.instance }} has not successfully synced the storage bucket in the last 30 minutes, meaning it may serve stale or incomplete results for historical block queries.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 24-hour threshold is a rough default; depends on your ingestion volume and configured compaction schedule — adjust based on your workload.
+    - alert: CortexCompactorHasNotRunCompaction
+      expr: '(time() - cortex_compactor_last_successful_run_timestamp_seconds > 86400) and (cortex_compactor_last_successful_run_timestamp_seconds > 0)'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex compactor has not run compaction (instance {{ $labels.instance }})
+        description: "Cortex compactor {{ $labels.instance }} has not successfully run a compaction in the last 24 hours, meaning TSDB blocks are not being merged and deduplicated.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
+    - alert: CortexAlertmanagerRingCheckFailing
+      expr: 'rate(cortex_alertmanager_ring_check_errors_total[5m]) > 0.05'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex Alertmanager ring check failing (instance {{ $labels.instance }})
+        description: "Cortex Alertmanager {{ $labels.instance }} is unable to check tenant ownership via the ring, which can cause misrouted or dropped alert notifications.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexRulerTooManyFailedPushes
+      expr: '100 * (sum by (instance, job) (rate(cortex_ruler_write_requests_failed_total[5m])) / sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m]))) > 1 and sum by (instance, job) (rate(cortex_ruler_write_requests_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex ruler too many failed pushes (instance {{ $labels.instance }})
+        description: "Cortex ruler {{ $labels.instance }} is failing to push {{ printf \"%.2f\" $value }}% of write requests when writing rule evaluation results back to Cortex.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
+    - alert: CortexAlertmanagerStatePersistFailing
+      expr: 'rate(cortex_alertmanager_state_persist_failed_total[15m]) > 0.05'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex Alertmanager state persist failing (instance {{ $labels.instance }})
+        description: "Cortex Alertmanager {{ $labels.instance }} is unable to persist full state snapshots to remote storage, risking loss of silences and notification state on restart.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexRuntimeConfigReloadFailure
+      expr: 'cortex_runtime_config_last_reload_successful == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex runtime config reload failure (instance {{ $labels.instance }})
+        description: "Cortex {{ $labels.job }} failed to reload its runtime configuration (limits overrides, etc.). This is distinct from ruler-specific rule group reloads.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 0.05/s avoids firing on transient single-event spikes.
+    - alert: CortexAlertmanagerConfigSyncFailing
+      expr: 'rate(cortex_alertmanager_sync_configs_failed_total[5m]) > 0.05'
+      for: 30m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cortex Alertmanager config sync failing (instance {{ $labels.instance }})
+        description: "Cortex Alertmanager {{ $labels.instance }} is failing to read tenant configurations from storage.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: CortexRulerConfigurationReloadFailure
+      expr: 'cortex_ruler_config_last_reload_successful != 1'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cortex ruler configuration reload failure (instance {{ $labels.instance }})
+        description: "Cortex ruler configuration reload failure (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -5,7 +5,6 @@ groups:
   
   rules:
 
-    # Linkerd does not expose request_errors_total. Errors are tracked via response_total{classification="failure"}.
     - alert: LinkerdHighErrorRate
       expr: 'sum(rate(response_total{classification="failure"}[1m])) by (deployment, statefulset, daemonset) / sum(rate(response_total[1m])) by (deployment, statefulset, daemonset) * 100 > 10 and sum(rate(response_total[1m])) by (deployment, statefulset, daemonset) > 0'
       for: 1m

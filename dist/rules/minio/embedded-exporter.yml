@@ -5,6 +5,15 @@ groups:
   
   rules:
 
+    - alert: MinioClusterErasureSetQuorumLost
+      expr: 'minio_cluster_health_erasure_set_status < 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Minio cluster erasure set quorum lost (instance {{ $labels.instance }})
+        description: "Minio erasure set has lost quorum, meaning MinIO can no longer guarantee reads or writes for objects in this pool/set until enough drives are restored.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: MinioClusterDiskOffline
       expr: 'minio_cluster_drive_offline_total > 0'
       for: 0m
@@ -21,13 +30,25 @@ groups:
         severity: critical
       annotations:
         summary: Minio node disk offline (instance {{ $labels.instance }})
-        description: "Minio cluster node disk is offline\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Minio cluster node is offline\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Uses usable capacity (post erasure-coding) rather than raw capacity, so the percentage
+    # reflects how much data can actually still be stored, not the physical disk bytes
+    # reserved for parity.
     - alert: MinioDiskSpaceUsage
-      expr: 'minio_cluster_capacity_raw_free_bytes / minio_cluster_capacity_raw_total_bytes * 100 < 10 and minio_cluster_capacity_raw_total_bytes > 0'
+      expr: 'minio_cluster_capacity_usable_free_bytes / minio_cluster_capacity_usable_total_bytes * 100 < 10 and minio_cluster_capacity_usable_total_bytes > 0'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: Minio disk space usage (instance {{ $labels.instance }})
         description: "Minio available free space is low (< 10%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: MinioKmsUnavailable
+      expr: 'minio_cluster_kms_online == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Minio KMS unavailable (instance {{ $labels.instance }})
+        description: "Minio KMS backend is offline; encryption and decryption of SSE-KMS objects will fail until KMS connectivity is restored.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

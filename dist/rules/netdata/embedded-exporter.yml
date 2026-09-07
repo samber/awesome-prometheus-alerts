@@ -51,14 +51,14 @@ groups:
         summary: Netdata predicted disk full (instance {{ $labels.instance }})
         description: "Netdata predicted disk full in 24 hours\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: NetdataMdMismatchCntUnsynchronizedBlocks
-      expr: 'netdata_md_mismatch_cnt_unsynchronized_blocks_average > 1024'
-      for: 2m
+    - alert: NetdataReportedUncorrectableDiskSectors
+      expr: 'increase(netdata_smartd_log_offline_uncorrectable_sector_count_sectors_average[2m]) > 0'
+      for: 0m
       labels:
         severity: warning
       annotations:
-        summary: Netdata MD mismatch cnt unsynchronized blocks (instance {{ $labels.instance }})
-        description: "RAID Array have unsynchronized blocks\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Netdata reported uncorrectable disk sectors (instance {{ $labels.instance }})
+        description: "Reported uncorrectable disk sectors ({{ $value }} sectors)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NetdataDiskReallocatedSectors
       expr: 'increase(netdata_smartd_log_reallocated_sectors_count_sectors_average[1m]) > 0'
@@ -69,6 +69,16 @@ groups:
         summary: Netdata disk reallocated sectors (instance {{ $labels.instance }})
         description: "Disk reallocated sectors detected ({{ $value }} sectors)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1024 blocks is a rough default; the expected mismatch count during a RAID scrub scales with array size — adjust based on your array's total capacity.
+    - alert: NetdataMdMismatchCntUnsynchronizedBlocks
+      expr: 'netdata_md_mismatch_cnt_unsynchronized_blocks_average > 1024'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Netdata MD mismatch cnt unsynchronized blocks (instance {{ $labels.instance }})
+        description: "RAID Array have unsynchronized blocks\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: NetdataDiskCurrentPendingSector
       expr: 'netdata_smartd_log_current_pending_sector_count_sectors_average > 0'
       for: 0m
@@ -77,12 +87,3 @@ groups:
       annotations:
         summary: Netdata disk current pending sector (instance {{ $labels.instance }})
         description: "Disk current pending sector\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: NetdataReportedUncorrectableDiskSectors
-      expr: 'increase(netdata_smartd_log_offline_uncorrectable_sector_count_sectors_average[2m]) > 0'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: Netdata reported uncorrectable disk sectors (instance {{ $labels.instance }})
-        description: "Reported uncorrectable disk sectors ({{ $value }} sectors)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

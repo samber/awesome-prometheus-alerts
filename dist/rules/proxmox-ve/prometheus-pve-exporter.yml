@@ -14,6 +14,17 @@ groups:
         summary: PVE node down (instance {{ $labels.instance }})
         description: "Proxmox VE node {{ $labels.id }} is down.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Loss of quorum means the cluster cannot make decisions about VM placement
+    # and fencing. This requires immediate attention.
+    - alert: PveClusterNotQuorate
+      expr: 'pve_cluster_info{quorate="0"} == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: PVE cluster not quorate (instance {{ $labels.instance }})
+        description: "Proxmox VE cluster has lost quorum.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     # This alert triggers for all VMs and containers that are not running.
     # You may want to filter by specific guests using the `id` label, or exclude
     # intentionally stopped guests with additional label matchers.
@@ -44,15 +55,6 @@ groups:
         summary: PVE high memory usage (instance {{ $labels.instance }})
         description: "Proxmox VE memory usage is above 90% on {{ $labels.id }}. Current value: {{ $value | printf \"%.2f\" }}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: PveStorageFillingUp
-      expr: 'pve_disk_usage_bytes{id=~"storage/.*"} / pve_disk_size_bytes{id=~"storage/.*"} * 100 > 80 and pve_disk_size_bytes{id=~"storage/.*"} > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: PVE storage filling up (instance {{ $labels.instance }})
-        description: "Proxmox VE storage {{ $labels.id }} is above 80% used. Current value: {{ $value | printf \"%.2f\" }}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: PveStorageAlmostFull
       expr: 'pve_disk_usage_bytes{id=~"storage/.*"} / pve_disk_size_bytes{id=~"storage/.*"} * 100 > 95 and pve_disk_size_bytes{id=~"storage/.*"} > 0'
       for: 2m
@@ -62,14 +64,14 @@ groups:
         summary: PVE storage almost full (instance {{ $labels.instance }})
         description: "Proxmox VE storage {{ $labels.id }} is above 95% used. Current value: {{ $value | printf \"%.2f\" }}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: PveGuestNotBackedUp
-      expr: 'pve_not_backed_up_total > 0'
-      for: 0m
+    - alert: PveStorageFillingUp
+      expr: 'pve_disk_usage_bytes{id=~"storage/.*"} / pve_disk_size_bytes{id=~"storage/.*"} * 100 > 80 and pve_disk_size_bytes{id=~"storage/.*"} > 0'
+      for: 5m
       labels:
         severity: warning
       annotations:
-        summary: PVE guest not backed up (instance {{ $labels.instance }})
-        description: "{{ $value }} Proxmox VE guest(s) are not covered by any backup job.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: PVE storage filling up (instance {{ $labels.instance }})
+        description: "Proxmox VE storage {{ $labels.id }} is above 80% used. Current value: {{ $value | printf \"%.2f\" }}%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: PveReplicationFailed
       expr: 'pve_replication_failed_syncs > 0'
@@ -80,13 +82,11 @@ groups:
         summary: PVE replication failed (instance {{ $labels.instance }})
         description: "Proxmox VE replication for {{ $labels.id }} has {{ $value }} failed sync(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Loss of quorum means the cluster cannot make decisions about VM placement
-    # and fencing. This requires immediate attention.
-    - alert: PveClusterNotQuorate
-      expr: 'pve_cluster_info{quorate="0"} == 1'
+    - alert: PveGuestNotBackedUp
+      expr: 'pve_not_backed_up_total > 0'
       for: 0m
       labels:
-        severity: critical
+        severity: warning
       annotations:
-        summary: PVE cluster not quorate (instance {{ $labels.instance }})
-        description: "Proxmox VE cluster has lost quorum.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: PVE guest not backed up (instance {{ $labels.instance }})
+        description: "{{ $value }} Proxmox VE guest(s) are not covered by any backup job.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

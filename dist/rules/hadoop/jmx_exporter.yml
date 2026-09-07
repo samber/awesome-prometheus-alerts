@@ -29,17 +29,62 @@ groups:
         summary: Hadoop Resource Manager Down (instance {{ $labels.instance }})
         description: "The Hadoop ResourceManager service is unavailable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: HadoopDataNodeOutOfService
-      expr: 'hadoop_datanode_last_heartbeat == 0'
+    - alert: HadoopHdfsMissingBlocks
+      expr: 'max without(job,name)(hadoop_namenode_missingblocks) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Hadoop HDFS Missing Blocks (instance {{ $labels.instance }})
+        description: "HDFS has one or more blocks with no surviving replica, meaning permanent data loss has occurred.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopNodeManagerCpuHigh
+      expr: 'max without(job,name)(100*hadoop_nodemanager_nodecpuutilization) > 80'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop Node Manager CPU High (instance {{ $labels.instance }})
+        description: "YARN NodeManager CPU utilization is above 80%, which can degrade container scheduling and task execution on this node.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopResourceManagerVcoreUsageHigh
+      expr: 'max without(job,name)(100*hadoop_resourcemanager_allocatedvcores/clamp_min(hadoop_resourcemanager_availablevcores+hadoop_resourcemanager_allocatedvcores,1)) > 80'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop Resource Manager vCore Usage High (instance {{ $labels.instance }})
+        description: "YARN ResourceManager has allocated more than 80% of cluster vCores, indicating the cluster is nearly out of CPU scheduling capacity.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopResourceManagerMemoryHigh
+      expr: '100 * hadoop_resourcemanager_allocatedmb / clamp_min(hadoop_resourcemanager_availablemb + hadoop_resourcemanager_allocatedmb, 1) > 80'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop Resource Manager Memory High (instance {{ $labels.instance }})
+        description: "The Hadoop ResourceManager is approaching its memory limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopHbaseRegionServerHeapLow
+      expr: 'hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8 and hadoop_hbase_region_server_max_heap_bytes > 0'
       for: 10m
       labels:
         severity: warning
       annotations:
-        summary: Hadoop Data Node Out Of Service (instance {{ $labels.instance }})
-        description: "The Hadoop DataNode is not sending heartbeats.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Hadoop HBase Region Server Heap Low (instance {{ $labels.instance }})
+        description: "HBase Region Servers are running low on heap space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopNodeManagerMemoryHigh
+      expr: 'max without(job,name)(100*hadoop_nodemanager_allocatedgb/clamp_min(hadoop_nodemanager_availablegb+hadoop_nodemanager_allocatedgb,1)) > 80'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop Node Manager Memory High (instance {{ $labels.instance }})
+        description: "YARN NodeManager has allocated more than 80% of its available memory, risking container scheduling failures on this node.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopHdfsDiskSpaceLow
-      expr: '(hadoop_hdfs_bytes_total - hadoop_hdfs_bytes_used) / hadoop_hdfs_bytes_total < 0.1 and hadoop_hdfs_bytes_total > 0'
+      expr: '100 * hadoop_namenode_capacityremaining / clamp_min(hadoop_namenode_capacitytotal, 1) < 20'
       for: 15m
       labels:
         severity: warning
@@ -56,14 +101,14 @@ groups:
         summary: Hadoop Map Reduce Task Failures (instance {{ $labels.instance }})
         description: "There is an unusually high number of MapReduce task failures.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: HadoopResourceManagerMemoryHigh
-      expr: 'hadoop_resourcemanager_memory_bytes / hadoop_resourcemanager_memory_max_bytes > 0.8 and hadoop_resourcemanager_memory_max_bytes > 0'
-      for: 15m
+    - alert: HadoopDataNodeOutOfService
+      expr: 'hadoop_namenode_numdeaddatanodes > 0'
+      for: 10m
       labels:
         severity: warning
       annotations:
-        summary: Hadoop Resource Manager Memory High (instance {{ $labels.instance }})
-        description: "The Hadoop ResourceManager is approaching its memory limit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Hadoop Data Node Out Of Service (instance {{ $labels.instance }})
+        description: "The Hadoop DataNode is not sending heartbeats.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HadoopYarnContainerAllocationFailures
       expr: 'increase(hadoop_yarn_container_allocation_failures_total[1h]) > 10'
@@ -74,6 +119,7 @@ groups:
         summary: Hadoop YARN Container Allocation Failures (instance {{ $labels.instance }})
         description: "There is a significant number of YARN container allocation failures.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5000 is a rough default; region count scales with your cluster size and data volume — adjust based on your workload.
     - alert: HadoopHbaseRegionCountHigh
       expr: 'hadoop_hbase_region_count > 5000'
       for: 15m
@@ -83,15 +129,7 @@ groups:
         summary: Hadoop HBase Region Count High (instance {{ $labels.instance }})
         description: "The HBase cluster has an unusually high number of regions.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: HadoopHbaseRegionServerHeapLow
-      expr: 'hadoop_hbase_region_server_heap_bytes / hadoop_hbase_region_server_max_heap_bytes > 0.8 and hadoop_hbase_region_server_max_heap_bytes > 0'
-      for: 10m
-      labels:
-        severity: warning
-      annotations:
-        summary: Hadoop HBase Region Server Heap Low (instance {{ $labels.instance }})
-        description: "HBase Region Servers are running low on heap space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # 0.5s threshold is a rough default; acceptable write latency depends on your storage backend and write workload — adjust based on your baseline.
     - alert: HadoopHbaseWriteRequestsLatencyHigh
       expr: 'hadoop_hbase_write_requests_latency_seconds > 0.5'
       for: 10m
@@ -100,3 +138,12 @@ groups:
       annotations:
         summary: Hadoop HBase Write Requests Latency High (instance {{ $labels.instance }})
         description: "HBase Write Requests are experiencing high latency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: HadoopHdfsVolumeFailures
+      expr: 'max without(job,name)(hadoop_namenode_volumefailurestotal) > 0'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Hadoop HDFS Volume Failures (instance {{ $labels.instance }})
+        description: "One or more HDFS DataNode storage volumes have failed since the DataNode last started, which is an early sign of failing disks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

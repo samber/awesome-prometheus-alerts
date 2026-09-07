@@ -5,6 +5,7 @@ groups:
   
   rules:
 
+    # 100 Mbps threshold is a rough default; adjust to match the speed your ISP plan actually promises.
     - alert: SpeedtestSlowInternetDownload
       expr: 'avg_over_time(speedtest_download[10m]) < 100'
       for: 0m
@@ -14,6 +15,7 @@ groups:
         summary: SpeedTest Slow Internet Download (instance {{ $labels.instance }})
         description: "Internet download speed is currently {{humanize $value}} Mbps.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 20 Mbps threshold is a rough default; adjust to match the upload speed your ISP plan actually promises.
     - alert: SpeedtestSlowInternetUpload
       expr: 'avg_over_time(speedtest_upload[10m]) < 20'
       for: 0m

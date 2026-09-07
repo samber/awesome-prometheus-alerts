@@ -52,23 +52,32 @@ groups:
         summary: Redis replication broken (instance {{ $labels.instance }})
         description: "Redis instance lost a slave\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: RedisClusterFlapping
-      expr: 'changes(redis_connected_slaves[1m]) > 1'
+    - alert: RedisClusterStateNotOk
+      expr: 'redis_cluster_state == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Redis cluster state not ok (instance {{ $labels.instance }})
+        description: "The Redis Cluster reports a non-ok state, meaning it is unable to serve queries, typically because hash slots are unassigned or too many nodes are down.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RedisMasterLinkDown
+      expr: 'redis_master_link_up == 0'
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Redis cluster flapping (instance {{ $labels.instance }})
-        description: "Changes have been detected in Redis replica connection. This can occur when replica nodes lose connection to the master and reconnect (a.k.a flapping).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Redis master link down (instance {{ $labels.instance }})
+        description: "Redis replica {{ $labels.instance }} has lost its connection to master {{ $labels.master_host }}:{{ $labels.master_port }} and is no longer receiving updates.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: RedisMissingBackup
-      expr: 'time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 48'
-      for: 0m
+    - alert: RedisClusterSlotFail
+      expr: 'redis_cluster_slots_fail > 0'
+      for: 5m
       labels:
-        severity: critical
+        severity: warning
       annotations:
-        summary: Redis missing backup (instance {{ $labels.instance }})
-        description: "Redis has not been backed up for 48 hours\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Redis cluster slot fail (instance {{ $labels.instance }})
+        description: "Some hash slots of the Redis Cluster are marked as FAIL, meaning part of the keyspace is unreachable and requires manual intervention or a failover.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # The exporter must be started with --include-system-metrics flag or REDIS_EXPORTER_INCL_SYSTEM_METRICS=true environment variable.
     - alert: RedisOutOfSystemMemory
@@ -89,6 +98,15 @@ groups:
         summary: Redis out of configured maxmemory (instance {{ $labels.instance }})
         description: "Redis is running out of configured maxmemory (> 90%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: RedisClusterFlapping
+      expr: 'changes(redis_connected_slaves[1m]) > 1'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Redis cluster flapping (instance {{ $labels.instance }})
+        description: "Changes have been detected in Redis replica connection. This can occur when replica nodes lose connection to the master and reconnect (a.k.a flapping).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: RedisTooManyConnections
       expr: 'redis_connected_clients / redis_config_maxclients * 100 > 90 and redis_config_maxclients > 0'
       for: 2m
@@ -98,6 +116,7 @@ groups:
         summary: Redis too many connections (instance {{ $labels.instance }})
         description: "Redis is running out of connections (> 90% used)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5 connections is a rough default; the expected minimum depends heavily on your application's usage pattern — adjust based on your baseline. Non-application connections (monitoring, admin/CLI sessions, replication) also keep a baseline count above zero even when the app itself is idle.
     - alert: RedisNotEnoughConnections
       expr: 'redis_connected_clients < 5'
       for: 2m
@@ -107,6 +126,7 @@ groups:
         summary: Redis not enough connections (instance {{ $labels.instance }})
         description: "Redis instance should have more connections (> 5)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5 rejected connections in 1m is a rough default; rejection volume correlates with your traffic load relative to the configured maxclients limit — adjust based on your workload.
     - alert: RedisRejectedConnections
       expr: 'increase(redis_rejected_connections_total[1m]) > 5'
       for: 0m
@@ -115,3 +135,22 @@ groups:
       annotations:
         summary: Redis rejected connections (instance {{ $labels.instance }})
         description: "Some connections to Redis has been rejected\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RedisClusterSlotPfail
+      expr: 'redis_cluster_slots_pfail > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Redis cluster slot pfail (instance {{ $labels.instance }})
+        description: "Some hash slots of the Redis Cluster are tentatively marked as PFAIL (possibly failing), an early warning sign of node problems before they escalate to a hard FAIL state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 48 hours is a rough default; how often a backup is needed depends on your backup/retention policy and data-loss tolerance — adjust based on your workflow.
+    - alert: RedisMissingBackup
+      expr: 'time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 48'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Redis missing backup (instance {{ $labels.instance }})
+        description: "Redis has not been backed up for 48 hours\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

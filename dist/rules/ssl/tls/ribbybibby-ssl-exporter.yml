@@ -14,15 +14,6 @@ groups:
         summary: SSL certificate probe failed (instance {{ $labels.instance }})
         description: "Failed to fetch SSL information {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: SslCertificateOcspStatusUnknown
-      expr: 'ssl_ocsp_response_status == 2'
-      for: 0m
-      labels:
-        severity: warning
-      annotations:
-        summary: SSL certificate OCSP status unknown (instance {{ $labels.instance }})
-        description: "Failed to get the OCSP status for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: SslCertificateRevoked
       expr: 'ssl_ocsp_response_status == 1'
       for: 0m
@@ -31,6 +22,15 @@ groups:
       annotations:
         summary: SSL certificate revoked (instance {{ $labels.instance }})
         description: "SSL certificate revoked {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SslCertificateOcspStatusUnknown
+      expr: 'ssl_ocsp_response_status == 2'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: SSL certificate OCSP status unknown (instance {{ $labels.instance }})
+        description: "Failed to get the OCSP status for {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SslCertificateExpiry(<7Days)
       expr: 'ssl_verified_cert_not_after{chain_no="0"} - time() < 86400 * 7'

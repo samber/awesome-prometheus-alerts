@@ -5,6 +5,15 @@ groups:
   
   rules:
 
+    - alert: OpenebsLvmVolumeGroupMissingPhysicalVolume
+      expr: 'lvm_vg_missing_pv_count > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenEBS LVM volume group missing physical volume (instance {{ $labels.instance }})
+        description: "OpenEBS LVM LocalPV volume group {{ $labels.instance }} is missing {{ $value }} underlying physical volume(s), which puts data at risk of loss.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: OpenebsUsedPoolCapacity
       expr: 'openebs_used_pool_capacity_percent > 80'
       for: 2m
@@ -13,3 +22,21 @@ groups:
       annotations:
         summary: OpenEBS used pool capacity (instance {{ $labels.instance }})
         description: "OpenEBS Pool use more than 80% of his capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenebsLvmVolumeGroupCapacityHigh
+      expr: '((lvm_vg_total_size_bytes - lvm_vg_free_size_bytes) / lvm_vg_total_size_bytes) * 100 > 90'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenEBS LVM volume group capacity high (instance {{ $labels.instance }})
+        description: "OpenEBS LVM LocalPV volume group {{ $labels.instance }} is using more than 90% of its capacity ({{ $value }}%). Free up space or expand the volume group to avoid provisioning failures.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: OpenebsLvmThinPoolCapacityHigh
+      expr: 'lvm_lv_used_percent{segtype="thin-pool"} > 90'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: OpenEBS LVM thin pool capacity high (instance {{ $labels.instance }})
+        description: "OpenEBS LVM LocalPV thin pool {{ $labels.instance }} is using more than 90% of its capacity ({{ $value }}%). A thin pool can run out of space even when the underlying volume group has free capacity.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

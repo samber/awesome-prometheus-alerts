@@ -5,14 +5,15 @@ groups:
   
   rules:
 
-    - alert: LokiProcessTooManyRestarts
-      expr: 'changes(process_start_time_seconds{job=~".*loki.*"}[15m]) > 2'
-      for: 0m
+    # 3-hour threshold is a rough default; depends on your ingestion volume and configured compaction schedule — adjust based on your workload.
+    - alert: LokiCompactorNotRunningCompaction
+      expr: 'min(time() - (loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds > 0)) by (cluster, namespace) > 10800 or max(max_over_time(loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds[3h])) by (cluster, namespace) == 0'
+      for: 1h
       labels:
-        severity: warning
+        severity: critical
       annotations:
-        summary: Loki process too many restarts (instance {{ $labels.instance }})
-        description: "A loki process had too many restarts (target {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Loki compactor not running compaction (instance {{ $labels.instance }})
+        description: "The Loki compactor in {{ $labels.namespace }} has not completed a successful compaction in over 3 hours (or never since startup), leaving index growth unbounded and retention unenforced.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: LokiRequestErrors
       expr: '100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10 and sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 0'
@@ -32,11 +33,30 @@ groups:
         summary: Loki request panic (instance {{ $labels.instance }})
         description: "{{ $labels.job }} is experiencing {{ $value | humanize }} panic(s) in the last 5 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1s p99 latency threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
     - alert: LokiRequestLatency
-      expr: 'histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*"}[5m])) by (namespace, job, route, le)) > 1'
+      expr: 'histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*|/schedulerpb.SchedulerForQuerier/QuerierLoop"}[5m])) by (namespace, job, route, le)) > 1'
       for: 5m
       labels:
         severity: critical
       annotations:
         summary: Loki request latency (instance {{ $labels.instance }})
         description: "The {{ $labels.job }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}s 99th percentile latency.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: LokiProcessTooManyRestarts
+      expr: 'changes(process_start_time_seconds{job=~".*loki.*"}[15m]) > 2'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Loki process too many restarts (instance {{ $labels.instance }})
+        description: "A loki process had too many restarts (target {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: LokiTooManyCompactorsRunning
+      expr: 'sum(loki_boltdb_shipper_compactor_running) by (cluster) > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Loki too many compactors running (instance {{ $labels.instance }})
+        description: "More than one Loki compactor is running in cluster {{ $labels.cluster }}; the compactor must run as a singleton, or index compaction and retention can be duplicated or corrupted.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

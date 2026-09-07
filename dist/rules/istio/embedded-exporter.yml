@@ -5,6 +5,26 @@ groups:
   
   rules:
 
+    # absent() fires only once every pilot replica has disappeared from service discovery; it will not catch a single replica going down in a multi-replica control plane deployment.
+    - alert: IstioControlPlaneComponentDown
+      expr: 'absent(istio_build{component="pilot"})'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: Istio control plane component down (instance {{ $labels.instance }})
+        description: "Istio control plane component {{ $labels.component }} has stopped reporting, disrupting service discovery, configuration propagation, and traffic management across the mesh.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: IstioPilotDuplicateEntry
+      expr: 'sum(pilot_duplicate_envoy_clusters{}) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Istio Pilot Duplicate Entry (instance {{ $labels.instance }})
+        description: "Istio Pilot has detected {{ $value }} duplicate Envoy cluster(s), indicating misconfigured DestinationRules or ServiceEntries.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 2 is a rough default; adjust to match your actual configured replica count for the ingress gateway deployment.
     - alert: IstioKubernetesGatewayAvailabilityDrop
       expr: 'min(kube_deployment_status_replicas_available{deployment="istio-ingressgateway", namespace="istio-system"}) without (instance, pod) < 2'
       for: 1m
@@ -53,6 +73,7 @@ groups:
         summary: Istio low total request rate (instance {{ $labels.instance }})
         description: "Global request rate in the service mesh is unusually low ({{ $value | printf \"%.2f\" }} req/s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 5% 4xx rate is a rough default. Client-error rates vary widely by application (bots, API misuse, rate limits, short-lived token expiry, malformed clients) — adjust based on your baseline.
     - alert: IstioHigh4xxErrorRate
       expr: 'sum(rate(istio_requests_total{reporter="destination", response_code=~"4.*"}[5m])) / sum(rate(istio_requests_total{reporter="destination"}[5m])) * 100 > 5 and sum(rate(istio_requests_total{reporter="destination"}[5m])) > 0'
       for: 1m
@@ -71,6 +92,7 @@ groups:
         summary: Istio high 5xx error rate (instance {{ $labels.instance }})
         description: "High percentage of HTTP 5xx responses in Istio ({{ $value | printf \"%.1f\" }}% > 5%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 100ms threshold is a rough default; acceptable latency varies by route and your SLO — adjust based on your baseline.
     - alert: IstioHighRequestLatency
       expr: 'rate(istio_request_duration_milliseconds_sum{reporter="destination"}[1m]) / rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 100 and rate(istio_request_duration_milliseconds_count{reporter="destination"}[1m]) > 0'
       for: 1m
@@ -80,6 +102,7 @@ groups:
         summary: Istio high request latency (instance {{ $labels.instance }})
         description: "Istio average request duration is {{ $value }}ms (> 100ms).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1000ms threshold is a rough default; acceptable latency varies by service and your SLO — adjust based on your baseline.
     - alert: IstioLatency99Percentile
       expr: 'histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket[1m])) by (destination_canonical_service, destination_workload_namespace, le)) > 1000'
       for: 1m
@@ -88,12 +111,3 @@ groups:
       annotations:
         summary: Istio latency 99 percentile (instance {{ $labels.instance }})
         description: "Istio p99 request latency is {{ $value }}ms (threshold: 1000ms).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: IstioPilotDuplicateEntry
-      expr: 'sum(pilot_duplicate_envoy_clusters{}) > 0'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: Istio Pilot Duplicate Entry (instance {{ $labels.instance }})
-        description: "Istio Pilot has detected {{ $value }} duplicate Envoy cluster(s), indicating misconfigured DestinationRules or ServiceEntries.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

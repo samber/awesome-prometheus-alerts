@@ -41,6 +41,27 @@ groups:
         summary: Provider failed because get genesis timeout (instance {{ $labels.instance }})
         description: "Timeout to get genesis for Provider `{{$labels.provider}}` in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # Threshold of 20ms. Adjust based on your expected database latency.
+    - alert: StoreConnectionVerySlow
+      expr: 'store_connection_wait_time_ms > 20'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Store connection very slow (instance {{ $labels.instance }})
+        description: "Store connection is very slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Requires graph-node >= 0.37.0. The deployment_status gauge (1=starting, 2=running,
+    # 3=stopped, 4=failed) replaced the older deployment_failed metric, which was removed.
+    - alert: SubgraphDeploymentFailed
+      expr: 'deployment_status == 4'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Subgraph deployment failed (instance {{ $labels.instance }})
+        description: "Subgraph deployment `{{$labels.deployment}}` has failed and indexing has stopped in Graph node `{{$labels.instance}}`; check the graph-node logs for the deployment to find the root cause.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     # Threshold of 10ms. Adjust based on your expected database latency.
     - alert: StoreConnectionSlow
       expr: 'store_connection_wait_time_ms > 10'
@@ -51,12 +72,12 @@ groups:
         summary: Store connection slow (instance {{ $labels.instance }})
         description: "Store connection is too slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Threshold of 20ms. Adjust based on your expected database latency.
-    - alert: StoreConnectionVerySlow
-      expr: 'store_connection_wait_time_ms > 20'
-      for: 0m
+    # 100 blocks is a rough default; real-world lag varies enormously by chain (block time ranges from ~2s to ~10min across networks) — adjust based on the specific network's block time.
+    - alert: SubgraphIndexingLagBehindChainHead
+      expr: 'ethereum_chain_head_number - ignoring(deployment,shard) group_right(deployment,shard) deployment_head > 100'
+      for: 10m
       labels:
-        severity: critical
+        severity: warning
       annotations:
-        summary: Store connection very slow (instance {{ $labels.instance }})
-        description: "Store connection is very slow to `{{$labels.pool}}` pool, `{{$labels.shard}}` shard in Graph node `{{$labels.instance}}`\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Subgraph indexing lag behind chain head (instance {{ $labels.instance }})
+        description: "Subgraph deployment `{{$labels.deployment}}` is more than 100 blocks behind the `{{$labels.network}}` chain head in Graph node `{{$labels.instance}}`, indicating indexing is stalled or too slow to keep up with new blocks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

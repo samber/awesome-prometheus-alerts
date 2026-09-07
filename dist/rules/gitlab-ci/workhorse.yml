@@ -16,6 +16,7 @@ groups:
         summary: GitLab Workhorse high error rate (instance {{ $labels.instance }})
         description: "GitLab Workhorse on {{ $labels.instance }} is returning more than 10% HTTP 5xx errors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 10s threshold is a rough default; depends on your request mix (large file uploads/downloads vs typical Git operations) — adjust based on your baseline.
     - alert: GitlabWorkhorseHighLatency
       expr: 'histogram_quantile(0.95, sum(rate(gitlab_workhorse_http_request_duration_seconds_bucket[5m])) by (le)) > 10'
       for: 5m

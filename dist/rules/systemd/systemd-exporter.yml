@@ -5,6 +5,34 @@ groups:
   
   rules:
 
+    - alert: SystemdUnitTasksNearLimit
+      expr: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and ignoring(type) systemd_unit_tasks_max > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd unit tasks near limit (instance {{ $labels.instance }})
+        description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 100 connections is arbitrary. Adjust to your workload.
+    - alert: SystemdSocketHighConnections
+      expr: 'systemd_socket_current_connections > 100'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Systemd socket high connections (instance {{ $labels.instance }})
+        description: "Systemd socket {{ $labels.name }} has {{ $value }} active connections. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SystemdServiceCrashLooping
+      expr: 'increase(systemd_service_restart_total[1h]) > 5'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Systemd service crash looping (instance {{ $labels.instance }})
+        description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: SystemdUnitFailed
       expr: 'systemd_unit_state{state="failed"} == 1'
       for: 5m
@@ -24,43 +52,15 @@ groups:
         summary: Systemd unit inactive (instance {{ $labels.instance }})
         description: "Systemd unit {{ $labels.name }} is inactive. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: SystemdServiceCrashLooping
-      expr: 'increase(systemd_service_restart_total[1h]) > 5'
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: Systemd service crash looping (instance {{ $labels.instance }})
-        description: "Systemd service {{ $labels.name }} has restarted {{ $value }} times in the last hour. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: SystemdUnitTasksNearLimit
-      expr: 'systemd_unit_tasks_current / ignoring(type) systemd_unit_tasks_max > 0.9 and ignoring(type) systemd_unit_tasks_max > 0'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: Systemd unit tasks near limit (instance {{ $labels.instance }})
-        description: "Systemd unit {{ $labels.name }} is using {{ $value | humanizePercentage }} of its task limit. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # systemd_socket_refused_connections_total is declared as Gauge by the exporter despite the _total suffix, so delta() is used instead of increase().
+    # 3 refused connections in 5m is a rough default; refusal volume correlates with your socket's connection load and configured Backlog= — adjust based on your traffic pattern.
     - alert: SystemdSocketRefusedConnections
-      expr: 'delta(systemd_socket_refused_connections_total[5m]) > 3'
+      expr: 'increase(systemd_socket_refused_connections_total[5m]) > 3'
       for: 2m
       labels:
         severity: warning
       annotations:
         summary: Systemd socket refused connections (instance {{ $labels.instance }})
         description: "Systemd socket {{ $labels.name }} is refusing connections. ({{ $value }} refused in last 5m, instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Threshold of 100 connections is arbitrary. Adjust to your workload.
-    - alert: SystemdSocketHighConnections
-      expr: 'systemd_socket_current_connections > 100'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: Systemd socket high connections (instance {{ $labels.instance }})
-        description: "Systemd socket {{ $labels.name }} has {{ $value }} active connections. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Triggers if timer hasn't fired in 24 hours. Adjust threshold per timer schedule.
     - alert: SystemdTimerMissedTrigger

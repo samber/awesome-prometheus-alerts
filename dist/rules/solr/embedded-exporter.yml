@@ -5,6 +5,42 @@ groups:
   
   rules:
 
+    - alert: SolrShardHasNoLeader
+      expr: 'max by (collection, shard) (solr_collections_shard_leader) < 1'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Solr shard has no leader (instance {{ $labels.instance }})
+        description: "Solr collection {{ $labels.collection }} shard {{ $labels.shard }} has no elected leader and cannot accept writes until a new leader is elected.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SolrHighJvmHeapUsage
+      expr: 'sum by (base_url) (solr_metrics_jvm_memory_heap_bytes{item="used"}) / sum by (base_url) (solr_metrics_jvm_memory_heap_bytes{item="max"}) > 0.9'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Solr high JVM heap usage (instance {{ $labels.instance }})
+        description: "Solr node {{ $labels.base_url }} is using more than 90% of its JVM heap, which can lead to node instability, stop-the-world GC pauses, or OutOfMemory crashes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SolrDiskSpaceVeryLow
+      expr: 'min by (base_url) (solr_metrics_core_fs_bytes{item="usableSpace"}) / max by (base_url) (solr_metrics_core_fs_bytes{item="totalSpace"}) <= 0.1'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Solr disk space very low (instance {{ $labels.instance }})
+        description: "Solr node {{ $labels.base_url }} has less than 10% usable disk space remaining, an imminent risk of index corruption or write failures.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SolrDiskSpaceLow
+      expr: 'min by (base_url) (solr_metrics_core_fs_bytes{item="usableSpace"}) / max by (base_url) (solr_metrics_core_fs_bytes{item="totalSpace"}) <= 0.2'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Solr disk space low (instance {{ $labels.instance }})
+        description: "Solr node {{ $labels.base_url }} has less than 20% usable disk space remaining, risking index corruption if it fills up.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: SolrUpdateErrors
       expr: 'increase(solr_metrics_core_update_handler_errors_total[1m]) > 1'
       for: 0m
@@ -13,15 +49,6 @@ groups:
       annotations:
         summary: Solr update errors (instance {{ $labels.instance }})
         description: "Solr collection {{ $labels.collection }} has failed updates for replica {{ $labels.replica }} on {{ $labels.base_url }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: SolrQueryErrors
-      expr: 'increase(solr_metrics_core_errors_total{category="QUERY"}[1m]) > 1'
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: Solr query errors (instance {{ $labels.instance }})
-        description: "Solr has increased query errors in collection {{ $labels.collection }} for replica {{ $labels.replica }} on {{ $labels.base_url }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: SolrReplicationErrors
       expr: 'increase(solr_metrics_core_errors_total{category="REPLICATION"}[1m]) > 1'
@@ -40,3 +67,30 @@ groups:
       annotations:
         summary: Solr low live node count (instance {{ $labels.instance }})
         description: "Solr collection {{ $labels.collection }} has less than two live nodes for replica {{ $labels.replica }} on {{ $labels.base_url }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SolrShardHasNoActiveReplica
+      expr: 'count by (collection, shard) (solr_collections_replica_state{state="active"}) < 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Solr shard has no active replica (instance {{ $labels.instance }})
+        description: "Solr collection {{ $labels.collection }} shard {{ $labels.shard }} has no active replicas, causing a complete read/write outage for that shard.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SolrBlockedOrDeadlockedJvmThreads
+      expr: 'max by (base_url) (solr_metrics_jvm_threads{item=~"blocked|deadlock"}) > 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Solr blocked or deadlocked JVM threads (instance {{ $labels.instance }})
+        description: "Solr node {{ $labels.base_url }} has blocked or deadlocked JVM threads, indicating the JVM may be stuck and unable to serve requests.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: SolrQueryErrors
+      expr: 'increase(solr_metrics_core_errors_total{category="QUERY"}[1m]) > 1'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Solr query errors (instance {{ $labels.instance }})
+        description: "Solr has increased query errors in collection {{ $labels.collection }} for replica {{ $labels.replica }} on {{ $labels.base_url }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -15,6 +15,70 @@ groups:
         summary: RabbitMQ node down (instance {{ $labels.instance }})
         description: "Less than 3 nodes running in RabbitMQ cluster\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    - alert: RabbitmqMemoryAlarmActive
+      expr: 'rabbitmq_alarms_memory_used_watermark > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: RabbitMQ memory alarm active (instance {{ $labels.instance }})
+        description: "Memory alarm is active on node {{ $labels.instance }} (vm_memory_high_watermark reached); publishers are blocked cluster-wide until memory is freed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqMemoryHigh
+      expr: 'rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90 and rabbitmq_resident_memory_limit_bytes > 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: RabbitMQ memory high (instance {{ $labels.instance }})
+        description: "A node use more than 90% of allocated RAM\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqDiskSpaceAlarmActive
+      expr: 'rabbitmq_alarms_free_disk_space_watermark > 0'
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: RabbitMQ disk space alarm active (instance {{ $labels.instance }})
+        description: "Disk space alarm is active on node {{ $labels.instance }} (disk_free_limit reached); publishers are blocked cluster-wide until disk space is freed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqPredictedLowDiskWatermark
+      expr: 'predict_linear(rabbitmq_disk_space_available_bytes[24h], 24*3600) < rabbitmq_disk_space_available_limit_bytes'
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: RabbitMQ predicted low disk watermark (instance {{ $labels.instance }})
+        description: "Based on the trend of available disk space over the last 24h, node {{ $labels.instance }} is predicted to hit its disk space alarm threshold within 24 hours, which would block all publishers cluster-wide.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqFileDescriptorsUsage
+      expr: 'rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90 and rabbitmq_process_max_fds > 0'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: RabbitMQ file descriptors usage (instance {{ $labels.instance }})
+        description: "A node use more than 90% of file descriptors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1000 is a rough default; connection count scales with your client/application count — adjust based on your workload.
+    - alert: RabbitmqTooManyConnections
+      expr: 'rabbitmq_connections > 1000'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: RabbitMQ too many connections (instance {{ $labels.instance }})
+        description: "The total connections of a node is too high\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: RabbitmqHighConnectionChurn
+      expr: '(sum(rate(rabbitmq_connections_closed_total[5m])) + sum(rate(rabbitmq_connections_opened_total[5m]))) / sum(rabbitmq_connections) > 0.1 and sum(rabbitmq_connections) >= 100'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: RabbitMQ high connection churn (instance {{ $labels.instance }})
+        description: "{{ $value | humanizePercentage }} of RabbitMQ connections are being opened or closed per second, indicating clients use short-lived connections instead of long-lived ones, which wastes CPU and file descriptors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     # 1m delay allows a restart without triggering an alert.
     - alert: RabbitmqNodeNotDistributed
       expr: 'erlang_vm_dist_node_state < 3'
@@ -34,24 +98,7 @@ groups:
         summary: RabbitMQ instances different versions (instance {{ $labels.instance }})
         description: "Running different version of RabbitMQ in the same cluster, can lead to failure.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: RabbitmqMemoryHigh
-      expr: 'rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90 and rabbitmq_resident_memory_limit_bytes > 0'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: RabbitMQ memory high (instance {{ $labels.instance }})
-        description: "A node use more than 90% of allocated RAM\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: RabbitmqFileDescriptorsUsage
-      expr: 'rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90 and rabbitmq_process_max_fds > 0'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: RabbitMQ file descriptors usage (instance {{ $labels.instance }})
-        description: "A node use more than 90% of file descriptors\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # 1000 is a rough default; queue depth depends on the balance between your producer and consumer throughput — adjust based on your workload.
     - alert: RabbitmqTooManyReadyMessages
       expr: 'sum(rabbitmq_queue_messages_ready) BY (queue) > 1000'
       for: 1m
@@ -61,6 +108,7 @@ groups:
         summary: RabbitMQ too many ready messages (instance {{ $labels.instance }})
         description: "RabbitMQ too many ready messages on queue {{ $labels.queue }} ({{ $value }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 1000 is a rough default; depends on your consumer's ack processing rate — adjust based on your workload.
     - alert: RabbitmqTooManyUnackMessages
       expr: 'sum(rabbitmq_queue_messages_unacked) BY (queue) > 1000'
       for: 1m
@@ -69,15 +117,6 @@ groups:
       annotations:
         summary: RabbitMQ too many unack messages (instance {{ $labels.instance }})
         description: "Too many unacknowledged messages on queue {{ $labels.queue }} ({{ $value }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: RabbitmqTooManyConnections
-      expr: 'rabbitmq_connections > 1000'
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: RabbitMQ too many connections (instance {{ $labels.instance }})
-        description: "The total connections of a node is too high\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: RabbitmqNoQueueConsumer
       expr: 'rabbitmq_queue_consumers < 1'

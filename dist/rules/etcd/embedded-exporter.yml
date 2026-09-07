@@ -5,6 +5,63 @@ groups:
   
   rules:
 
+    - alert: EtcdNoLeader
+      expr: 'etcd_server_has_leader == 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd no Leader (instance {{ $labels.instance }})
+        description: "Etcd cluster have no leader\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdInsufficientMembersForQuorum
+      expr: 'sum(up{job=~".*etcd.*"} == bool 1) without (instance) < ((count(up{job=~".*etcd.*"}) without (instance) + 1) / 2)'
+      for: 3m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd insufficient members for quorum (instance {{ $labels.instance }})
+        description: "Only {{ $value }} etcd members are reachable, fewer than required for quorum; the cluster will reject writes until quorum is restored.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1s threshold is a rough default; fsync duration depends on your disk hardware (NVMe vs spinning disk vs network storage) — adjust based on your baseline.
+    - alert: EtcdHighFsyncDurationsCritical
+      expr: 'histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le)) > 1'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd high fsync durations critical (instance {{ $labels.instance }})
+        description: "Etcd WAL fsync duration is critically high, 99th percentile is over 1s, which can cause request timeouts and trigger leader elections.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 0.5s threshold is a rough default; fsync duration depends on your disk hardware (NVMe vs spinning disk vs network storage) — adjust based on your baseline.
+    - alert: EtcdHighFsyncDurations
+      expr: 'histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le)) > 0.5'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high fsync durations (instance {{ $labels.instance }})
+        description: "Etcd WAL fsync duration increasing, 99th percentile is over 0.5s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 0.25s threshold is a rough default; commit duration depends on your disk hardware and write workload — adjust based on your baseline.
+    - alert: EtcdHighCommitDurations
+      expr: 'histogram_quantile(0.99, sum(rate(etcd_disk_backend_commit_duration_seconds_bucket[5m])) by (instance, le)) > 0.25'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd high commit durations (instance {{ $labels.instance }})
+        description: "Etcd commit duration increasing, 99th percentile is over 0.25s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdDatabaseHighFragmentationRatio
+      expr: '(last_over_time(etcd_mvcc_db_total_size_in_use_in_bytes[5m]) / last_over_time(etcd_mvcc_db_total_size_in_bytes[5m])) < 0.5 and etcd_mvcc_db_total_size_in_use_in_bytes > 104857600'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Etcd database high fragmentation ratio (instance {{ $labels.instance }})
+        description: "Etcd database in-use size is below 50% of its allocated size ({{ $value | humanizePercentage }}), indicating fragmentation; run 'etcdctl defrag' to reclaim disk space.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
     - alert: EtcdInsufficientMembers
       expr: 'count(etcd_server_id) % 2 == 0'
       for: 0m
@@ -14,14 +71,26 @@ groups:
         summary: Etcd insufficient Members (instance {{ $labels.instance }})
         description: "Etcd cluster should have an odd number of members\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: EtcdNoLeader
-      expr: 'etcd_server_has_leader == 0'
-      for: 0m
+    # Counts server-side failures only. NotFound, AlreadyExists and Cancelled are normal gRPC
+    # responses and are deliberately excluded from the error rate.
+    - alert: EtcdHighNumberOfFailedGrpcRequestsCritical
+      expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Unknown|FailedPrecondition|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
+      for: 2m
       labels:
         severity: critical
       annotations:
-        summary: Etcd no Leader (instance {{ $labels.instance }})
-        description: "Etcd cluster have no leader\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Etcd high number of failed GRPC requests critical (instance {{ $labels.instance }})
+        description: "More than 5% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # These etcd_http_* metrics are from the etcd v2 API and do not exist in etcd 3.x. Remove these rules if running etcd 3.x.
+    - alert: EtcdHighNumberOfFailedHttpRequestsCritical
+      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd high number of failed HTTP requests critical (instance {{ $labels.instance }})
+        description: "More than 5% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: EtcdHighNumberOfLeaderChanges
       expr: 'increase(etcd_server_leader_changes_seen_total[10m]) > 2'
@@ -32,9 +101,10 @@ groups:
         summary: Etcd high number of leader changes (instance {{ $labels.instance }})
         description: "Etcd leader changed {{ $value }} times during 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
+    # Counts server-side failures only. NotFound, AlreadyExists and Cancelled are normal gRPC
+    # responses and are deliberately excluded from the error rate.
     - alert: EtcdHighNumberOfFailedGrpcRequestsWarning
-      expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
+      expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Unknown|FailedPrecondition|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.01 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
       for: 2m
       labels:
         severity: warning
@@ -42,18 +112,10 @@ groups:
         summary: Etcd high number of failed GRPC requests warning (instance {{ $labels.instance }})
         description: "More than 1% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Filters to actual error codes. grpc_code!="OK" includes benign codes like NotFound, AlreadyExists, and Cancelled.
-    - alert: EtcdHighNumberOfFailedGrpcRequestsCritical
-      expr: 'sum(rate(grpc_server_handled_total{grpc_code=~"Internal|Unavailable|DeadlineExceeded|ResourceExhausted|Aborted|Unknown"}[1m])) BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0.05 and sum(rate(grpc_server_handled_total[1m])) BY (grpc_service, grpc_method) > 0'
-      for: 2m
-      labels:
-        severity: critical
-      annotations:
-        summary: Etcd high number of failed GRPC requests critical (instance {{ $labels.instance }})
-        description: "More than 5% GRPC request failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
+    # Excludes the Defragment method, which is inherently slow and would otherwise trigger
+    # false positives during a manual or automatic etcdctl defrag.
     - alert: EtcdGrpcRequestsSlow
-      expr: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
+      expr: 'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_method!="Defragment", grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15'
       for: 2m
       labels:
         severity: warning
@@ -71,16 +133,6 @@ groups:
         summary: Etcd high number of failed HTTP requests warning (instance {{ $labels.instance }})
         description: "More than 1% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # These etcd_http_* metrics are from the etcd v2 API and do not exist in etcd 3.x. Remove these rules if running etcd 3.x.
-    - alert: EtcdHighNumberOfFailedHttpRequestsCritical
-      expr: 'sum(rate(etcd_http_failed_total[1m])) BY (method) / sum(rate(etcd_http_received_total[1m])) BY (method) > 0.05 and sum(rate(etcd_http_received_total[1m])) BY (method) > 0'
-      for: 2m
-      labels:
-        severity: critical
-      annotations:
-        summary: Etcd high number of failed HTTP requests critical (instance {{ $labels.instance }})
-        description: "More than 5% HTTP failure detected in Etcd\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     # This etcd_http_* metric is from the etcd v2 API and does not exist in etcd 3.x. Remove this rule if running etcd 3.x.
     - alert: EtcdHttpRequestsSlow
       expr: 'histogram_quantile(0.99, rate(etcd_http_successful_duration_seconds_bucket[1m])) > 0.15'
@@ -91,6 +143,7 @@ groups:
         summary: Etcd HTTP requests slow (instance {{ $labels.instance }})
         description: "HTTP requests slowing down, 99th percentile is over 0.15s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+    # 0.15s threshold is a rough default; round-trip time depends on your network topology between etcd members — adjust based on your baseline.
     - alert: EtcdMemberCommunicationSlow
       expr: 'histogram_quantile(0.99, sum(rate(etcd_network_peer_round_trip_time_seconds_bucket[5m])) by (instance, le)) > 0.15'
       for: 2m
@@ -109,20 +162,29 @@ groups:
         summary: Etcd high number of failed proposals (instance {{ $labels.instance }})
         description: "Etcd server got {{ $value }} failed proposals in the past hour\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: EtcdHighFsyncDurations
-      expr: 'histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le)) > 0.5'
+    - alert: EtcdPeerCommunicationFailures
+      expr: 'sum(rate(etcd_network_peer_sent_failures_total[1m])) by (To) > 0.01'
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: Etcd high fsync durations (instance {{ $labels.instance }})
-        description: "Etcd WAL fsync duration increasing, 99th percentile is over 0.5s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Etcd peer communication failures (instance {{ $labels.instance }})
+        description: "Etcd member is experiencing more than 0.01 failed peer sends per second to peer {{ $labels.To }}, which usually indicates the member is unreachable or network-partitioned.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: EtcdHighCommitDurations
-      expr: 'histogram_quantile(0.99, sum(rate(etcd_disk_backend_commit_duration_seconds_bucket[5m])) by (instance, le)) > 0.25'
-      for: 2m
+    - alert: EtcdDatabaseQuotaLowSpace
+      expr: '(last_over_time(etcd_mvcc_db_total_size_in_bytes[5m]) / last_over_time(etcd_server_quota_backend_bytes[5m])) * 100 > 95'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Etcd database quota low space (instance {{ $labels.instance }})
+        description: "Etcd database size is above 95% of the configured storage quota ({{ $value }}%); once the quota is reached, etcd stops accepting writes cluster-wide.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: EtcdExcessiveDatabaseGrowth
+      expr: 'predict_linear(etcd_mvcc_db_total_size_in_bytes[4h], 4*60*60) > etcd_server_quota_backend_bytes'
+      for: 10m
       labels:
         severity: warning
       annotations:
-        summary: Etcd high commit durations (instance {{ $labels.instance }})
-        description: "Etcd commit duration increasing, 99th percentile is over 0.25s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        summary: Etcd excessive database growth (instance {{ $labels.instance }})
+        description: "Based on the current write rate over the past 4 hours, the etcd database is predicted to exceed the configured storage quota within the next 4 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

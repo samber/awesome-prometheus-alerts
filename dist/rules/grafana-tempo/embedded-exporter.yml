@@ -2,17 +2,13 @@ groups:
 
 - name: EmbeddedExporter
 
+  # Most rules below apply to any Tempo deployment. A subset (live-store health, and any
+  # rule mentioning distributor Kafka-produce, block-builder, or backend-scheduler
+  # lag/ownership) instead requires Tempo v3.0+'s Kafka-based ingest architecture
+  # (distributor -> Kafka -> block-builder/live-store). On a classic/monolithic Tempo
+  # deployment those specific metrics won't exist and their rules will simply stay inactive.
   
   rules:
-
-    - alert: TempoDistributorUnhealthy
-      expr: 'max by (job) (tempo_ring_members{state="Unhealthy", name="distributor"}) > 0'
-      for: 15m
-      labels:
-        severity: warning
-      annotations:
-        summary: Tempo distributor unhealthy (instance {{ $labels.instance }})
-        description: "Tempo has {{ $value }} unhealthy distributor(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: TempoLiveStoreUnhealthy
       expr: 'max by (job) (tempo_ring_members{state="Unhealthy", name="live-store"}) > 0'
@@ -89,35 +85,10 @@ groups:
         summary: Tempo block list rising quickly (instance {{ $labels.instance }})
         description: "Tempo blocklist length is up {{ printf \"%.0f\" $value }}% over the last 7 days. Consider scaling compactors.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: TempoBadOverrides
-      expr: 'sum by (job) (tempo_runtime_config_last_reload_successful == 0) > 0'
-      for: 15m
-      labels:
-        severity: critical
-      annotations:
-        summary: Tempo bad overrides (instance {{ $labels.instance }})
-        description: "{{ $labels.job }} failed to reload runtime overrides.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    - alert: TempoUserConfigurableOverridesReloadFailing
-      expr: 'sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[1h])) > 5 and sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[5m])) > 0'
-      for: 0m
-      labels:
-        severity: critical
-      annotations:
-        summary: Tempo user configurable overrides reload failing (instance {{ $labels.instance }})
-        description: "{{ $value }} user-configurable overrides reloads have failed in the past hour.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Threshold of 100 blocks per compactor instance. Adjust based on your environment.
-    - alert: TempoCompactionTooManyOutstandingBlocksWarning
-      expr: 'sum by (instance) (tempodb_compaction_outstanding_blocks) > 100'
-      for: 6h
-      labels:
-        severity: warning
-      annotations:
-        summary: Tempo compaction too many outstanding blocks warning (instance {{ $labels.instance }})
-        description: "There are too many outstanding compaction blocks for {{ $labels.instance }}. Consider increasing compactor resources.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-    # Threshold of 100 blocks per compactor instance. Normalize by backend-worker count if needed. Adjust based on your environment.
+    # Threshold of 250 blocks per compactor instance. Adjust based on your environment. If
+    # you run a split backend-scheduler/backend-worker architecture, consider normalizing
+    # this count by the number of backend-worker instances before thresholding, since
+    # sensitivity would otherwise scale inversely with fleet size.
     - alert: TempoCompactionTooManyOutstandingBlocksCritical
       expr: 'sum by (instance) (tempodb_compaction_outstanding_blocks) > 250'
       for: 24h
@@ -146,15 +117,6 @@ groups:
         summary: Tempo metrics generator processor updates failing (instance {{ $labels.instance }})
         description: "Tempo metrics generator processor updates are failing for {{ $labels.job }} ({{ $value }} failures in 5m).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    - alert: TempoMetricsGeneratorServiceGraphsDroppingSpans
-      expr: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans_total[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
-      for: 15m
-      labels:
-        severity: warning
-      annotations:
-        summary: Tempo metrics generator service graphs dropping spans (instance {{ $labels.instance }})
-        description: "Tempo metrics generator is dropping {{ printf \"%.2f\" $value }}% of spans in service graphs for {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
     - alert: TempoMetricsGeneratorCollectionsFailing
       expr: 'sum by (job) (increase(tempo_metrics_generator_registry_collections_failed_total[5m])) > 2'
       for: 5m
@@ -163,6 +125,110 @@ groups:
       annotations:
         summary: Tempo metrics generator collections failing (instance {{ $labels.instance }})
         description: "Tempo metrics generator collections are failing for {{ $labels.job }} ({{ $value }} failures in 5m).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoDistributorKafkaProduceFailures
+      expr: '100 * sum by (job) (rate(tempo_distributor_produce_failures_total{reason!="cancelled-before-producing"}[5m])) / sum by (job) (rate(tempo_distributor_produce_records_total[5m])) > 0.1 and sum by (job) (rate(tempo_distributor_produce_records_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo distributor Kafka produce failures (instance {{ $labels.instance }})
+        description: "Tempo distributor {{ $labels.job }} is failing to produce {{ printf \"%.2f\" $value }}% of trace records to Kafka, an early indicator of write-path trace loss.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 300s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
+    - alert: TempoLiveStoreAllOwnersLagging
+      expr: 'min by (job, partition) (tempo_ingest_group_partition_lag_seconds{container="live-store"}) > 300'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo live store all owners lagging (instance {{ $labels.instance }})
+        description: "All live-store owners of Tempo partition {{ $labels.partition }} are lagging by {{ $value }}s behind their Kafka ingest partition, causing a partial read outage for recent traces.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 1200s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
+    - alert: TempoLiveStorePartitionLagCritical
+      expr: 'tempo_ingest_group_partition_lag_seconds{container="live-store"} > 1200'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo live store partition lag critical (instance {{ $labels.instance }})
+        description: "Tempo live-store {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; recent traces on this partition may be significantly delayed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoLiveStorePartitionsUnowned
+      expr: 'max by (job) (tempo_partition_ring_partitions{name="livestore-partitions", state=~"Active|Inactive"}) > count(count by (partition, job) (tempo_live_store_partition_owned)) by (job)'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo live store partitions unowned (instance {{ $labels.instance }})
+        description: "{{ $labels.job }} has live-store partitions with no owner in the partition ring; spans for those partitions are fully unqueryable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 300s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
+    - alert: TempoBlockBuilderPartitionLagCritical
+      expr: 'tempo_ingest_group_partition_lag_seconds{container="block-builder"} > 300'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo block builder partition lag critical (instance {{ $labels.instance }})
+        description: "Tempo block-builder {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; traces are significantly delayed in being flushed into durable blocks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoBackendSchedulerJobsFailing
+      expr: '100 * sum by (job) (increase(tempo_backend_scheduler_jobs_failed_total[5m])) / sum by (job) (increase(tempo_backend_scheduler_jobs_created_total[5m])) > 5 and sum by (job) (increase(tempo_backend_scheduler_jobs_created_total[5m])) > 0'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo backend scheduler jobs failing (instance {{ $labels.instance }})
+        description: "Tempo backend-scheduler job failure rate is {{ printf \"%.2f\" $value }}% for {{ $labels.job }}, indicating compaction jobs are failing in the backend-scheduler/backend-worker pipeline.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 900s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
+    - alert: TempoMetricsGeneratorPartitionLagCritical
+      expr: 'tempo_ingest_group_partition_lag_seconds{container="metrics-generator"} > 900'
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo metrics generator partition lag critical (instance {{ $labels.instance }})
+        description: "Tempo metrics-generator {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; generated service-graph and span metrics reflect stale data.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoBlockBuildersPartitionsMismatch
+      expr: 'max by (job) (tempo_partition_ring_partitions{name="livestore-partitions", state=~"Active|Inactive"}) > sum by (job) (tempo_block_builder_owned_partitions)'
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo block builders partitions mismatch (instance {{ $labels.instance }})
+        description: "{{ $labels.job }} has more live-store partitions in the partition ring than block-builders currently own, indicating stuck or misconfigured partition ownership.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoDistributorUnhealthy
+      expr: 'max by (job) (tempo_ring_members{state="Unhealthy", name="distributor"}) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo distributor unhealthy (instance {{ $labels.instance }})
+        description: "Tempo has {{ $value }} unhealthy distributor(s).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 100 blocks per compactor instance. Adjust based on your environment.
+    - alert: TempoCompactionTooManyOutstandingBlocksWarning
+      expr: 'sum by (instance) (tempodb_compaction_outstanding_blocks) > 100'
+      for: 6h
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo compaction too many outstanding blocks warning (instance {{ $labels.instance }})
+        description: "There are too many outstanding compaction blocks for {{ $labels.instance }}. Consider increasing compactor resources.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoMetricsGeneratorServiceGraphsDroppingSpans
+      expr: '100 * sum by (job) (rate(tempo_metrics_generator_processor_service_graphs_dropped_spans_total[5m])) / sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0.5 and sum by (job) (rate(tempo_metrics_generator_spans_received_total[5m])) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo metrics generator service graphs dropping spans (instance {{ $labels.instance }})
+        description: "Tempo metrics generator is dropping {{ printf \"%.2f\" $value }}% of spans in service graphs for {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Fires when the memcached error rate exceeds 20%. Only relevant if Tempo is configured with memcached caching.
     - alert: TempoMemcachedErrorsElevated
@@ -173,3 +239,44 @@ groups:
       annotations:
         summary: Tempo memcached errors elevated (instance {{ $labels.instance }})
         description: "Tempo memcached error rate is {{ printf \"%.2f\" $value }}% for {{ $labels.name }} in {{ $labels.job }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 200s threshold is a rough default; Kafka lag scales with your ingestion throughput and consumer processing speed — adjust based on your workload.
+    - alert: TempoLiveStorePartitionLagWarning
+      expr: 'tempo_ingest_group_partition_lag_seconds{container="live-store"} > 200'
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo live store partition lag warning (instance {{ $labels.instance }})
+        description: "Tempo live-store {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}, degrading read completeness for recent traces.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # The block-builder consumes in batches, so its raw lag sawtooths up to consume_cycle_duration
+    # (5m by default) on every healthy cycle. The 6m average is what makes 200s meaningful: it
+    # means the block-builder is burning roughly 45% of its cycle budget. Raise the window
+    # alongside consume_cycle_duration if you tune it.
+    - alert: TempoBlockBuilderPartitionLagWarning
+      expr: 'avg_over_time(tempo_ingest_group_partition_lag_seconds{container="block-builder"}[6m]) > 200'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Tempo block builder partition lag warning (instance {{ $labels.instance }})
+        description: "Tempo block-builder {{ $labels.instance }} (group {{ $labels.group }}) is lagging by {{ $value }}s behind Kafka ingest partition {{ $labels.partition }}; traces are delayed in being flushed into durable blocks.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoBadOverrides
+      expr: 'sum by (job) (tempo_runtime_config_last_reload_successful == 0) > 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo bad overrides (instance {{ $labels.instance }})
+        description: "{{ $labels.job }} failed to reload runtime overrides.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: TempoUserConfigurableOverridesReloadFailing
+      expr: 'sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[1h])) > 5 and sum by (job) (increase(tempo_overrides_user_configurable_overrides_reload_failed_total[5m])) > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Tempo user configurable overrides reload failing (instance {{ $labels.instance }})
+        description: "{{ $value }} user-configurable overrides reloads have failed in the past hour.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
