@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this collection of alerting rules, please cite it as below."
+title: "samber/awesome-prometheus-alerts: Collection of Prometheus alerting rules"
+abstract: >-
+  A curated collection of 1000+ production-ready Prometheus alerting rules covering
+  90+ services and 100+ exporters, spanning host and hardware monitoring, databases,
+  message brokers, proxies and service meshes, runtimes, orchestrators, CI/CD,
+  network and security, storage, cloud providers and observability backends.
+  Every rule ships as a copy-pasteable PromQL snippet with a documented threshold,
+  and is browsable as a static website with per-exporter downloadable rule files.
+type: software
+authors:
+  - family-names: Berthe
+    given-names: Samuel
+    orcid: "https://orcid.org/0009-0000-2060-7721"
+    email: hello@samuel-berthe.fr
+doi: 10.5281/zenodo.21604506
+repository-code: "https://github.com/samber/awesome-prometheus-alerts"
+url: "https://samber.github.io/awesome-prometheus-alerts"
+license:
+  - CC-BY-4.0
+  - MIT
+keywords:
+  - prometheus
+  - alerting
+  - alertmanager
+  - promql
+  - monitoring
+  - observability
+  - sre
+  - devops
+  - kubernetes
+  - exporter
+date-released: "2018-10-21"

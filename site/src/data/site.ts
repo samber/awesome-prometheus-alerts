@@ -20,6 +20,13 @@ export const GITHUB_API_REPO_URL = 'https://api.github.com/repos/samber/awesome-
 export const GITHUB_CONTRIBUTING_URL = `${GITHUB_URL}/blob/master/CONTRIBUTING.md`;
 export const GITHUB_LICENSE_URL = `${GITHUB_URL}/blob/master/LICENSE`;
 
+// Sibling awesome lists maintained alongside this one, cross-linked from the footer.
+export const SIBLING_AWESOME_LISTS = [
+  { name: 'Awesome AI-Native', url: 'https://samber.github.io/awesome-ai-native/' },
+  { name: 'Awesome OLAP', url: 'https://samber.github.io/awesome-olap/' },
+  { name: 'Awesome User Research', url: 'https://samber.github.io/awesome-user-research/' },
+];
+
 // Licenses
 export const LICENSE_CC_BY_URL = 'https://creativecommons.org/licenses/by/4.0/';
 export const LICENSE_CC_BY_NAME = 'Creative Commons CC BY 4.0';

@@ -4,6 +4,12 @@
 
 Collection available here: **[https://samber.github.io/awesome-prometheus-alerts](https://samber.github.io/awesome-prometheus-alerts)**
 
+See also:
+
+- [awesome-ai-native](https://github.com/samber/awesome-ai-native) - Products where the LLM is the product itself.
+- [awesome-olap](https://github.com/samber/awesome-olap) - OLAP databases, data lakes and data engineering tools.
+- [awesome-user-research](https://github.com/samber/awesome-user-research) - Tools for Product Managers and UX Researchers.
+
 <div align="center">
   <hr>
   <sup><b>Sponsored by:</b></sup>
@@ -141,6 +147,7 @@ Collection available here: **[https://samber.github.io/awesome-prometheus-alerts
 - [CoreDNS](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/coredns/)
 - [Freeswitch](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/freeswitch/)
 - [Hashicorp Vault](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/hashicorp-vault/)
+- [sip-exporter](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/sip-exporter)
 - [Keycloak](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/keycloak/)
 - [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/cloudflare/)
 - [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/snmp/)
