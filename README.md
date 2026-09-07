@@ -1,6 +1,6 @@
 # 👋 Awesome Prometheus Alerts [![Awesome](https://awesome.re/badge-flat.svg)](https://awesome.re)
 
-> **940+ production-ready Prometheus alerting rules for 90+ services** — copy-paste YAML for Kubernetes, MySQL, Redis, Kafka, and more.
+> **1,155+ production-ready Prometheus alerting rules for 93+ services** — copy-paste YAML for Kubernetes, MySQL, Redis, Kafka, and more.
 
 Collection available here: **[https://samber.github.io/awesome-prometheus-alerts](https://samber.github.io/awesome-prometheus-alerts)**
 
@@ -55,135 +55,136 @@ See also:
 
 #### Basic resource monitoring
 
-- [Prometheus self-monitoring](https://samber.github.io/awesome-prometheus-alerts/rules#prometheus-internals)
-- [Host/Hardware](https://samber.github.io/awesome-prometheus-alerts/rules#host-and-hardware)
-- [SMART](https://samber.github.io/awesome-prometheus-alerts/rules#smart)
-- [IPMI](https://samber.github.io/awesome-prometheus-alerts/rules#ipmi)
-- [Docker Containers](https://samber.github.io/awesome-prometheus-alerts/rules#docker-containers)
-- [Blackbox](https://samber.github.io/awesome-prometheus-alerts/rules#blackbox)
-- [Windows](https://samber.github.io/awesome-prometheus-alerts/rules#windows-server)
-- [VMWare](https://samber.github.io/awesome-prometheus-alerts/rules#vmware)
-- [Proxmox VE](https://samber.github.io/awesome-prometheus-alerts/rules#proxmox-ve)
-- [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules#netdata)
-- [eBPF](https://samber.github.io/awesome-prometheus-alerts/rules#ebpf)
-- [Process Exporter](https://samber.github.io/awesome-prometheus-alerts/rules#process-exporter)
-- [Systemd](https://samber.github.io/awesome-prometheus-alerts/rules#systemd)
+- [Prometheus self-monitoring](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/prometheus-self-monitoring/)
+- [Host and hardware](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/host-and-hardware/)
+- [S.M.A.R.T Device Monitoring](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/s-m-a-r-t-device-monitoring/)
+- [IPMI](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/ipmi/)
+- [Docker containers](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/docker-containers/)
+- [Blackbox](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/blackbox/)
+- [Windows Server](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/windows-server/)
+- [VMware](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/vmware/)
+- [Proxmox VE](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/proxmox-ve/)
+- [Netdata](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/netdata/)
+- [eBPF](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/ebpf/)
+- [Process Exporter](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/process-exporter/)
+- [Systemd](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/systemd/)
 
 #### Databases
 
-- [MySQL](https://samber.github.io/awesome-prometheus-alerts/rules#mysql)
-- [PostgreSQL](https://samber.github.io/awesome-prometheus-alerts/rules#postgresql)
-- [SQL Server](https://samber.github.io/awesome-prometheus-alerts/rules#sql-server)
-- [Oracle Database](https://samber.github.io/awesome-prometheus-alerts/rules#oracle-database)
-- [Patroni](https://samber.github.io/awesome-prometheus-alerts/rules#patroni)
-- [PGBouncer](https://samber.github.io/awesome-prometheus-alerts/rules#pgbouncer)
-- [Redis](https://samber.github.io/awesome-prometheus-alerts/rules#redis)
-- [Memcached](https://samber.github.io/awesome-prometheus-alerts/rules#memcached)
-- [MongoDB](https://samber.github.io/awesome-prometheus-alerts/rules#mongodb)
-- [Elasticsearch](https://samber.github.io/awesome-prometheus-alerts/rules#elasticsearch)
-- [OpenSearch](https://samber.github.io/awesome-prometheus-alerts/rules#opensearch)
-- [Meilisearch](https://samber.github.io/awesome-prometheus-alerts/rules#meilisearch)
-- [Cassandra](https://samber.github.io/awesome-prometheus-alerts/rules#cassandra)
-- [Clickhouse](https://samber.github.io/awesome-prometheus-alerts/rules#clickhouse)
-- [CouchDB](https://samber.github.io/awesome-prometheus-alerts/rules#couchdb)
-- [Solr](https://samber.github.io/awesome-prometheus-alerts/rules#solr)
+- [MySQL](https://samber.github.io/awesome-prometheus-alerts/rules/databases/mysql/)
+- [PostgreSQL](https://samber.github.io/awesome-prometheus-alerts/rules/databases/postgresql/)
+- [SQL Server](https://samber.github.io/awesome-prometheus-alerts/rules/databases/sql-server/)
+- [Oracle Database](https://samber.github.io/awesome-prometheus-alerts/rules/databases/oracle-database/)
+- [Patroni](https://samber.github.io/awesome-prometheus-alerts/rules/databases/patroni/)
+- [PGBouncer](https://samber.github.io/awesome-prometheus-alerts/rules/databases/pgbouncer/)
+- [Redis](https://samber.github.io/awesome-prometheus-alerts/rules/databases/redis/)
+- [Memcached](https://samber.github.io/awesome-prometheus-alerts/rules/databases/memcached/)
+- [MongoDB](https://samber.github.io/awesome-prometheus-alerts/rules/databases/mongodb/)
+- [Elasticsearch](https://samber.github.io/awesome-prometheus-alerts/rules/databases/elasticsearch/)
+- [OpenSearch](https://samber.github.io/awesome-prometheus-alerts/rules/databases/opensearch/)
+- [Meilisearch](https://samber.github.io/awesome-prometheus-alerts/rules/databases/meilisearch/)
+- [Cassandra](https://samber.github.io/awesome-prometheus-alerts/rules/databases/cassandra/)
+- [Clickhouse](https://samber.github.io/awesome-prometheus-alerts/rules/databases/clickhouse/)
+- [CouchDB](https://samber.github.io/awesome-prometheus-alerts/rules/databases/couchdb/)
+- [Solr](https://samber.github.io/awesome-prometheus-alerts/rules/databases/solr/)
 
 #### Message brokers
 
-- [RabbitMQ](https://samber.github.io/awesome-prometheus-alerts/rules#rabbitmq)
-- [Zookeeper](https://samber.github.io/awesome-prometheus-alerts/rules#zookeeper)
-- [Kafka](https://samber.github.io/awesome-prometheus-alerts/rules#kafka)
-- [Pulsar](https://samber.github.io/awesome-prometheus-alerts/rules#pulsar)
-- [Nats](https://samber.github.io/awesome-prometheus-alerts/rules#nats)
+- [RabbitMQ](https://samber.github.io/awesome-prometheus-alerts/rules/message-brokers/rabbitmq/)
+- [Zookeeper](https://samber.github.io/awesome-prometheus-alerts/rules/message-brokers/zookeeper/)
+- [Kafka](https://samber.github.io/awesome-prometheus-alerts/rules/message-brokers/kafka/)
+- [Pulsar](https://samber.github.io/awesome-prometheus-alerts/rules/message-brokers/pulsar/)
+- [Nats](https://samber.github.io/awesome-prometheus-alerts/rules/message-brokers/nats/)
 
 #### Proxies, load balancers and service meshes
 
-- [Nginx](https://samber.github.io/awesome-prometheus-alerts/rules#nginx)
-- [Apache](https://samber.github.io/awesome-prometheus-alerts/rules#apache)
-- [HaProxy](https://samber.github.io/awesome-prometheus-alerts/rules#haproxy)
-- [Traefik](https://samber.github.io/awesome-prometheus-alerts/rules#traefik)
-- [Caddy](https://samber.github.io/awesome-prometheus-alerts/rules#caddy)
-- [Envoy](https://samber.github.io/awesome-prometheus-alerts/rules#envoy)
-- [Linkerd](https://samber.github.io/awesome-prometheus-alerts/rules#linkerd)
-- [Istio](https://samber.github.io/awesome-prometheus-alerts/rules#istio)
+- [Nginx](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/nginx/)
+- [Apache](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/apache/)
+- [HaProxy](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/haproxy/)
+- [Traefik](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/traefik/)
+- [Caddy](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/caddy/)
+- [Envoy](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/envoy/)
+- [Linkerd](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/linkerd/)
+- [Istio](https://samber.github.io/awesome-prometheus-alerts/rules/proxies-load-balancers-and-service-meshes/istio/)
 
 #### Runtimes
 
-- [PHP-FPM](https://samber.github.io/awesome-prometheus-alerts/rules#php-fpm)
-- [JVM](https://samber.github.io/awesome-prometheus-alerts/rules#jvm)
-- [Golang](https://samber.github.io/awesome-prometheus-alerts/rules#golang)
-- [Ruby](https://samber.github.io/awesome-prometheus-alerts/rules#ruby)
-- [Python](https://samber.github.io/awesome-prometheus-alerts/rules#python)
-- [Sidekiq](https://samber.github.io/awesome-prometheus-alerts/rules#sidekiq)
+- [PHP-FPM](https://samber.github.io/awesome-prometheus-alerts/rules/runtimes/php-fpm/)
+- [JVM](https://samber.github.io/awesome-prometheus-alerts/rules/runtimes/jvm/)
+- [Golang](https://samber.github.io/awesome-prometheus-alerts/rules/runtimes/golang/)
+- [Ruby](https://samber.github.io/awesome-prometheus-alerts/rules/runtimes/ruby/)
+- [Python](https://samber.github.io/awesome-prometheus-alerts/rules/runtimes/python/)
+- [Sidekiq](https://samber.github.io/awesome-prometheus-alerts/rules/runtimes/sidekiq/)
 
 #### Data engineering
 
-- [Apache Flink](https://samber.github.io/awesome-prometheus-alerts/rules#apache-flink)
-- [Apache Spark](https://samber.github.io/awesome-prometheus-alerts/rules#apache-spark)
-- [Hadoop](https://samber.github.io/awesome-prometheus-alerts/rules#hadoop)
+- [Apache Flink](https://samber.github.io/awesome-prometheus-alerts/rules/data-engineering/apache-flink/)
+- [Apache Spark](https://samber.github.io/awesome-prometheus-alerts/rules/data-engineering/apache-spark/)
+- [Hadoop](https://samber.github.io/awesome-prometheus-alerts/rules/data-engineering/hadoop/)
 
 #### Orchestrators
 
-- [Kubernetes](https://samber.github.io/awesome-prometheus-alerts/rules#kubernetes)
-- [Nomad](https://samber.github.io/awesome-prometheus-alerts/rules#nomad)
-- [Consul](https://samber.github.io/awesome-prometheus-alerts/rules#consul)
-- [Etcd](https://samber.github.io/awesome-prometheus-alerts/rules#etcd)
-- [OpenStack](https://samber.github.io/awesome-prometheus-alerts/rules#openstack)
+- [Kubernetes](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/kubernetes/)
+- [Nomad](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/nomad/)
+- [Consul](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/consul/)
+- [Etcd](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/etcd/)
+- [OpenStack](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/openstack/)
 
 #### CI/CD
 
-- [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules#jenkins)
-- [ArgoCD](https://samber.github.io/awesome-prometheus-alerts/rules#argocd)
-- [FluxCD](https://samber.github.io/awesome-prometheus-alerts/rules#fluxcd)
-- [GitLab CI](https://samber.github.io/awesome-prometheus-alerts/rules#gitlab-ci)
-- [Spinnaker](https://samber.github.io/awesome-prometheus-alerts/rules#spinnaker)
+- [Jenkins](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/jenkins/)
+- [ArgoCD](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/argocd/)
+- [FluxCD](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/fluxcd/)
+- [GitLab CI](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/gitlab-ci/)
+- [Spinnaker](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/spinnaker/)
 
 #### Network and security
 
-- [SpeedTest](https://samber.github.io/awesome-prometheus-alerts/rules#speedtest)
-- [SSL/TLS](https://samber.github.io/awesome-prometheus-alerts/rules#ssl/tls)
-- [cert-manager](https://samber.github.io/awesome-prometheus-alerts/rules#cert-manager)
-- [Juniper](https://samber.github.io/awesome-prometheus-alerts/rules#juniper)
-- [CoreDNS](https://samber.github.io/awesome-prometheus-alerts/rules#coredns)
-- [FreeSwitch](https://samber.github.io/awesome-prometheus-alerts/rules#freeswitch)
-- [sip-exporter](https://samber.github.io/awesome-prometheus-alerts/rules#sip-exporter)
-- [Hashicorp Vault](https://samber.github.io/awesome-prometheus-alerts/rules#hashicorp-vault)
-- [Keycloak](https://samber.github.io/awesome-prometheus-alerts/rules#keycloak)
-- [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules#cloudflare)
-- [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules#snmp)
-- [Cilium](https://samber.github.io/awesome-prometheus-alerts/rules#cilium)
-- [WireGuard](https://samber.github.io/awesome-prometheus-alerts/rules#wireguard)
+- [SpeedTest](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/speedtest/)
+- [SSL/TLS](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/ssl-tls/)
+- [cert-manager](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/cert-manager/)
+- [Juniper](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/juniper/)
+- [CoreDNS](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/coredns/)
+- [Freeswitch](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/freeswitch/)
+- [Hashicorp Vault](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/hashicorp-vault/)
+- [sip-exporter](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/sip-exporter)
+- [Keycloak](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/keycloak/)
+- [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/cloudflare/)
+- [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/snmp/)
+- [Cilium](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/cilium/)
+- [WireGuard](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/wireguard/)
 
 #### Storage
 
-- [Ceph](https://samber.github.io/awesome-prometheus-alerts/rules#ceph)
-- [ZFS](https://samber.github.io/awesome-prometheus-alerts/rules#zfs)
-- [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules#openebs)
-- [Minio](https://samber.github.io/awesome-prometheus-alerts/rules#minio)
+- [Ceph](https://samber.github.io/awesome-prometheus-alerts/rules/storage/ceph/)
+- [ZFS](https://samber.github.io/awesome-prometheus-alerts/rules/storage/zfs/)
+- [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules/storage/openebs/)
+- [Minio](https://samber.github.io/awesome-prometheus-alerts/rules/storage/minio/)
 
 #### Cloud providers
 
-- [AWS CloudWatch](https://samber.github.io/awesome-prometheus-alerts/rules#aws-cloudwatch)
-- [Google Cloud Stackdriver](https://samber.github.io/awesome-prometheus-alerts/rules#google-cloud-stackdriver)
-- [DigitalOcean](https://samber.github.io/awesome-prometheus-alerts/rules#digitalocean)
-- [Azure](https://samber.github.io/awesome-prometheus-alerts/rules#azure)
+- [AWS CloudWatch](https://samber.github.io/awesome-prometheus-alerts/rules/cloud-providers/aws-cloudwatch/)
+- [Google Cloud Stackdriver](https://samber.github.io/awesome-prometheus-alerts/rules/cloud-providers/google-cloud-stackdriver/)
+- [DigitalOcean](https://samber.github.io/awesome-prometheus-alerts/rules/cloud-providers/digitalocean/)
+- [Azure](https://samber.github.io/awesome-prometheus-alerts/rules/cloud-providers/azure/)
 
 #### Observability
 
-- [Thanos](https://samber.github.io/awesome-prometheus-alerts/rules#thanos)
-- [Loki](https://samber.github.io/awesome-prometheus-alerts/rules#loki)
-- [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules#promtail)
-- [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules#cortex)
-- [Grafana Tempo](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-tempo)
-- [Grafana Mimir](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-mimir)
-- [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules#grafana-alloy)
-- [OpenTelemetry Collector](https://samber.github.io/awesome-prometheus-alerts/rules#opentelemetry-collector)
-- [Jaeger](https://samber.github.io/awesome-prometheus-alerts/rules#jaeger)
+- [Thanos](https://samber.github.io/awesome-prometheus-alerts/rules/observability/thanos/)
+- [Loki](https://samber.github.io/awesome-prometheus-alerts/rules/observability/loki/)
+- [Promtail](https://samber.github.io/awesome-prometheus-alerts/rules/observability/promtail/)
+- [Cortex](https://samber.github.io/awesome-prometheus-alerts/rules/observability/cortex/)
+- [Grafana Tempo](https://samber.github.io/awesome-prometheus-alerts/rules/observability/grafana-tempo/)
+- [Grafana Mimir](https://samber.github.io/awesome-prometheus-alerts/rules/observability/grafana-mimir/)
+- [Grafana Alloy](https://samber.github.io/awesome-prometheus-alerts/rules/observability/grafana-alloy/)
+- [OpenTelemetry Collector](https://samber.github.io/awesome-prometheus-alerts/rules/observability/opentelemetry-collector/)
+- [Jaeger](https://samber.github.io/awesome-prometheus-alerts/rules/observability/jaeger/)
 
 #### Other
 
-- [APC UPS](https://samber.github.io/awesome-prometheus-alerts/rules#apc-ups)
-- [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules#graph-node)
+- [APC UPS](https://samber.github.io/awesome-prometheus-alerts/rules/other/apc-ups/)
+- [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules/other/graph-node/)
+- [LiteLLM](https://samber.github.io/awesome-prometheus-alerts/rules/other/litellm/)
 
 ## 🤝 Contributing
 

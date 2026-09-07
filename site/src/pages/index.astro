@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import StatsBar from '../components/StatsBar.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import ServiceLogo from '../components/ServiceLogo.astro';
-import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, getPopularServices } from '../data/rules';
+import { data, getGroupSlug, getRuleCount, getTotalRuleCount, getTotalServiceCount, getPopularServices, RULES_DATA_MODIFIED } from '../data/rules';
 import { SITE_URL, GITHUB_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, LICENSE_CC_BY_URL, LICENSE_MIT_URL } from '../data/site';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -28,7 +28,7 @@ const org = {
   },
 };
 
-const buildDate = new Date().toISOString().slice(0, 10);
+const buildDate = RULES_DATA_MODIFIED;
 
 const faqItems = [
   {
@@ -122,7 +122,7 @@ const jsonLd = {
     {
       '@type': 'Dataset',
       name: 'Awesome Prometheus Alerts',
-      description: `Collection of ${totalRules} production-ready Prometheus alerting rules covering ${totalServices} services and 13 categories including databases, Kubernetes, cloud providers, and more.`,
+      description: `Collection of ${totalRules} production-ready Prometheus alerting rules covering ${totalServices} services and ${data.groups.length} categories including databases, Kubernetes, cloud providers, and more.`,
       url: SITE_URL,
       creator: schemaAuthor,
       datePublished: SITE_DATE_PUBLISHED,

@@ -5,7 +5,7 @@ import Sidebar from '../../../components/Sidebar.astro';
 import ExporterSection from '../../../components/ExporterSection.astro';
 import CautionBanner from '../../../components/CautionBanner.astro';
 import ServiceLogo from '../../../components/ServiceLogo.astro';
-import { data, getGroupSlug, getServiceSlug, getRuleCount, getAllServices } from '../../../data/rules';
+import { data, getGroupSlug, getServiceSlug, getRuleCount, getAllServices, RULES_DATA_MODIFIED } from '../../../data/rules';
 import { SITE_URL, schemaAuthor, schemaPublisher, schemaWebSite, SITE_DATE_PUBLISHED, SCHEMA_IN_LANGUAGE } from '../../../data/site';
 
 export function getStaticPaths() {
@@ -40,7 +40,7 @@ const faqItems = service.exporters.flatMap((exp) =>
   }))
 );
 
-const buildDate = new Date().toISOString().slice(0, 10);
+const buildDate = RULES_DATA_MODIFIED;
 const keywords = [
   'Prometheus', 'alerting rules', service.name, 'monitoring', 'PromQL',
   ...service.exporters.map((e) => e.name).filter(Boolean),

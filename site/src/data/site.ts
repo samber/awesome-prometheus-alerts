@@ -1,4 +1,7 @@
-export const SITE_URL = import.meta.env.SITE + import.meta.env.BASE_URL;
+// Every call site appends a path with no leading slash (e.g. `${SITE_URL}rules/`), so
+// SITE_URL must always end in exactly one slash — BASE_URL doesn't carry a trailing one
+// when `base` is configured without it (see astro.config.mjs).
+export const SITE_URL = `${(import.meta.env.SITE as string).replace(/\/$/, '')}${import.meta.env.BASE_URL.replace(/\/$/, '')}/`;
 export const SITE_ORIGIN = import.meta.env.SITE as string;
 
 export const SITE_NAME = 'Awesome Prometheus Alerts';
