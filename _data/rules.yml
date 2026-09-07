@@ -4029,7 +4029,7 @@ groups:
                   Threshold is a rough default. High-concurrency servers may legitimately run thousands of goroutines. Adjust to match your baseline.
               - name: Go GC duration high
                 description: Go GC pause duration is too high (max > 1s)
-                query: 'go_gc_duration_seconds{quantile="1"} > 1'
+                query: 'go_gc_duration_seconds{quantile="1.0"} > 1'
                 severity: warning
                 for: 5m
                 comments: |
