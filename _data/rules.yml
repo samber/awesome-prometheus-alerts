@@ -5794,16 +5794,6 @@ groups:
             doc_url: https://github.com/aibudaevv/sip-exporter
             rules:
               #
-              # Availability
-              #
-              - name: SIP exporter absent
-                description: Prometheus has seen no sip-exporter build information for 5 minutes. The exporter may be down or missing from service discovery.
-                query: "absent(sip_exporter_build_info)"
-                severity: critical
-                for: 5m
-                comments: |
-                  This detects complete absence. Add selectors if one Prometheus monitors multiple independent sip-exporter environments.
-              #
               # Resource saturation (USE)
               #
               - name: SIP exporter processing channel saturated
