@@ -98,11 +98,13 @@ export function getServiceSlug(service: Service): string {
   return toSlug(service.name);
 }
 
-/** CamelCase a rule name for the Prometheus alert name field */
+/** CamelCase a rule name for the Prometheus alert name field.
+ *  Mirrors the `capitalize` filter used by ../dist/template.yml, which lowercases the
+ *  rest of each word, so the copied snippet matches the downloadable rule file. */
 export function toCamelCase(name: string): string {
   return name
     .split(/\s+/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join('');
 }
 
@@ -414,7 +416,7 @@ export function formatRuleAsYaml(rule: Rule): string {
   const description = rule.description.replace(/"/g, '\\"');
 
   return `${commentLines}- alert: ${alertName}
-  expr: ${rule.query}
+  expr: '${rule.query}'
   for: ${forValue}
   labels:
     severity: ${rule.severity}
