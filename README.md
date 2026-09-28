@@ -137,6 +137,7 @@ See also:
 - [FluxCD](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/fluxcd/)
 - [GitLab CI](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/gitlab-ci/)
 - [Spinnaker](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/spinnaker/)
+- [GitHub Actions](https://samber.github.io/awesome-prometheus-alerts/rules/ci-cd/github-actions/)
 
 #### Network and security
 

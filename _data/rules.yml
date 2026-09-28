@@ -915,6 +915,66 @@ groups:
                 description: '{{ $value }} Proxmox VE guest(s) are not covered by any backup job.'
                 query: 'pve_not_backed_up_total > 0'
                 severity: warning
+          - name: drumandbytes/pve-metrics-exporter
+            slug: drumandbytes-pve-metrics-exporter
+            doc_url: https://github.com/drumandbytes/pve-metrics-exporter
+            comments: |
+              Metric names overlap with prometheus-pve-exporter (e.g. `pve_up`) but labels and meaning differ; don't mix the two rule sets.
+              Temperature rules need lm-sensors on the host, and only cover sensors whose chip reports a critical threshold.
+            rules:
+              #
+              # Availability
+              #
+              - name: PVE API unreachable
+                description: 'pve-metrics-exporter cannot fetch from the Proxmox VE API on {{ $labels.instance }} and is serving a cached result, so every other Proxmox metric is stale. Check the API URL, token and TLS settings.'
+                query: 'pve_up == 0'
+                severity: warning
+                for: 5m
+              - name: PVE guest stopped unexpectedly
+                description: 'Proxmox VE {{ $labels.type }} {{ $labels.name }} ({{ $labels.vmid }}) on node {{ $labels.node }} was running an hour ago and is now stopped.'
+                query: 'pve_guest_up == 0 and pve_guest_up offset 1h == 1'
+                severity: warning
+                for: 5m
+                comments: |
+                  Only guests that were running an hour ago, so intentionally stopped guests don't alert.
+              #
+              # Resource saturation (USE)
+              #
+              - name: PVE node high CPU usage
+                description: 'Proxmox VE node {{ $labels.node }} CPU usage is above 90% ({{ $value | printf "%.0f" }}%).'
+                query: 'pve_node_cpu_percent > 90'
+                severity: warning
+                for: 30m
+              - name: PVE node high memory usage
+                description: 'Proxmox VE node {{ $labels.node }} memory usage is above 95% ({{ $value | humanizePercentage }}). The host will start swapping or OOM-killing guest processes.'
+                query: 'pve_node_memory_used_bytes / pve_node_memory_total_bytes > 0.95 and pve_node_memory_total_bytes > 0'
+                severity: warning
+                for: 30m
+              - name: PVE node root filesystem almost full
+                description: 'Proxmox VE node {{ $labels.node }} root filesystem is above 90% used ({{ $value | humanizePercentage }}). A full root filesystem stops Proxmox services.'
+                query: 'pve_node_disk_used_bytes / pve_node_disk_total_bytes > 0.90 and pve_node_disk_total_bytes > 0'
+                severity: warning
+                for: 1h
+              - name: PVE storage almost full
+                description: 'Proxmox VE storage {{ $labels.storage }} on node {{ $labels.node }} is above 95% used ({{ $value | humanizePercentage }}). Writes will fail soon.'
+                query: 'pve_storage_used_bytes / pve_storage_total_bytes > 0.95 and pve_storage_total_bytes > 0'
+                severity: critical
+                for: 15m
+              - name: PVE storage filling up
+                description: 'Proxmox VE storage {{ $labels.storage }} on node {{ $labels.node }} is above 85% used ({{ $value | humanizePercentage }}).'
+                query: 'pve_storage_used_bytes / pve_storage_total_bytes > 0.85 and pve_storage_total_bytes > 0'
+                severity: warning
+                for: 1h
+              - name: PVE hardware temperature critical
+                description: 'Proxmox VE node {{ $labels.node }} {{ $labels.kind }} sensor {{ $labels.label }} is at or above its critical temperature ({{ $value }}°C). The hardware throttles or shuts down at this point.'
+                query: 'pve_node_temperature_celsius >= pve_node_temperature_critical_celsius'
+                severity: critical
+                for: 2m
+              - name: PVE hardware temperature high
+                description: 'Proxmox VE node {{ $labels.node }} {{ $labels.kind }} sensor {{ $labels.label }} is within 10°C of its critical temperature ({{ $value }}°C). Check fans, dust and airflow.'
+                query: 'pve_node_temperature_celsius > pve_node_temperature_critical_celsius - 10'
+                severity: warning
+                for: 10m
 
       - name: Netdata
         logo: /images/services/netdata.svg
@@ -5570,6 +5630,70 @@ groups:
                 comments: |
                   This metric is specific to AWS cloud providers in Clouddriver.
                   The 1000ms threshold is a rough default. Adjust based on your AWS usage patterns.
+
+      - name: GitHub Actions
+        logo: /images/services/github-actions.svg
+        exporters:
+          - name: drumandbytes/github-actions-runner-exporter
+            slug: drumandbytes-github-actions-runner-exporter
+            doc_url: https://github.com/drumandbytes/github-actions-runner-exporter
+            rules:
+              #
+              # Availability
+              #
+              - name: GitHub Actions all runners offline
+                description: 'No self-hosted GitHub Actions runner is online, so every job targeting them is stuck in the queue.'
+                query: 'count(github_runner_up) > 0 and sum(github_runner_up) == 0'
+                severity: critical
+                for: 5m
+              - name: GitHub Actions runner offline
+                description: 'Self-hosted GitHub Actions runner {{ $labels.runner }} is registered but offline. Jobs that need it will queue.'
+                query: 'github_runner_up == 0'
+                severity: warning
+                for: 10m
+              - name: GitHub Actions runner status stale
+                description: 'The runner status poll is failing on {{ $labels.instance }} and a cached result is being served. Check the token and GitHub API reachability.'
+                query: 'github_runners_up == 0'
+                severity: warning
+                for: 5m
+              - name: GitHub Actions org stats stale
+                description: 'The org stats poll is failing on {{ $labels.instance }}; CI, pull request and Dependabot metrics are no longer updating.'
+                query: 'github_org_up == 0'
+                severity: warning
+                for: 30m
+              #
+              # Resource saturation (USE)
+              #
+              - name: GitHub Actions runners saturated
+                description: 'Every online self-hosted runner has been busy for 30 minutes, so new jobs are likely waiting in the queue.'
+                query: 'sum(github_runner_busy) >= sum(github_runner_up) and sum(github_runner_up) > 0'
+                severity: warning
+                for: 30m
+                comments: |
+                  30m is a rough default tied to your typical job duration: a fleet running long builds is legitimately all-busy for longer. Adjust to your workload.
+              - name: GitHub Actions API rate limit low
+                description: 'Less than 10% of the GitHub API rate limit is left ({{ $value | humanizePercentage }}). Polls will start failing.'
+                query: 'github_rate_limit_remaining / github_rate_limit_limit < 0.10 and github_rate_limit_limit > 0'
+                severity: warning
+                for: 10m
+              #
+              # Performance and errors (RED)
+              #
+              - name: GitHub Actions workflow failing
+                description: 'The latest run of {{ $labels.workflow }} in {{ $labels.repo }} ended with {{ $labels.conclusion }}: {{ $labels.url }}'
+                query: 'github_repo_ci_last_run_conclusion{conclusion=~"failure|timed_out"} == 1'
+                severity: info
+                for: 1h
+                comments: |
+                  Looks at each workflow's latest completed run on any branch, so it's awareness-only.
+              #
+              # Info, security, and config
+              #
+              - name: GitHub Dependabot critical alerts open
+                description: 'Repository {{ $labels.repo }} has {{ $value }} open critical Dependabot alert(s).'
+                query: 'github_repo_dependabot_alerts_open{severity="critical"} > 0'
+                severity: info
+                for: 1h
 
   - name: Network and security
     services:
