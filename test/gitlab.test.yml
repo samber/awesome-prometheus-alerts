@@ -1,0 +1,365 @@
+# GitLab 19.4.0 server_metrics.rb:14-18,39-41 uses [10,300] and [10,60] buckets.
+# Tail-event percentage above the last finite bucket is not an interpolated p95.
+rule_files:
+- rules/gitlab-ci/gitlab-built-in-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: slow
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts:
+    - exp_labels:
+        worker: a
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high job completion time (instance )
+        description: "More than 5% of observed GitLab Sidekiq jobs take longer than 300 seconds (100%).\n  VALUE\
+          \ = 100\n  LABELS = map[worker:a]"
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high queue latency (instance )
+        description: "More than 5% of observed GitLab Sidekiq queue waits take longer than 60 seconds (100%).\n\
+          \  VALUE = 100\n  LABELS = map[]"
+- name: healthy
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+- name: at_threshold
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+- name: tail5
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+5700x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0+5700x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+5700x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0+5700x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+- name: tail6
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+5640x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0+5640x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+5640x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0+5640x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts:
+    - exp_labels:
+        worker: a
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high job completion time (instance )
+        description: "More than 5% of observed GitLab Sidekiq jobs take longer than 300 seconds (6%).\n  VALUE =\
+          \ 6\n  LABELS = map[worker:a]"
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high queue latency (instance )
+        description: "More than 5% of observed GitLab Sidekiq queue waits take longer than 60 seconds (6%).\n  VALUE\
+          \ = 6\n  LABELS = map[]"
+- name: mixed
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="b",worker="b",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="b",worker="b",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="b",worker="b",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="b",worker="b",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="b",worker="b",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="b",worker="b",job="sidekiq"}
+    values: 0+6000x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts:
+    - exp_labels:
+        worker: a
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high job completion time (instance )
+        description: "More than 5% of observed GitLab Sidekiq jobs take longer than 300 seconds (100%).\n  VALUE\
+          \ = 100\n  LABELS = map[worker:a]"
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high queue latency (instance )
+        description: "More than 5% of observed GitLab Sidekiq queue waits take longer than 60 seconds (50%).\n \
+          \ VALUE = 50\n  LABELS = map[]"
+- name: missing
+  interval: 1m
+  input_series: []
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+- name: idle
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+0x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+- name: recovery
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 12000 18000 24000 30000 36000 42000 48000 54000 60000
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 12000 18000 24000 30000 36000 42000 48000 54000 60000
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 12000 18000 24000 30000 36000 42000 48000 54000 60000
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 12000 18000 24000 30000 36000 42000 48000 54000 60000
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0+6000x30
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts:
+    - exp_labels:
+        worker: a
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high job completion time (instance )
+        description: "More than 5% of observed GitLab Sidekiq jobs take longer than 300 seconds (100%).\n  VALUE\
+          \ = 100\n  LABELS = map[worker:a]"
+  - eval_time: 30m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high queue latency (instance )
+        description: "More than 5% of observed GitLab Sidekiq queue waits take longer than 60 seconds (100%).\n\
+          \  VALUE = 100\n  LABELS = map[]"
+  - eval_time: 30m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+- name: disappearance
+  interval: 1m
+  input_series:
+  - series: sidekiq_jobs_completion_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 stale _ _ _ _ _ _ _ _ _
+  - series: sidekiq_jobs_completion_seconds_bucket{le="300",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 stale _ _ _ _ _ _ _ _ _
+  - series: sidekiq_jobs_completion_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0 6000 12000 18000 24000 30000 36000 42000 48000 54000 60000 66000 72000 78000 84000 90000 96000 102000
+      108000 114000 120000 stale _ _ _ _ _ _ _ _ _
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="10",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 stale _ _ _ _ _ _ _ _ _
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="60",instance="a",worker="a",job="sidekiq"}
+    values: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 stale _ _ _ _ _ _ _ _ _
+  - series: sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf",instance="a",worker="a",job="sidekiq"}
+    values: 0 6000 12000 18000 24000 30000 36000 42000 48000 54000 60000 66000 72000 78000 84000 90000 96000 102000
+      108000 114000 120000 stale _ _ _ _ _ _ _ _ _
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts:
+    - exp_labels:
+        worker: a
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high job completion time (instance )
+        description: "More than 5% of observed GitLab Sidekiq jobs take longer than 300 seconds (100%).\n  VALUE\
+          \ = 100\n  LABELS = map[worker:a]"
+  - eval_time: 30m
+    alertname: GitlabSidekiqHighJobCompletionTime
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+      exp_annotations:
+        summary: GitLab Sidekiq high queue latency (instance )
+        description: "More than 5% of observed GitLab Sidekiq queue waits take longer than 60 seconds (100%).\n\
+          \  VALUE = 100\n  LABELS = map[]"
+  - eval_time: 30m
+    alertname: GitlabSidekiqHighQueueLatency
+    exp_alerts: []

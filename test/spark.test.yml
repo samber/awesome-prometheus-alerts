@@ -1,0 +1,85 @@
+# Spark v3.5.9/v4.2.0 PrometheusResource.scala emits both durations in seconds.
+# Preserve the existing lifetime ratio; do not silently convert it to a recent-window ratio.
+rule_files:
+- rules/apache-spark/spark-prometheus.yml
+evaluation_interval: 1m
+tests:
+- name: high lifetime GC ratio
+  interval: 1m
+  input_series:
+  - series: metrics_executor_totalGCTime_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 500x10
+  - series: metrics_executor_totalDuration_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 1000x10
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts:
+    - exp_labels:
+        application_id: app-1
+        application_name: example
+        executor_id: '1'
+        instance: spark:4040
+        job: spark
+        severity: warning
+      exp_annotations:
+        summary: Spark executor high GC time (instance spark:4040)
+        description: "Spark executor 1 in example is spending too much time in GC.\n  VALUE = 0.5\n  LABELS = map[application_id:app-1\
+          \ application_name:example executor_id:1 instance:spark:4040 job:spark]"
+- name: healthy lifetime GC ratio
+  interval: 1m
+  input_series:
+  - series: metrics_executor_totalGCTime_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 50x10
+  - series: metrics_executor_totalDuration_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 1000x10
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+- name: exactly ten percent
+  interval: 1m
+  input_series:
+  - series: metrics_executor_totalGCTime_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 100x10
+  - series: metrics_executor_totalDuration_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 1000x10
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+- name: zero duration
+  interval: 1m
+  input_series:
+  - series: metrics_executor_totalGCTime_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 1x10
+  - series: metrics_executor_totalDuration_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: '0x10'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+- name: missing denominator
+  interval: 1m
+  input_series:
+  - series: metrics_executor_totalGCTime_seconds_total{application_id="app-1",application_name="example",executor_id="1",instance="spark:4040",job="spark"}
+    values: 500x10
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: SparkExecutorHighGcTime
+    exp_alerts: []

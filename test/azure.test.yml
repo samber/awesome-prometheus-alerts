@@ -1,0 +1,162 @@
+# Summary sums/counts record completed collections, not the current in-flight collection.
+# Source: webdevops/azure-metrics-exporter 25.12.0 main.go:190-201, probe_metrics_resource.go:81-88.
+rule_files:
+- rules/azure/azure-metrics-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: 'negative control: healthy exporter (2 s per 1-minute probe) stays silent for 24 h'
+  interval: 1m
+  input_series:
+  - series: azurerm_stats_metric_collecttime_count{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0+1x1440
+  - series: azurerm_stats_metric_collecttime_sum{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0+2x1440
+  alert_rule_test:
+  - eval_time: 2h
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+  - eval_time: 3h
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+  - eval_time: 24h
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+- name: 400 s collections fire after the pending period with the collection time as value
+  interval: 1m
+  input_series:
+  - series: azurerm_stats_metric_collecttime_count{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0x6 1x9 2x9 3x9 4x9 5x9 6x3
+  - series: azurerm_stats_metric_collecttime_sum{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0x6 400x9 800x9 1200x9 1600x9 2000x9 2400x3
+  alert_rule_test:
+  - eval_time: 11m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+  - eval_time: 12m
+    alertname: AzureExporterSlowCollection
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        job: azure-metrics-exporter
+        instance: azure-metrics-exporter:8080
+        subscriptionID: 00000000-0000-0000-0000-000000000001
+        handler: /probe/metrics/list
+      exp_annotations:
+        summary: Azure exporter slow collection (instance azure-metrics-exporter:8080)
+        description: "Azure metrics exporter on azure-metrics-exporter:8080 average completed metric collection\
+          \ time over the last 15 minutes is above 5 minutes (400s).\n  VALUE = 400\n  LABELS = map[handler:/probe/metrics/list\
+          \ instance:azure-metrics-exporter:8080 job:azure-metrics-exporter subscriptionID:00000000-0000-0000-0000-000000000001]"
+  - eval_time: 30m
+    alertname: AzureExporterSlowCollection
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        job: azure-metrics-exporter
+        instance: azure-metrics-exporter:8080
+        subscriptionID: 00000000-0000-0000-0000-000000000001
+        handler: /probe/metrics/list
+      exp_annotations:
+        summary: Azure exporter slow collection (instance azure-metrics-exporter:8080)
+        description: "Azure metrics exporter on azure-metrics-exporter:8080 average completed metric collection\
+          \ time over the last 15 minutes is above 5 minutes (400s).\n  VALUE = 400\n  LABELS = map[handler:/probe/metrics/list\
+          \ instance:azure-metrics-exporter:8080 job:azure-metrics-exporter subscriptionID:00000000-0000-0000-0000-000000000001]"
+  - eval_time: 60m
+    alertname: AzureExporterSlowCollection
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        job: azure-metrics-exporter
+        instance: azure-metrics-exporter:8080
+        subscriptionID: 00000000-0000-0000-0000-000000000001
+        handler: /probe/metrics/list
+      exp_annotations:
+        summary: Azure exporter slow collection (instance azure-metrics-exporter:8080)
+        description: "Azure metrics exporter on azure-metrics-exporter:8080 average completed metric collection\
+          \ time over the last 15 minutes is above 5 minutes (400s).\n  VALUE = 400\n  LABELS = map[handler:/probe/metrics/list\
+          \ instance:azure-metrics-exporter:8080 job:azure-metrics-exporter subscriptionID:00000000-0000-0000-0000-000000000001]"
+- name: the alert clears once collections are fast again
+  interval: 1m
+  input_series:
+  - series: azurerm_stats_metric_collecttime_count{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0x6 1x9 2x9 3x3 4x9 5x9 6x9 7x9 8x9 9x9 10x9 11x9 12x9 13x9 14x9 15x9 16x9 17x9 18x9
+  - series: azurerm_stats_metric_collecttime_sum{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0x6 400x9 800x9 1200x3 1202x9 1204x9 1206x9 1208x9 1210x9 1212x9 1214x9 1216x9 1218x9 1220x9 1222x9
+      1224x9 1226x9 1228x9 1230x9
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: AzureExporterSlowCollection
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        job: azure-metrics-exporter
+        instance: azure-metrics-exporter:8080
+        subscriptionID: 00000000-0000-0000-0000-000000000001
+        handler: /probe/metrics/list
+      exp_annotations:
+        summary: Azure exporter slow collection (instance azure-metrics-exporter:8080)
+        description: "Azure metrics exporter on azure-metrics-exporter:8080 average completed metric collection\
+          \ time over the last 15 minutes is above 5 minutes (400s).\n  VALUE = 400\n  LABELS = map[handler:/probe/metrics/list\
+          \ instance:azure-metrics-exporter:8080 job:azure-metrics-exporter subscriptionID:00000000-0000-0000-0000-000000000001]"
+  - eval_time: 31m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+  - eval_time: 60m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+  - eval_time: 3h
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+- name: 'negative control: healthy exporter with a 10-minute probe interval stays silent'
+  interval: 1m
+  input_series:
+  - series: azurerm_stats_metric_collecttime_count{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0 1x9 2x9 3x9 4x9 5x9 6x9 7x9 8x9 9x9 10x9 11x9 12x9 13x9 14x9 15x9 16x9 17x9 18x9
+  - series: azurerm_stats_metric_collecttime_sum{job="azure-metrics-exporter",instance="azure-metrics-exporter:8080",subscriptionID="00000000-0000-0000-0000-000000000001",handler="/probe/metrics/list"}
+    values: 0 2x9 4x9 6x9 8x9 10x9 12x9 14x9 16x9 18x9 20x9 22x9 24x9 26x9 28x9 30x9 32x9 34x9 36x9
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+  - eval_time: 3h
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+- name: reset with healthy collections
+  interval: 1m
+  input_series:
+  - series: azurerm_stats_metric_collecttime_count{job="azure",instance="azure:8080",subscriptionID="s",handler="/probe/metrics/list"}
+    values: 100+1x10 0+1x20
+  - series: azurerm_stats_metric_collecttime_sum{job="azure",instance="azure:8080",subscriptionID="s",handler="/probe/metrics/list"}
+    values: 200+2x10 0+2x20
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+- name: idle after earlier collections
+  interval: 1m
+  input_series:
+  - series: azurerm_stats_metric_collecttime_count{job="azure",instance="azure:8080",subscriptionID="s",handler="/probe/metrics/list"}
+    values: 100x30
+  - series: azurerm_stats_metric_collecttime_sum{job="azure",instance="azure:8080",subscriptionID="s",handler="/probe/metrics/list"}
+    values: 40000x30
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+- name: exactly 300 seconds
+  interval: 1m
+  input_series:
+  - series: azurerm_stats_metric_collecttime_count{job="azure",instance="azure:8080",subscriptionID="s",handler="/probe/metrics/list"}
+    values: 0+1x30
+  - series: azurerm_stats_metric_collecttime_sum{job="azure",instance="azure:8080",subscriptionID="s",handler="/probe/metrics/list"}
+    values: 0+300x30
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
+- name: missing metrics
+  interval: 1m
+  input_series: []
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: AzureExporterSlowCollection
+    exp_alerts: []
