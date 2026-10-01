@@ -22,7 +22,7 @@
     "pagefind": "^1.5.2",
     "posthog-js": "^1.426.3",
     "tailwindcss": "^4.3.3",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
