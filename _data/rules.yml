@@ -4326,11 +4326,11 @@ groups:
                   Fires when a worker has no free cores. This may be normal under high load but can indicate capacity issues.
               - name: Spark executor high GC time
                 description: "Spark executor {{ $labels.executor_id }} in {{ $labels.application_name }} is spending too much time in GC."
-                query: "metrics_executor_totalGCTime_seconds_total / metrics_executor_totalDuration > 0.1 and metrics_executor_totalDuration > 0"
+                query: "metrics_executor_totalGCTime_seconds_total / metrics_executor_totalDuration_seconds_total > 0.1 and metrics_executor_totalDuration_seconds_total > 0"
                 severity: warning
                 for: 5m
                 comments: |
-                  Fires when more than 10% of executor time is spent in garbage collection.
+                  Fires when the lifetime GC time exceeds 10% of the reported executor duration.
                   This metric comes from the PrometheusResource endpoint (/metrics/executors/prometheus/).
               - name: Spark executor high task failure rate
                 description: "Spark executor {{ $labels.executor_id }} has a task failure rate above 10%."
@@ -4693,7 +4693,7 @@ groups:
                 for: 10m
               - name: Kubernetes version mismatch
                 description: There are {{ $value }} different semantic versions of Kubernetes components running simultaneously, which may indicate a partial or stalled cluster upgrade.
-                query: 'count(count by (git_version) (label_replace(kubernetes_build_info, "git_version", "$1", "git_version", "(v[0-9]*\.[0-9]*\.[0-9]*).*"))) > 1'
+                query: 'count(count by (git_version) (label_replace(kubernetes_build_info, "git_version", "$1", "git_version", "(v[0-9]*\\.[0-9]*\\.[0-9]*).*"))) > 1'
                 severity: warning
                 for: 10m
               - name: Kubernetes HPA scale maximum
@@ -4720,13 +4720,13 @@ groups:
               #
               - name: Kubernetes client certificate expires soon
                 description: A client certificate used to authenticate to the apiserver is expiring in less than 24.0 hours.
-                query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60'
+                query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and on (job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60'
                 severity: critical
                 comments: |
                   Replace job="apiserver" with the actual job name in your Prometheus configuration (kube-prometheus-stack uses "apiserver" by default).
               - name: Kubernetes client certificate expires next week
                 description: A client certificate used to authenticate to the apiserver is expiring next week.
-                query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 7*24*60*60'
+                query: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and on (job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 7*24*60*60'
                 severity: warning
                 comments: |
                   Replace job="apiserver" with the actual job name in your Prometheus configuration (kube-prometheus-stack uses "apiserver" by default).
@@ -5328,20 +5328,24 @@ groups:
                   When running jobs approach the concurrency limit, new jobs will queue up.
                   Consider scaling Sidekiq workers or increasing concurrency.
               - name: GitLab Sidekiq high job completion time
-                description: "GitLab Sidekiq job p95 completion time on {{ $labels.instance }} is above 5 minutes ({{ $value | humanizeDuration }})."
-                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_completion_seconds_bucket[5m])) by (le, worker)) > 300"
+                description: "More than 5% of observed GitLab Sidekiq jobs take longer than 300 seconds ({{ $value }}%)."
+                query: '100 * (sum by (worker) (rate(sidekiq_jobs_completion_seconds_bucket{le="+Inf"}[5m])) - sum by (worker) (rate(sidekiq_jobs_completion_seconds_bucket{le="300"}[5m]))) / sum by (worker) (rate(sidekiq_jobs_completion_seconds_bucket{le="+Inf"}[5m])) > 5'
                 severity: warning
                 for: 10m
                 comments: |
                   This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+                  GitLab's largest finite completion bucket is 300 seconds, so p95 cannot exceed it.
+                  This rule measures the percentage of completed jobs above that boundary, not an interpolated p95.
               - name: GitLab Sidekiq high queue latency
-                description: "GitLab Sidekiq jobs on {{ $labels.instance }} are waiting more than 60 seconds before being processed."
-                query: "histogram_quantile(0.95, sum(rate(sidekiq_jobs_queue_duration_seconds_bucket[5m])) by (le)) > 60"
+                description: "More than 5% of observed GitLab Sidekiq queue waits take longer than 60 seconds ({{ $value }}%)."
+                query: '100 * (sum(rate(sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf"}[5m])) - sum(rate(sidekiq_jobs_queue_duration_seconds_bucket{le="60"}[5m]))) / sum(rate(sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf"}[5m])) > 5'
                 severity: warning
                 for: 5m
                 comments: |
                   This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
                   High queue latency means jobs are stuck waiting. Check Sidekiq concurrency and queue sizes.
+                  GitLab's largest finite queue-duration bucket is 60 seconds, so p95 cannot exceed it.
+                  This rule measures the percentage of observed waits above that boundary, not an interpolated p95.
               # Database connection pool
               - name: GitLab CI pipeline creation slow
                 description: "GitLab CI pipeline creation p95 latency on {{ $labels.instance }} is above 30 seconds."
@@ -6807,12 +6811,14 @@ groups:
                 comments: |
                   50 remaining is a rough default; depends on your Azure subscription's configured API write quota and your call volume — adjust based on your baseline.
               - name: Azure exporter slow collection
-                description: "Azure metrics exporter on {{ $labels.instance }} metric collection is taking more than 5 minutes ({{ $value }}s)."
-                query: "azurerm_stats_metric_collecttime_sum > 300"
+                description: "Azure metrics exporter on {{ $labels.instance }} average completed metric collection time over the last 15 minutes is above 5 minutes ({{ $value }}s)."
+                query: "rate(azurerm_stats_metric_collecttime_sum[15m]) / rate(azurerm_stats_metric_collecttime_count[15m]) > 300"
                 severity: warning
                 for: 5m
                 comments: |
                   5-minute threshold is a rough default; collection time scales with how many Azure resources and metrics you're monitoring — adjust based on your monitored fleet size.
+                  The Summary records completed collections; this average does not measure an in-flight collection.
+                  The 15-minute window must exceed the probe interval. Increase it for less frequent probes.
 
 
   - name: Observability

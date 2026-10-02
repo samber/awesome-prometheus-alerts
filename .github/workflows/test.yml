@@ -4,11 +4,15 @@ on:
   pull_request:
     paths:
       - _data/**
+      - test/**
+      - .github/workflows/test.yml
   push:
     branches:
       - master
     paths:
       - _data/**
+      - test/**
+      - .github/workflows/test.yml
 
 jobs:
   promtool-check:
@@ -30,23 +34,7 @@ jobs:
         run: gem install liquid-cli
 
       - name: Build rule configuration
-        run: |
-          cat _data/rules.yml | yq -I 0 -o json > _data/rules.json
-
-          for service in $(cat _data/rules.json | jq -r '.groups[].services[] | @base64'); do
-            subdir=test/rules/$(echo ${service} | base64 --decode | jq -r '.name | ascii_downcase | split(" ") | join("-")')
-            mkdir -p "${subdir}"
-
-            # groupName=$(echo "{% assign groupName = name | split: ' ' %}{% capture groupNameCamelcase %}{% for word in groupName %}{{ word | capitalize }} {% endfor %}{% endcapture %} {{ groupNameCamelcase | remove: ' ' | remove: '-' }}" | liquid $(echo ${service} | base64 --decode | jq -r '.name | ascii_downcase | split(" ") | join("-")'))
-
-            for exporter in $(echo ${service} | base64 --decode | jq -r '.exporters[] | @base64'); do
-              exporterName=$(echo ${exporter} | base64 --decode | jq -r '.slug')
-              cat dist/template.yml | liquid "$(echo ${exporter} | base64 --decode)" > ${subdir}/${exporterName}.yml
-              echo ${subdir}/${exporterName}.yml
-            done
-          done
-
-          rm _data/rules.json
+        run: bash test/generate.sh
 
       - name: Check Prometheus alert rules
         uses: peimanja/promtool-github-actions@master
@@ -56,3 +44,9 @@ jobs:
           promtool_actions_comment: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test alert rule behavior
+        run: |
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD:/work" -w /work prom/prometheus:v3.15.0 \
+            test rules test/*.test.yml
