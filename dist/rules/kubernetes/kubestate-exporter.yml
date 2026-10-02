@@ -378,7 +378,7 @@ groups:
         description: "PodDisruptionBudget {{ $labels.namespace }}/{{ $labels.poddisruptionbudget }} does not have the desired number of healthy pods, so voluntary disruptions such as node drains or cluster upgrades may be blocked or the application may be under-provisioned during maintenance.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: KubernetesVersionMismatch
-      expr: 'count(count by (git_version) (label_replace(kubernetes_build_info, "git_version", "$1", "git_version", "(v[0-9]*\.[0-9]*\.[0-9]*).*"))) > 1'
+      expr: 'count(count by (git_version) (label_replace(kubernetes_build_info, "git_version", "$1", "git_version", "(v[0-9]*\\.[0-9]*\\.[0-9]*).*"))) > 1'
       for: 10m
       labels:
         severity: warning
@@ -416,7 +416,7 @@ groups:
 
     # Replace job="apiserver" with the actual job name in your Prometheus configuration (kube-prometheus-stack uses "apiserver" by default).
     - alert: KubernetesClientCertificateExpiresSoon
-      expr: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60'
+      expr: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and on (job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60'
       for: 0m
       labels:
         severity: critical
@@ -426,7 +426,7 @@ groups:
 
     # Replace job="apiserver" with the actual job name in your Prometheus configuration (kube-prometheus-stack uses "apiserver" by default).
     - alert: KubernetesClientCertificateExpiresNextWeek
-      expr: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 7*24*60*60'
+      expr: 'apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and on (job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 7*24*60*60'
       for: 0m
       labels:
         severity: warning

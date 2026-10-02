@@ -147,25 +147,29 @@ groups:
         description: "GitLab Sidekiq has {{ $value }} running jobs, approaching concurrency limit on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
+    # GitLab's largest finite completion bucket is 300 seconds, so p95 cannot exceed it.
+    # This rule measures the percentage of completed jobs above that boundary, not an interpolated p95.
     - alert: GitlabSidekiqHighJobCompletionTime
-      expr: 'histogram_quantile(0.95, sum(rate(sidekiq_jobs_completion_seconds_bucket[5m])) by (le, worker)) > 300'
+      expr: '100 * (sum by (worker) (rate(sidekiq_jobs_completion_seconds_bucket{le="+Inf"}[5m])) - sum by (worker) (rate(sidekiq_jobs_completion_seconds_bucket{le="300"}[5m]))) / sum by (worker) (rate(sidekiq_jobs_completion_seconds_bucket{le="+Inf"}[5m])) > 5'
       for: 10m
       labels:
         severity: warning
       annotations:
         summary: GitLab Sidekiq high job completion time (instance {{ $labels.instance }})
-        description: "GitLab Sidekiq job p95 completion time on {{ $labels.instance }} is above 5 minutes ({{ $value | humanizeDuration }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "More than 5% of observed GitLab Sidekiq jobs take longer than 300 seconds ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # This metric requires the emit_sidekiq_histogram_metrics feature flag to be enabled.
     # High queue latency means jobs are stuck waiting. Check Sidekiq concurrency and queue sizes.
+    # GitLab's largest finite queue-duration bucket is 60 seconds, so p95 cannot exceed it.
+    # This rule measures the percentage of observed waits above that boundary, not an interpolated p95.
     - alert: GitlabSidekiqHighQueueLatency
-      expr: 'histogram_quantile(0.95, sum(rate(sidekiq_jobs_queue_duration_seconds_bucket[5m])) by (le)) > 60'
+      expr: '100 * (sum(rate(sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf"}[5m])) - sum(rate(sidekiq_jobs_queue_duration_seconds_bucket{le="60"}[5m]))) / sum(rate(sidekiq_jobs_queue_duration_seconds_bucket{le="+Inf"}[5m])) > 5'
       for: 5m
       labels:
         severity: warning
       annotations:
         summary: GitLab Sidekiq high queue latency (instance {{ $labels.instance }})
-        description: "GitLab Sidekiq jobs on {{ $labels.instance }} are waiting more than 60 seconds before being processed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "More than 5% of observed GitLab Sidekiq queue waits take longer than 60 seconds ({{ $value }}%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # 30s threshold is a rough default; depends on your pipeline complexity and CI instance load — adjust based on your baseline.
     - alert: GitlabCiPipelineCreationSlow

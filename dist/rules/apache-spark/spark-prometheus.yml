@@ -68,10 +68,10 @@ groups:
         summary: Spark worker cores exhausted (instance {{ $labels.instance }})
         description: "Spark worker {{ $labels.instance }} has no free cores.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-    # Fires when more than 10% of executor time is spent in garbage collection.
+    # Fires when the lifetime GC time exceeds 10% of the reported executor duration.
     # This metric comes from the PrometheusResource endpoint (/metrics/executors/prometheus/).
     - alert: SparkExecutorHighGcTime
-      expr: 'metrics_executor_totalGCTime_seconds_total / metrics_executor_totalDuration > 0.1 and metrics_executor_totalDuration > 0'
+      expr: 'metrics_executor_totalGCTime_seconds_total / metrics_executor_totalDuration_seconds_total > 0.1 and metrics_executor_totalDuration_seconds_total > 0'
       for: 5m
       labels:
         severity: warning
