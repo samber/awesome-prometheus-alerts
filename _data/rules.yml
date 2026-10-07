@@ -1715,6 +1715,79 @@ groups:
                 comments: |
                   48 hours is a rough default; how often a backup is needed depends on your backup/retention policy and data-loss tolerance — adjust based on your workflow.
 
+      - name: Valkey
+        logo: /images/services/valkey.svg
+        exporters:
+          - name: BetterDB Monitor
+            slug: betterdb-monitor-valkey
+            doc_url: https://docs.betterdb.com/prometheus-integration
+            comments: |
+              BetterDB Monitor (https://betterdb.com) polls Valkey (and Redis and Dragonfly) and exposes their metrics under a betterdb_ prefix, labeled by connection (host:port), at /prometheus/metrics. Queries were validated against BetterDB Monitor 0.49.0 scraped by Prometheus against Valkey 8.
+            rules:
+              #
+              # Availability
+              #
+              - name: Valkey unreachable from BetterDB Monitor
+                description: BetterDB Monitor has had no successful poll of {{ $labels.connection }} within its staleness window. The instance is likely down or unreachable.
+                query: "betterdb_poll_stale == 1"
+                severity: critical
+                for: 5m
+                comments: |
+                  betterdb_poll_stale is BetterDB Monitor's own liveness signal (1 means no successful poll within the staleness window). Prefer it over up == 0, which misses staleness on service-discovered targets.
+              - name: Valkey replica link down
+                description: Replica {{ $labels.connection }} has lost its link to the master. Replication is stalled.
+                query: "betterdb_master_link_up == 0"
+                severity: critical
+                for: 1m
+                comments: |
+                  Series is present on replicas only.
+              - name: Valkey cluster has failing slots
+                description: '{{ $value }} cluster slots are in FAIL state on {{ $labels.connection }}. Part of the keyspace is unavailable.'
+                query: "betterdb_cluster_slots_fail > 0"
+                severity: critical
+                for: 5m
+              #
+              # Resource saturation (USE)
+              #
+              - name: Valkey memory above 90% of maxmemory
+                description: 'Valkey memory use on {{ $labels.connection }} is {{ $value | printf "%.1f" }}% of maxmemory. Evictions or OOM command rejections are imminent.'
+                query: "betterdb_memory_used_bytes / betterdb_memory_max_bytes * 100 > 90 and betterdb_memory_max_bytes > 0"
+                severity: warning
+                for: 5m
+                comments: |
+                  The "and betterdb_memory_max_bytes > 0" guard is required: betterdb_memory_max_bytes is 0 when no maxmemory is set, and without the guard the ratio is +Inf, so the alert would fire on every unbounded instance.
+              - name: Valkey high memory fragmentation
+                description: 'Memory fragmentation ratio on {{ $labels.connection }} is {{ $value | printf "%.2f" }}. RSS is well above the live dataset.'
+                query: "betterdb_memory_fragmentation_ratio > 1.5 and betterdb_memory_used_bytes > 1e8"
+                severity: warning
+                for: 15m
+                comments: |
+                  The 100MB used-memory floor suppresses the misleading high ratio reported on near-empty instances, where allocator overhead dominates RSS.
+              #
+              # Performance and errors (RED)
+              #
+              - name: Valkey keys being evicted
+                description: 'Valkey is evicting keys on {{ $labels.connection }} ({{ $value | printf "%.0f" }} in 5m). The instance is at its memory limit and dropping data.'
+                query: "increase(betterdb_evicted_keys_total[5m]) > 0"
+                severity: warning
+                comments: |
+                  betterdb_evicted_keys_total is exposed with a gauge type but is a cumulative counter sourced from INFO. Use increase()/rate(); do not compare the raw value.
+              - name: Valkey replica lag high
+                description: 'Replica {{ $labels.connection }} last synced with its master {{ $value | printf "%.0f" }}s ago. Replication is falling behind.'
+                query: "betterdb_master_last_io_seconds_ago > 30"
+                severity: warning
+                for: 1m
+                comments: |
+                  Series is present on replicas only.
+              #
+              # Info, security, and config
+              #
+              - name: Valkey last RDB save failed
+                description: The last RDB background save failed on {{ $labels.connection }}. Persistence is stale and data may be lost on restart.
+                query: "betterdb_rdb_last_bgsave_ok == 0"
+                severity: warning
+                for: 5m
+
       - name: Memcached
         logo: /images/services/memcached.svg
         exporters:
