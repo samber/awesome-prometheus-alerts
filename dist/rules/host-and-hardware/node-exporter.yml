@@ -82,7 +82,8 @@ groups:
 
     # Please add ignored mountpoints in node_exporter parameters like
     # "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|run)($|/)" (node_exporter >= 1.2),
-    # or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2).
+    # or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2,
+    # deprecated since 1.2 and slated for removal in node_exporter 2.x).
     # Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
     - alert: HostOutOfDiskSpace
       expr: '(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} / node_filesystem_size_bytes < .10 and on (instance, device, mountpoint) node_filesystem_readonly == 0)'
@@ -104,7 +105,8 @@ groups:
 
     # Please add ignored mountpoints in node_exporter parameters like
     # "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|run)($|/)" (node_exporter >= 1.2),
-    # or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2).
+    # or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2,
+    # deprecated since 1.2 and slated for removal in node_exporter 2.x).
     # Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
     - alert: HostDiskMayFillIn24Hours
       expr: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[3h], 86400) <= 0 and node_filesystem_avail_bytes > 0 and node_filesystem_readonly == 0'
