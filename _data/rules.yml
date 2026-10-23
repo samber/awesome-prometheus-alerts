@@ -265,7 +265,8 @@ groups:
                 for: 2m
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
-                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+                  "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|run)($|/)" (node_exporter >= 1.2),
+                  or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2).
                   Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
               - name: Host out of inodes
                 description: Disk is almost running out of available inodes (< 10% left)
@@ -279,7 +280,8 @@ groups:
                 for: 2m
                 comments: |
                   Please add ignored mountpoints in node_exporter parameters like
-                  "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+                  "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|run)($|/)" (node_exporter >= 1.2),
+                  or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2).
                   Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
               - name: Host inodes may fill in 24 hours
                 description: Filesystem will likely run out of inodes within the next 24 hours at current write rate
