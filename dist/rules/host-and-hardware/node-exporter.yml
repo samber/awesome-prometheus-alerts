@@ -81,7 +81,8 @@ groups:
         description: "Node memory usage is < 20% for 1 week. Consider reducing memory space. (instance {{ $labels.instance }})\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Please add ignored mountpoints in node_exporter parameters like
-    # "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+    # "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|run)($|/)" (node_exporter >= 1.2),
+    # or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2).
     # Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
     - alert: HostOutOfDiskSpace
       expr: '(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"} / node_filesystem_size_bytes < .10 and on (instance, device, mountpoint) node_filesystem_readonly == 0)'
@@ -102,7 +103,8 @@ groups:
         description: "Disk is almost running out of available inodes (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     # Please add ignored mountpoints in node_exporter parameters like
-    # "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)".
+    # "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|run)($|/)" (node_exporter >= 1.2),
+    # or "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)" (node_exporter < 1.2).
     # Same rule using "node_filesystem_free_bytes" will fire when disk fills for non-root users.
     - alert: HostDiskMayFillIn24Hours
       expr: 'predict_linear(node_filesystem_avail_bytes{fstype!~"^(fuse.*|tmpfs|cifs|nfs)"}[3h], 86400) <= 0 and node_filesystem_avail_bytes > 0 and node_filesystem_readonly == 0'
