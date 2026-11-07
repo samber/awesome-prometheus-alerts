@@ -185,6 +185,7 @@ See also:
 - [APC UPS](https://samber.github.io/awesome-prometheus-alerts/rules/other/apc-ups/)
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules/other/graph-node/)
 - [LiteLLM](https://samber.github.io/awesome-prometheus-alerts/rules/other/litellm/)
+- [vLLM](https://samber.github.io/awesome-prometheus-alerts/rules/other/vllm/)
 
 ## 🤝 Contributing
 

@@ -8383,3 +8383,61 @@ groups:
                 for: 10m
                 comments: |
                   10s threshold is a rough default; end-to-end latency depends heavily on which downstream LLM provider/model you route to — adjust based on your baseline.
+
+      - name: vLLM
+        logo: /images/services/vllm.svg
+        exporters:
+          - slug: embedded-exporter
+            doc_url: https://docs.vllm.ai/en/latest/usage/metrics.html
+            comments: |
+              vLLM serves these metrics on the OpenAI-compatible API port at `/metrics`, with `model_name` and `engine` labels.
+              Metric names are from the V1 engine (vllm/v1/metrics/loggers.py).
+            rules:
+              #
+              # Resource saturation (USE)
+              #
+              - name: vLLM KV cache almost full (> 90%)
+                description: "KV cache usage of {{ $labels.model_name }} on {{ $labels.instance }} is {{ $value | humanizePercentage }}. New requests wait in the queue and running ones get preempted."
+                query: "vllm:kv_cache_usage_perc > 0.90"
+                severity: warning
+                for: 15m
+                comments: |
+                  vLLM V0 and releases before the V1 engine exposed this gauge as `vllm:gpu_cache_usage_perc`.
+              - name: vLLM requests preempted
+                description: "vLLM is preempting {{ $value | humanize }} requests/s for {{ $labels.model_name }} on {{ $labels.instance }}. Preempted requests are recomputed because the KV cache ran out."
+                query: "sum by (instance, model_name) (rate(vllm:num_preemptions_total[5m])) > 0.1"
+                severity: warning
+                for: 15m
+                comments: |
+                  Raise --gpu-memory-utilization, lower --max-num-seqs or add replicas.
+              - name: vLLM requests queueing
+                description: "{{ $value }} requests are waiting for {{ $labels.model_name }} on {{ $labels.instance }}. The engine is saturated."
+                query: "sum by (instance, model_name) (vllm:num_requests_waiting) > 10"
+                severity: warning
+                for: 10m
+                comments: |
+                  Threshold of 10 waiting requests is arbitrary. The right value depends on --max-num-seqs and on how much queueing your clients tolerate.
+              #
+              # Performance and errors (RED)
+              #
+              - name: vLLM request errors
+                description: "{{ $value | humanizePercentage }} of {{ $labels.model_name }} requests on {{ $labels.instance }} finish with an internal error (returned as HTTP 500)."
+                query: 'sum by (instance, model_name) (rate(vllm:request_success_total{finished_reason="error"}[5m])) / sum by (instance, model_name) (rate(vllm:request_success_total[5m])) > 0.01 and sum by (instance, model_name) (rate(vllm:request_success_total[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  The `error` finish reason only exists in recent vLLM releases. Older versions do not emit it and the rule stays silent.
+              - name: vLLM high time to first token
+                description: "Time to first token p95 for {{ $labels.model_name }} on {{ $labels.instance }} is {{ $value | humanizeDuration }}."
+                query: "histogram_quantile(0.95, sum by (le, instance, model_name) (rate(vllm:time_to_first_token_seconds_bucket[5m]))) > 2"
+                severity: warning
+                for: 10m
+                comments: |
+                  2s is a rough default. Acceptable TTFT depends on prompt length, model size and your SLO, adjust based on your baseline.
+              - name: vLLM high abort ratio
+                description: "{{ $value | humanizePercentage }} of {{ $labels.model_name }} requests on {{ $labels.instance }} are aborted before completion, usually clients timing out or disconnecting."
+                query: 'sum by (instance, model_name) (rate(vllm:request_success_total{finished_reason="abort"}[10m])) / sum by (instance, model_name) (rate(vllm:request_success_total[10m])) > 0.05 and sum by (instance, model_name) (rate(vllm:request_success_total[10m])) > 0'
+                severity: warning
+                for: 15m
+                comments: |
+                  Aborts are client driven (timeouts, cancelled streams, users closing the tab), so the 5% threshold depends on your clients' timeout settings.
