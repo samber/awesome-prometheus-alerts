@@ -1,0 +1,68 @@
+groups:
+
+- name: EmbeddedExporter
+
+  # vLLM serves these metrics on the OpenAI-compatible API port at `/metrics`, with `model_name` and `engine` labels.
+  # Metric names are from the V1 engine (vllm/v1/metrics/loggers.py).
+  
+  rules:
+
+    # vLLM V0 and releases before the V1 engine exposed this gauge as `vllm:gpu_cache_usage_perc`.
+    - alert: VllmKvCacheAlmostFull(>90%)
+      expr: 'vllm:kv_cache_usage_perc > 0.90'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: vLLM KV cache almost full (> 90%) (instance {{ $labels.instance }})
+        description: "KV cache usage of {{ $labels.model_name }} on {{ $labels.instance }} is {{ $value | humanizePercentage }}. New requests wait in the queue and running ones get preempted.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Raise --gpu-memory-utilization, lower --max-num-seqs or add replicas.
+    - alert: VllmRequestsPreempted
+      expr: 'sum by (instance, model_name) (rate(vllm:num_preemptions_total[5m])) > 0.1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: vLLM requests preempted (instance {{ $labels.instance }})
+        description: "vLLM is preempting {{ $value | humanize }} requests/s for {{ $labels.model_name }} on {{ $labels.instance }}. Preempted requests are recomputed because the KV cache ran out.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 10 waiting requests is arbitrary. The right value depends on --max-num-seqs and on how much queueing your clients tolerate.
+    - alert: VllmRequestsQueueing
+      expr: 'sum by (instance, model_name) (vllm:num_requests_waiting) > 10'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: vLLM requests queueing (instance {{ $labels.instance }})
+        description: "{{ $value }} requests are waiting for {{ $labels.model_name }} on {{ $labels.instance }}. The engine is saturated.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # The `error` finish reason only exists in recent vLLM releases. Older versions do not emit it and the rule stays silent.
+    - alert: VllmRequestErrors
+      expr: 'sum by (instance, model_name) (rate(vllm:request_success_total{finished_reason="error"}[5m])) / sum by (instance, model_name) (rate(vllm:request_success_total[5m])) > 0.01 and sum by (instance, model_name) (rate(vllm:request_success_total[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: vLLM request errors (instance {{ $labels.instance }})
+        description: "{{ $value | humanizePercentage }} of {{ $labels.model_name }} requests on {{ $labels.instance }} finish with an internal error (returned as HTTP 500).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 2s is a rough default. Acceptable TTFT depends on prompt length, model size and your SLO, adjust based on your baseline.
+    - alert: VllmHighTimeToFirstToken
+      expr: 'histogram_quantile(0.95, sum by (le, instance, model_name) (rate(vllm:time_to_first_token_seconds_bucket[5m]))) > 2'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: vLLM high time to first token (instance {{ $labels.instance }})
+        description: "Time to first token p95 for {{ $labels.model_name }} on {{ $labels.instance }} is {{ $value | humanizeDuration }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Aborts are client driven (timeouts, cancelled streams, users closing the tab), so the 5% threshold depends on your clients' timeout settings.
+    - alert: VllmHighAbortRatio
+      expr: 'sum by (instance, model_name) (rate(vllm:request_success_total{finished_reason="abort"}[10m])) / sum by (instance, model_name) (rate(vllm:request_success_total[10m])) > 0.05 and sum by (instance, model_name) (rate(vllm:request_success_total[10m])) > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: vLLM high abort ratio (instance {{ $labels.instance }})
+        description: "{{ $value | humanizePercentage }} of {{ $labels.model_name }} requests on {{ $labels.instance }} are aborted before completion, usually clients timing out or disconnecting.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
