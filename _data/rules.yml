@@ -8396,9 +8396,9 @@ groups:
               #
               # Resource saturation (USE)
               #
-              - name: vLLM KV cache almost full (> 95%)
+              - name: vLLM KV cache almost full (> 90%)
                 description: "KV cache usage of {{ $labels.model_name }} on {{ $labels.instance }} is {{ $value | humanizePercentage }}. New requests wait in the queue and running ones get preempted."
-                query: "vllm:kv_cache_usage_perc > 0.95"
+                query: "vllm:kv_cache_usage_perc > 0.90"
                 severity: warning
                 for: 15m
                 comments: |
