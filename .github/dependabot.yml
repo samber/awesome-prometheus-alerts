@@ -10,3 +10,18 @@ updates:
     directory: "/site"
     schedule:
       interval: "monthly"
+
+  - package-ecosystem: "npm"
+    directory: "/cli"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "gomod"
+    directory: "/server"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "docker"
+    directory: "/server"
+    schedule:
+      interval: "monthly"

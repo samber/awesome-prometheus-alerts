@@ -1,0 +1,58 @@
+name: Publish CLI to npm
+
+# Release: bump cli/package.json "version", merge, then push a matching tag:
+#   git tag cli-v0.1.0 && git push origin cli-v0.1.0
+#
+# Authentication uses npm trusted publishing (OIDC), so no NPM_TOKEN secret is
+# needed. Configure it once on npmjs.com: package settings > Trusted publisher >
+# GitHub Actions, repository samber/awesome-prometheus-alerts, workflow
+# cli-publish.yml. The very first publish of a new package name must be done
+# manually (npm publish from cli/), since trusted publishers attach to an
+# existing package.
+
+on:
+  push:
+    tags:
+      - cli-v*
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish
+    if: github.repository_owner == 'samber'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          # Trusted publishing needs npm >= 11.5.1, bundled with Node.js 24.
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: cli/package-lock.json
+
+      - name: Check tag matches package version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if [ "${TAG}" != "cli-v${version}" ]; then
+            echo "::error::tag ${TAG} does not match cli/package.json version ${version}"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish
+        # prepublishOnly runs the type check, lint, tests and build.
+        run: npm publish --access public
