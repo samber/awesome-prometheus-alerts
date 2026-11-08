@@ -1,0 +1,82 @@
+groups:
+
+- name: NvidiaDcgmExporter
+
+  # Metric names are the ones of dcgm-exporter 4.9.0+ (DCGM 4.7 field names). 4.8.x and older use the old names, given in each rule's comment.
+  
+  rules:
+
+    # The gauge holds the last XID until the driver is reloaded or the GPU is reset, so the alert stays active until then.
+    # Other codes (e.g. 13, 31, 43) are usually application faults, and 92 (high single-bit ECC rate) only needs monitoring. See https://docs.nvidia.com/deploy/xid-errors/
+    # dcgm-exporter 4.8.x and older: DCGM_FI_DEV_XID_ERRORS.
+    - alert: NvidiaGpuFatalXidError
+      expr: 'DCGM_FI_DEV_XID_ERROR == 48 or DCGM_FI_DEV_XID_ERROR == 74 or DCGM_FI_DEV_XID_ERROR == 79 or DCGM_FI_DEV_XID_ERROR == 94 or DCGM_FI_DEV_XID_ERROR == 95'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: NVIDIA GPU fatal XID error (instance {{ $labels.instance }})
+        description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} reported XID {{ $value }}. 48, 94 and 95 are ECC errors, 74 is an NVLink error and 79 means the GPU fell off the bus. Drain the node, then reset or replace the GPU.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Row remapping exists on Ampere and newer data center GPUs.
+    # dcgm-exporter 4.8.x and older: DCGM_FI_DEV_ROW_REMAP_FAILURE.
+    - alert: NvidiaGpuRowRemappingFailed
+      expr: 'DCGM_FI_DEV_ROW_REMAP_FAILED > 0'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: NVIDIA GPU row remapping failed (instance {{ $labels.instance }})
+        description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} could not remap a faulty memory row: its spare rows are exhausted. Drain the node and replace the GPU.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # The slowdown temperature depends on the GPU model; the optional DCGM_FI_DEV_GPU_TEMP_SLOWDOWN_CELSIUS field reports it. Adjust 85°C to your GPUs.
+    # dcgm-exporter 4.8.x and older: DCGM_FI_DEV_GPU_TEMP.
+    - alert: NvidiaGpuHighTemperature
+      expr: 'DCGM_FI_DEV_GPU_TEMP_CELSIUS > 85'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: NVIDIA GPU high temperature (instance {{ $labels.instance }})
+        description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} is at {{ $value }}°C. The GPU slows its clocks down near its slowdown temperature.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # DCGM_FI_DEV_GPU_THERMAL_THROTTLE_SECONDS_TOTAL is not in the default counters; enable it in the dcgm-exporter metrics CSV.
+    # dcgm-exporter 4.8.x and older: rate(DCGM_FI_DEV_THERMAL_VIOLATION[5m]) / 1e9 (the counter is in nanoseconds).
+    - alert: NvidiaGpuThermalThrottling
+      expr: 'rate(DCGM_FI_DEV_GPU_THERMAL_THROTTLE_SECONDS_TOTAL[5m]) > 0.1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: NVIDIA GPU thermal throttling (instance {{ $labels.instance }})
+        description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} ran below its application clocks because of temperature {{ $value | humanizePercentage }} of the time. Check cooling and airflow.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # dcgm-exporter 4.8.x and older: DCGM_FI_DEV_UNCORRECTABLE_REMAPPED_ROWS.
+    - alert: NvidiaGpuUncorrectableMemoryErrors
+      expr: 'increase(DCGM_FI_DEV_ROW_REMAP_UNCORRECTABLE_TOTAL[1h]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: NVIDIA GPU uncorrectable memory errors (instance {{ $labels.instance }})
+        description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} remapped {{ $value }} memory rows after uncorrectable errors in the last hour. The remap takes effect after a GPU reset.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # dcgm-exporter 4.8.x and older: DCGM_FI_DEV_PCIE_REPLAY_COUNTER.
+    - alert: NvidiaGpuPcieReplays
+      expr: 'rate(DCGM_FI_DEV_PCIE_REPLAY_TOTAL[5m]) > 1'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: NVIDIA GPU PCIe replays (instance {{ $labels.instance }})
+        description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} retries {{ $value | humanize }} PCIe transfers/s. This points to a degraded PCIe link (riser, slot or cable).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # dcgm-exporter 4.8.x and older: DCGM_FI_DEV_GPU_UTIL, which is a percentage (use < 5).
+    - alert: NvidiaGpuUnderutilized
+      expr: 'avg_over_time(DCGM_FI_DEV_GPU_UTIL_RATIO[2h]) < 0.05'
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: NVIDIA GPU underutilized (instance {{ $labels.instance }})
+        description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} averaged {{ $value | humanizePercentage }} utilization over the last 2 hours. Consider freeing or sharing it.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
