@@ -1,0 +1,51 @@
+{
+  "name": "awesome-prometheus-alerts",
+  "version": "0.1.0",
+  "description": "Share your Prometheus alerting rules with the awesome-prometheus-alerts project.",
+  "keywords": [
+    "prometheus",
+    "alerting",
+    "alertmanager",
+    "promql",
+    "monitoring",
+    "observability"
+  ],
+  "homepage": "https://samber.github.io/awesome-prometheus-alerts/",
+  "bugs": "https://github.com/samber/awesome-prometheus-alerts/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samber/awesome-prometheus-alerts.git",
+    "directory": "cli"
+  },
+  "license": "MIT",
+  "author": "Samuel Berthe <hello@samuel-berthe.fr>",
+  "type": "module",
+  "bin": {
+    "awesome-prometheus-alerts": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "prepublishOnly": "npm run check && npm run lint && npm test && npm run build"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.0",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.1.0"
+  }
+}
