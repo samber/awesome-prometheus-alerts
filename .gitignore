@@ -9,5 +9,13 @@ site/dist/
 site/.astro/
 site/public/pagefind/
 
+# Share CLI and server (see also cli/.gitignore and server/.gitignore)
+cli/node_modules/
+cli/dist/
+.env
+
+# Local docker compose volumes
+.data/
+
 # Misc
 .worktrees/

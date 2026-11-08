@@ -1,0 +1,48 @@
+# Development stack for the share server (server/) and the CLI (cli/).
+#
+#   cp server/.env.dist server/.env
+#   docker compose up
+#   node cli/dist/index.js share --server http://localhost:4242 <paths...>
+#
+# MinIO console: http://localhost:9001 (minioadmin / minioadmin).
+# minio/minio images were removed from Docker Hub; pgsty/minio is a maintained,
+# drop-in community fork.
+
+services:
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./.data/minio:/data
+
+  minio-init:
+    image: pgsty/mc:RELEASE.2026-10-26T00-00-00Z
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 1; done
+        mc mb --ignore-existing local/awesome-prometheus-alerts-shares
+
+  share-server:
+    image: golang:1.27.3-trixie
+    working_dir: /app
+    command: ["go", "run", "github.com/air-verse/air@v1.67.4", "-c", ".air.toml"]
+    env_file:
+      - ./server/.env
+    ports:
+      - "4242:4242"
+    volumes:
+      - ./server:/app
+      - ./.data/share-server-go-mod:/go/pkg/mod
+      - ./.data/share-server-go-build:/root/.cache/go-build
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
