@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CopyButton from '../components/CopyButton.astro';
 import StatsBar from '../components/StatsBar.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import ServiceLogo from '../components/ServiceLogo.astro';
@@ -77,6 +78,14 @@ const faqItems = [
     acceptedAnswer: {
       '@type': 'Answer',
       text: `Yes! Contributions are welcome. Open a pull request on GitHub at ${GITHUB_URL} with your new rules added to the _data/rules.yml file. Follow the existing format: provide a clear rule name, a description explaining what the alert means and why it matters, a tested PromQL expression, an appropriate severity, and a sensible "for" duration to avoid false positives.`,
+    },
+  },
+  {
+    '@type': 'Question',
+    name: 'Can I share my own alerting rules?',
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: 'Yes. Run npx awesome-prometheus-alerts share followed by your rule files or the directories holding them (for example /etc/prometheus/rules). The command uploads only Prometheus rule files and PrometheusRule resources, skips prometheus.yml, alertmanager.yml and other configurations that often contain credentials, and asks for confirmation first. Add --dry-run to preview what would be sent. Shared rules are reviewed to improve this collection.',
     },
   },
   {
@@ -316,6 +325,23 @@ const jsonLd = {
           <p class="text-sm text-slate-500 dark:text-slate-400">Time-based alert suppression and timezone-aware PromQL patterns.</p>
         </a>
       </div>
+    </div>
+  </section>
+
+  <!-- Share your rules section -->
+  <section class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Share your alerting rules</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-3xl">
+        Your production alerts can make this collection better. Share your rule files in one command: only Prometheus rule files and PrometheusRule resources are uploaded, while prometheus.yml, alertmanager.yml and other configurations are skipped, as they often contain credentials.
+      </p>
+      <div class="flex items-center justify-between gap-3 rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+        <code id="share-command" class="text-sm text-slate-100 font-mono overflow-x-auto whitespace-nowrap">npx awesome-prometheus-alerts share /etc/prometheus/rules</code>
+        <CopyButton targetId="share-command" copyData={{ name: 'share_command_copy' }} />
+      </div>
+      <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        Add <code class="font-mono">--dry-run</code> to preview what would be sent. Requires Node.js 22 or later.
+      </p>
     </div>
   </section>
 

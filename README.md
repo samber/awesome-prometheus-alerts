@@ -46,6 +46,7 @@ See also:
 ## ✨ Contents
 
 - [Rules](#-rules)
+- [Share your rules](#-share-your-rules)
 - [Contributing](#-contributing)
 - [Improvements](#-improvements)
 - [Help us](#-show-your-support)
@@ -186,6 +187,18 @@ See also:
 - [Graph Node](https://samber.github.io/awesome-prometheus-alerts/rules/other/graph-node/)
 - [LiteLLM](https://samber.github.io/awesome-prometheus-alerts/rules/other/litellm/)
 - [vLLM](https://samber.github.io/awesome-prometheus-alerts/rules/other/vllm/)
+
+## 📤 Share your rules
+
+Your production alerts can make this collection better. Share your rule files in one command:
+
+```sh
+npx awesome-prometheus-alerts share /etc/prometheus/rules
+```
+
+- Only Prometheus rule files and `PrometheusRule` resources are uploaded. `prometheus.yml`, `alertmanager.yml` and other configurations are skipped, as they often contain credentials.
+- The command lists what it found and asks for confirmation. Add `--dry-run` to preview without uploading.
+- Requires Node.js 22 or later. More options in the [CLI documentation](cli/README.md).
 
 ## 🤝 Contributing
 

@@ -10,11 +10,16 @@ All rules are stored in a single YAML data file (`_data/rules.yml`) and rendered
 
 The project is community-driven. Most contributions are PRs adding or updating rules in `_data/rules.yml`. Files in `dist/rules/` are auto-generated on merge — never edit them manually.
 
+Users can also share their own rule files with `npx awesome-prometheus-alerts share`. Those uploads land in the maintainer's S3 bucket for asynchronous review; they never modify `_data/rules.yml` directly.
+
 ## Architecture
 
 - **`_data/rules.yml`** — The single source of truth for all alerting rules. This is the main file contributors edit. It is NOT a valid Prometheus config; the site renders each rule into copy-pasteable Prometheus alert format.
 - **`site/`** — Astro + TypeScript static site that renders the rules into browsable pages and per-exporter downloads. Its file layout and dev/build/lint commands live in **`site/CLAUDE.md`**.
 - **`dist/rules/`** — Pre-built downloadable rule files organized by service/exporter (referenced in the site for `wget` commands).
+- **`cli/`** — `awesome-prometheus-alerts` npm package: `npx awesome-prometheus-alerts share <paths...>` uploads a user's own rule files. See **`cli/CLAUDE.md`**.
+- **`server/`** — Go server receiving those uploads, validating them and storing them in S3 under `<date>/<hostname>/<time>Z/`. See **`server/CLAUDE.md`**.
+- **`docker-compose.yml`** — Local development stack for `server/` (MinIO + hot reload). Not used by the site.
 
 ## Rules YAML Structure
 

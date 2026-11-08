@@ -116,6 +116,8 @@ const canonical = canonicalUrl ?? `${SITE_ORIGIN}${base}${Astro.url.pathname.rep
         window.posthog?.capture('all_rules_copied', { ...data, ...counts });
       } else if (name === 'wget_copy') {
         window.posthog?.capture('wget_copied', { ...data, ...counts });
+      } else if (name === 'share_command_copy') {
+        window.posthog?.capture('share_command_copied', { ...data, ...counts });
       }
     });
   </script>
