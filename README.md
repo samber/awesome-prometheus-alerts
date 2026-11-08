@@ -59,6 +59,7 @@ See also:
 - [Host and hardware](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/host-and-hardware/)
 - [S.M.A.R.T Device Monitoring](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/s-m-a-r-t-device-monitoring/)
 - [IPMI](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/ipmi/)
+- [NVIDIA GPU](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/nvidia-gpu/)
 - [Docker containers](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/docker-containers/)
 - [Blackbox](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/blackbox/)
 - [Windows Server](https://samber.github.io/awesome-prometheus-alerts/rules/basic-resource-monitoring/windows-server/)
