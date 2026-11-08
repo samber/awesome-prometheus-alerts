@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.dist
+tmp/
+*.test
+*.out

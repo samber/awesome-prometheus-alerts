@@ -1,0 +1,8 @@
+# Local configuration (copy .env.dist to .env)
+.env
+
+# Build outputs (air writes into tmp/)
+tmp/
+/share-server
+*.test
+*.out

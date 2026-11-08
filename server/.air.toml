@@ -1,0 +1,13 @@
+# Hot reload for the development container (see the repository docker-compose.yml).
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/share-server ./cmd/share-server"
+entrypoint = ["./tmp/share-server"]
+include_ext = ["go"]
+exclude_dir = ["tmp"]
+exclude_regex = ["_test\\.go$"]
+delay = 500
+kill_delay = "2s"
+send_interrupt = true
