@@ -2,9 +2,9 @@
 //
 // Validation is deliberately structural: a file is accepted when every YAML
 // document in it is a Prometheus rule file or a PrometheusRule custom resource.
-// PromQL errors are reported as issues instead of rejections, so rule files
-// written for PromQL dialects (Loki LogQL, VictoriaMetrics MetricsQL, Helm
-// templates) are still collected.
+// Expressions are not parsed: rule files written for PromQL dialects (Loki
+// LogQL, VictoriaMetrics MetricsQL, Helm templates) are collected too, and
+// PromQL is checked later, during asynchronous review (promtool check rules).
 package rules
 
 import (
@@ -14,7 +14,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/prometheus/prometheus/promql/parser"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -28,7 +27,7 @@ const (
 	FormatPrometheusRuleCRD Format = "prometheus-rule-crd"
 )
 
-// maxIssueMessageLength caps parser messages, which can echo large expressions.
+// maxIssueMessageLength caps YAML decoder messages, which can echo large values.
 const maxIssueMessageLength = 512
 
 // ErrNotRuleFile is returned when a file is not made only of rule documents.
@@ -69,21 +68,12 @@ type rule struct {
 	Expr   string `yaml:"expr"`
 }
 
-// Validator checks rule files. It is safe for concurrent use.
-type Validator struct {
-	parser parser.Parser
-}
+// Validator checks rule files. It is stateless and safe for concurrent use.
+type Validator struct{}
 
-// NewValidator returns a Validator with every optional PromQL feature enabled,
-// so that experimental syntax is not reported as an issue.
+// NewValidator returns a Validator.
 func NewValidator() *Validator {
-	return &Validator{
-		parser: parser.NewParser(parser.Options{
-			EnableExperimentalFunctions: true,
-			EnableBinopFillModifiers:    true,
-			EnableUnquotedUTF8Names:     true,
-		}),
-	}
+	return &Validator{}
 }
 
 // Validate parses content and returns a report, or an error wrapping
@@ -117,7 +107,7 @@ func (v *Validator) Validate(content []byte) (Report, error) {
 		if err := groupsNode.Decode(&groups); err != nil {
 			return Report{}, fmt.Errorf("%w: document %d: malformed groups: %s", ErrNotRuleFile, index, truncate(err.Error()))
 		}
-		v.inspectGroups(index, groups, &report)
+		inspectGroups(index, groups, &report)
 	}
 
 	if report.Rules() == 0 {
@@ -132,7 +122,7 @@ func (v *Validator) Validate(content []byte) (Report, error) {
 	return report, nil
 }
 
-func (v *Validator) inspectGroups(document int, groups []ruleGroup, report *Report) {
+func inspectGroups(document int, groups []ruleGroup, report *Report) {
 	for _, group := range groups {
 		report.Groups++
 		if strings.TrimSpace(group.Name) == "" {
@@ -158,10 +148,6 @@ func (v *Validator) inspectGroups(document int, groups []ruleGroup, report *Repo
 
 			if strings.TrimSpace(r.Expr) == "" {
 				report.Issues = append(report.Issues, withMessage(issue, issue.Rule, "rule has no expr"))
-				continue
-			}
-			if _, err := v.parser.ParseExpr(r.Expr); err != nil {
-				report.Issues = append(report.Issues, withMessage(issue, issue.Rule, "invalid PromQL: "+err.Error()))
 			}
 		}
 	}

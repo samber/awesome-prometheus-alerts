@@ -47,7 +47,7 @@ func newTestStore(t *testing.T, endpoint string, prefix string) *S3Store {
 	t.Helper()
 	t.Setenv("AWS_ACCESS_KEY_ID", "test")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
-	store, err := NewS3Store(context.Background(), &config.Config{
+	store, err := NewS3Store(&config.Config{
 		S3Bucket:         "shares",
 		S3Region:         "us-east-1",
 		S3Endpoint:       endpoint,
@@ -70,7 +70,9 @@ func TestPutWritesUnderPrefix(t *testing.T) {
 	assert.Equal(t, http.MethodPut, got[0].method)
 	assert.Equal(t, "/shares/uploads/2026-11-08/host/120000.000Z/rules/a.yml", got[0].path)
 	assert.Equal(t, "application/yaml", got[0].contentType)
-	assert.Equal(t, "groups: []", got[0].body)
+	// Over plain HTTP, minio-go signs the payload with aws-chunked streaming,
+	// so the raw body holds chunk signatures around the content.
+	assert.Contains(t, got[0].body, "groups: []")
 }
 
 func TestPutReturnsErrorOnFailure(t *testing.T) {
@@ -81,4 +83,14 @@ func TestPutReturnsErrorOnFailure(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "put object")
+}
+
+func TestNewS3StoreRejectsInvalidEndpoints(t *testing.T) {
+	for _, endpoint := range []string{"", "minio:9000", "ftp://minio:9000", "://bad"} {
+		t.Run(endpoint, func(t *testing.T) {
+			_, err := NewS3Store(&config.Config{S3Bucket: "shares", S3Endpoint: endpoint})
+
+			require.Error(t, err)
+		})
+	}
 }

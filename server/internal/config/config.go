@@ -22,6 +22,7 @@ const (
 const (
 	defaultListenAddr      = ":4242"
 	defaultS3Region        = "us-east-1"
+	defaultS3Endpoint      = "https://s3.amazonaws.com"
 	defaultRateLimit       = 10
 	defaultRateLimitWindow = time.Hour
 	defaultMaxFiles        = 500
@@ -49,7 +50,7 @@ type Config struct {
 
 	S3Bucket string
 	S3Region string
-	// S3Endpoint is empty for AWS, or the URL of an S3-compatible service.
+	// S3Endpoint is the URL of AWS S3 or of an S3-compatible service.
 	S3Endpoint       string
 	S3Prefix         string
 	S3ForcePathStyle bool
@@ -80,7 +81,7 @@ func LoadFrom(lookup func(string) (string, bool)) (*Config, error) {
 		MaxFileBytes:      r.int("MAX_FILE_BYTES", defaultMaxFileBytes),
 		S3Bucket:          r.string("S3_BUCKET", ""),
 		S3Region:          r.string("S3_REGION", defaultS3Region),
-		S3Endpoint:        r.string("S3_ENDPOINT", ""),
+		S3Endpoint:        r.string("S3_ENDPOINT", defaultS3Endpoint),
 		S3Prefix:          strings.Trim(r.string("S3_PREFIX", ""), "/"),
 		S3ForcePathStyle:  r.bool("S3_FORCE_PATH_STYLE", false),
 	}

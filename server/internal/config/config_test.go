@@ -29,6 +29,7 @@ func TestLoadDefaults(t *testing.T) {
 	assert.Equal(t, 1<<20, cfg.MaxFileBytes)
 	assert.Equal(t, int64(16<<20), cfg.MaxBodyBytes)
 	assert.Equal(t, "us-east-1", cfg.S3Region)
+	assert.Equal(t, "https://s3.amazonaws.com", cfg.S3Endpoint)
 	assert.False(t, cfg.S3ForcePathStyle)
 	assert.Empty(t, cfg.TrustedProxyCIDRs)
 }

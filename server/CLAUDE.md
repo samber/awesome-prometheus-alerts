@@ -8,9 +8,9 @@ Bucket layout, manifest format, API and configuration: `README.md`.
 - `cmd/share-server/main.go` — wires the samber/do injector, runs the server, graceful shutdown.
 - `internal/config` — environment variables → `*config.Config`.
 - `internal/logging` — `*slog.Logger` (text in dev, JSON in prod).
-- `internal/rules` — structural rule-file validation plus PromQL parsing (issues, not rejections).
+- `internal/rules` — structural rule-file validation. Expressions are deliberately not parsed (see Invariants).
 - `internal/share` — the use case: sanitize paths/hostname, validate, store files then `manifest.json`.
-- `internal/storage` — `S3Store` on aws-sdk-go-v2, S3-compatible endpoints supported.
+- `internal/storage` — `S3Store` on minio-go v7, works with AWS S3 and S3-compatible services.
 - `internal/api` — chi router, handlers, rate limiting, `*api.Server`.
 
 Every package has a `package.go` exposing a `do.Package` for dependency injection.
@@ -21,7 +21,7 @@ Interfaces (`share.ObjectStore`, `share.RuleValidator`, `api.Sharer`) are declar
 - **Share** / **upload** — one `POST /v1/shares` call; stored under one `<date>/<hostname>/<time>Z/` folder.
 - **Upload ID** — that folder path, also `manifest.id`, printed by the CLI as the reference.
 - **Rule document** — a YAML document that is a Prometheus rule file (`groups`) or a `PrometheusRule` resource.
-- **Issue** — a non-fatal problem (invalid PromQL, missing expr) recorded in the manifest; the file is kept.
+- **Issue** — a non-fatal structural problem (missing expr, unnamed group) recorded in the manifest; the file is kept.
 - **Rejection** — a file that is not stored, with its reason.
 
 ## Invariants
@@ -36,6 +36,10 @@ Interfaces (`share.ObjectStore`, `share.RuleValidator`, `api.Sharer`) are declar
 - `X-Forwarded-For` is trusted only from `TRUSTED_PROXY_CIDRS` (chi `ClientIPFromXFF`). Never switch to
   `middleware.RealIP` or `httprate.LimitByRealIP`: both trust spoofable headers.
 - Size limits mirror the CLI constants in `../cli/src/constants.ts`. Change both sides together.
+- No PromQL parsing at ingest: it would flag LogQL/MetricsQL rules that are worth collecting. PromQL is
+  checked during asynchronous review with `promtool`.
+- Keep the dependency tree small. Do not add the AWS SDK (one module per service, many Dependabot PRs)
+  or `github.com/prometheus/prometheus` (pulls the whole Prometheus server dependency graph).
 
 ## Commands
 
@@ -45,4 +49,4 @@ golangci-lint run ./...   # config in .golangci.yml, needs a golangci-lint built
 go build ./cmd/share-server
 ```
 
-`github.com/prometheus/prometheus` sets the minimum Go version in `go.mod`.
+`github.com/minio/minio-go/v7` sets the minimum Go version in `go.mod`.

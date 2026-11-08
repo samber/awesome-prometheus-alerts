@@ -61,7 +61,7 @@ func TestValidateAcceptsMultiDocumentCRDs(t *testing.T) {
 	assert.Equal(t, 1, report.RecordingRules)
 }
 
-func TestValidateAnnotatesInvalidRules(t *testing.T) {
+func TestValidateAnnotatesMalformedRules(t *testing.T) {
 	content := `
 groups:
   - rules:
@@ -77,27 +77,11 @@ groups:
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, report.AlertingRules)
-	require.Len(t, report.Issues, 5)
+	require.Len(t, report.Issues, 4)
 	assert.Equal(t, "group has no name", report.Issues[0].Message)
-	assert.Equal(t, "LokiErrors", report.Issues[1].Rule)
-	assert.True(t, strings.HasPrefix(report.Issues[1].Message, "invalid PromQL: "), report.Issues[1].Message)
-	assert.Equal(t, Issue{Document: 1, Rule: "Missing", Message: "rule has no expr"}, report.Issues[2])
-	assert.Equal(t, "rule has neither alert nor record", report.Issues[3].Message)
-	assert.Equal(t, "rule has both alert and record", report.Issues[4].Message)
-}
-
-func TestValidateAcceptsExperimentalPromQL(t *testing.T) {
-	content := `
-groups:
-  - name: experimental
-    rules:
-      - record: top
-        expr: limitk(3, sort_by_label(up, "instance"))
-`
-	report, err := NewValidator().Validate([]byte(content))
-
-	require.NoError(t, err)
-	assert.Empty(t, report.Issues)
+	assert.Equal(t, Issue{Document: 1, Rule: "Missing", Message: "rule has no expr"}, report.Issues[1])
+	assert.Equal(t, "rule has neither alert nor record", report.Issues[2].Message)
+	assert.Equal(t, "rule has both alert and record", report.Issues[3].Message)
 }
 
 func TestValidateRejectsNonRuleFiles(t *testing.T) {

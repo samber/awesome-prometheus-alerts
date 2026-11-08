@@ -35,7 +35,7 @@ Receives Prometheus rule files sent by `npx awesome-prometheus-alerts share` (se
       "alerting_rules": 14,
       "recording_rules": 3,
       "issues": [
-        { "document": 1, "group": "loki", "rule": "LokiErrors", "message": "invalid PromQL: …" }
+        { "document": 1, "group": "node", "rule": "HostDown", "message": "rule has no expr" }
       ]
     }
   ],
@@ -50,7 +50,8 @@ Use `sha256` to deduplicate files shared by several hosts.
 ## Validation
 
 - A file is stored only if **every** YAML document in it is a Prometheus rule file (`groups`) or a `PrometheusRule` resource, with at least one alerting or recording rule. Anything else is rejected, which keeps credentials from other configuration files out of the bucket.
-- PromQL is parsed with the Prometheus parser (experimental features enabled). Errors are recorded as `issues` instead of rejecting the file, so Loki, VictoriaMetrics and templated rules are still collected.
+- Expressions are not parsed, so Loki, VictoriaMetrics and templated rules are collected too. Check PromQL during review with `promtool check rules`; for `PrometheusRule` files, extract `spec` first (e.g. `yq '.spec' file.yaml`).
+- Structural problems that do not invalidate the whole file (rule without `expr`, group without `name`) are recorded as `issues`.
 - Paths are sanitized (no absolute paths, no `..`, `.yml`/`.yaml` only, 12 levels and 256 characters at most).
 - If no file is valid, nothing is stored and the API answers `422` with the rejection reasons.
 
@@ -81,11 +82,11 @@ Environment variables (see [`.env.dist`](.env.dist)):
 | `MAX_BODY_BYTES` | `16777216` | Size of the request body. |
 | `S3_BUCKET` | (required) | Destination bucket. It must already exist. |
 | `S3_REGION` | `us-east-1` | Bucket region. |
-| `S3_ENDPOINT` | (empty) | Endpoint of an S3-compatible service (MinIO, R2, Scaleway…). Empty for AWS. |
+| `S3_ENDPOINT` | `https://s3.amazonaws.com` | URL of AWS S3 or of an S3-compatible service (MinIO, R2, Scaleway…). |
 | `S3_FORCE_PATH_STYLE` | `false` | Path-style addressing, required by MinIO. |
 | `S3_PREFIX` | (empty) | Optional key prefix in front of the date folders. |
 
-Credentials come from the standard AWS chain: `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, a profile or an IAM role. The server only needs `s3:PutObject` on the bucket, plus `s3:ListBucket` for the startup reachability check (`HeadBucket`).
+Credentials are looked up, in order, in `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`, the shared AWS credentials file, then the host IAM role (EC2, ECS, EKS web identity). The server only needs `s3:PutObject` on the bucket, plus `s3:ListBucket` for the startup reachability check.
 
 ## Running
 
