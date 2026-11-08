@@ -11,17 +11,54 @@ updates:
     schedule:
       interval: "monthly"
 
+  # Share CLI, published to npm and run by users through npx. The cooldown lets
+  # a compromised release be detected and yanked before it reaches them.
   - package-ecosystem: "npm"
     directory: "/cli"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      cli-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # typescript-eslint only supports TypeScript < 6.1. Lift this once it supports 7.x.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+      # Node.js types must match the minimum version in package.json "engines" (22).
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
 
+  # Share server.
   - package-ecosystem: "gomod"
     directory: "/server"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      server-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
+  # Share server Dockerfile (golang build image and distroless runtime image).
   - package-ecosystem: "docker"
     directory: "/server"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      server-images:
+        patterns:
+          - "*"
