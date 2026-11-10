@@ -7,13 +7,13 @@ groups:
 
     # 1s threshold is a rough default; acceptable latency varies by backend and your SLO — adjust based on your baseline.
     - alert: HaproxyHttpSlowingDown
-      expr: 'avg by (instance, proxy) (haproxy_backend_max_total_time_seconds) > 1'
+      expr: 'haproxy_backend_total_time_average_seconds > 1'
       for: 1m
       labels:
         severity: warning
       annotations:
         summary: HAProxy HTTP slowing down (instance {{ $labels.instance }})
-        description: "HAProxy backend max total time is above 1s on {{ $labels.proxy }} - {{ $value | printf \"%.2f\"}}s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "HAProxy backend average total time over the last 1024 requests is above 1s on {{ $labels.proxy }} - {{ $value | printf \"%.2f\"}}s\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: HaproxyDroppingLogs
       expr: 'rate(haproxy_process_dropped_logs_total[5m]) != 0'
