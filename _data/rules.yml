@@ -3378,8 +3378,8 @@ groups:
               # Availability
               #
               - name: HAProxy HTTP slowing down
-                description: HAProxy backend max total time is above 1s on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}s
-                query: avg by (instance, proxy) (haproxy_backend_max_total_time_seconds) > 1
+                description: HAProxy backend average total time over the last 1024 requests is above 1s on {{ $labels.proxy }} - {{ $value | printf "%.2f"}}s
+                query: haproxy_backend_total_time_average_seconds > 1
                 severity: warning
                 for: 1m
                 comments: |
