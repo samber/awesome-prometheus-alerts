@@ -5136,6 +5136,56 @@ groups:
                 query: 'openstack_cinder_limits_volume_used_gb / openstack_cinder_limits_volume_max_gb > 0.9 and openstack_cinder_limits_volume_max_gb > 0'
                 severity: warning
 
+      - name: KEDA
+        logo: /images/services/keda.svg
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://keda.sh/docs/latest/integrations/prometheus/
+            comments: |
+              Scrape the KEDA operator metrics endpoint (port 8080 by default).
+              KEDA sets its own namespace label. Without honor_labels, Prometheus renames it to exported_namespace.
+            rules:
+              #
+              # Performance and errors (RED)
+              #
+              - name: KEDA ScaledObject errors
+                description: ScaledObject {{ $labels.namespace }}/{{ $labels.scaledObject }} keeps failing to read its scalers ({{ $value | printf "%.0f" }} errors in 5m). The workload is not scaled on fresh data; check the KEDA operator logs and the scaler source (auth, address, query).
+                query: "increase(keda_scaled_object_errors_total[5m]) > 0"
+                severity: warning
+                for: 5m
+              - name: KEDA ScaledJob errors
+                description: ScaledJob {{ $labels.namespace }}/{{ $labels.scaledJob }} keeps failing to read its scalers ({{ $value | printf "%.0f" }} errors in 5m). No new Jobs are created on fresh data; check the KEDA operator logs and the scaler source.
+                query: "increase(keda_scaled_job_errors_total[5m]) > 0"
+                severity: warning
+                for: 5m
+              - name: KEDA scaler metrics latency high
+                description: Scaler {{ $labels.scaler }} of {{ $labels.namespace }}/{{ $labels.scaledObject }} takes {{ $value | humanizeDuration }} to return its metric. Slow scaler sources delay scaling decisions.
+                query: "keda_scaler_metrics_latency_seconds > 5"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 5s is arbitrary. Adjust it to the polling interval of your ScaledObjects and to how slow the scaler source (Prometheus query, cloud API) normally is.
+              - name: KEDA scaling loop delayed
+                description: KEDA scaling loop for {{ $labels.type }} {{ $labels.namespace }}/{{ $labels.resource }} runs {{ $value | humanizeDuration }} later than scheduled. The operator is overloaded or blocked on slow scalers.
+                query: "keda_internal_scale_loop_latency_seconds > 30"
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 30s is arbitrary. Keep it above the polling interval of your ScaledObjects.
+              - name: KEDA CloudEvents emission failing
+                description: KEDA cannot deliver CloudEvents from {{ $labels.namespace }}/{{ $labels.cloudeventsource }} to sink {{ $labels.eventsink }}.
+                query: 'increase(keda_cloudeventsource_events_emitted_total{state="failed"}[5m]) > 0'
+                severity: warning
+              #
+              # Info, security, and config
+              #
+              - name: KEDA ScaledObject paused
+                description: ScaledObject {{ $labels.namespace }}/{{ $labels.scaledObject }} has been paused for more than 24h, so its workload is not autoscaled.
+                query: "keda_scaled_object_paused > 0"
+                severity: info
+                for: 24h
+
   - name: CI/CD
     services:
       - name: Jenkins
