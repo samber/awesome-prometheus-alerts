@@ -161,6 +161,7 @@ See also:
 - [ZFS](https://samber.github.io/awesome-prometheus-alerts/rules/storage/zfs/)
 - [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules/storage/openebs/)
 - [Minio](https://samber.github.io/awesome-prometheus-alerts/rules/storage/minio/)
+- [Velero](https://samber.github.io/awesome-prometheus-alerts/rules/storage/velero/)
 
 #### Cloud providers
 
