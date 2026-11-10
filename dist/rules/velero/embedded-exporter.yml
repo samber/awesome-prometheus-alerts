@@ -1,0 +1,84 @@
+groups:
+
+- name: EmbeddedExporter
+
+  
+  rules:
+
+    # velero_backup_location_status_gauge exists since Velero v1.17.
+    - alert: VeleroBackupStorageLocationUnavailable
+      expr: 'velero_backup_location_status_gauge == 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Velero backup storage location unavailable (instance {{ $labels.instance }})
+        description: "Velero backup storage location {{ $labels.backup_location_name }} is unavailable. Backups to it fail until Velero can reach the object storage again (credentials, bucket, network).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Manual backups have an empty schedule label.
+    - alert: VeleroBackupFailed
+      expr: 'increase(velero_backup_failure_total[1h]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Velero backup failed (instance {{ $labels.instance }})
+        description: "Velero backup of schedule {{ $labels.schedule }} failed. Check `velero backup logs` for the cause (storage location, plugin or API errors).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: VeleroBackupPartiallyFailed
+      expr: 'increase(velero_backup_partial_failure_total[1h]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Velero backup partially failed (instance {{ $labels.instance }})
+        description: "Velero backup of schedule {{ $labels.schedule }} finished with errors on some items. The backup is incomplete; check `velero backup describe --details`.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: VeleroVolumeSnapshotFailed
+      expr: 'increase(velero_volume_snapshot_failure_total[1h]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Velero volume snapshot failed (instance {{ $labels.instance }})
+        description: "Velero failed to snapshot {{ $value | printf \"%.0f\" }} volume(s) for schedule {{ $labels.schedule }} in the last hour. Persistent volume data is missing from the backup.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: VeleroCsiSnapshotFailed
+      expr: 'sum without (backupName) (increase(velero_csi_snapshot_failure_total[1h])) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Velero CSI snapshot failed (instance {{ $labels.instance }})
+        description: "Velero failed to take {{ $value | printf \"%.0f\" }} CSI volume snapshot(s) for schedule {{ $labels.schedule }} in the last hour. Check the VolumeSnapshotClass and the CSI driver.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: VeleroRestoreFailed
+      expr: 'increase(velero_restore_failed_total[1h]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Velero restore failed (instance {{ $labels.instance }})
+        description: "A Velero restore failed. Check `velero restore logs` for the cause.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # velero_repo_maintenance_failure_total exists since Velero v1.18.
+    - alert: VeleroRepositoryMaintenanceFailed
+      expr: 'increase(velero_repo_maintenance_failure_total[6h]) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Velero repository maintenance failed (instance {{ $labels.instance }})
+        description: "Velero maintenance job for repository {{ $labels.repository_name }} failed. Without maintenance the repository keeps unreferenced data and keeps growing.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 25h fits a daily schedule. Set it a bit above the interval of your slowest schedule.
+    # Since Velero v1.19, velero_schedule_expected_interval_seconds carries each schedule interval:
+    # time() - velero_backup_last_successful_timestamp{schedule!=""} > 2 * velero_schedule_expected_interval_seconds
+    - alert: VeleroNoRecentSuccessfulBackup
+      expr: 'time() - velero_backup_last_successful_timestamp{schedule!=""} > 86400 + 3600'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Velero no recent successful backup (instance {{ $labels.instance }})
+        description: "Schedule {{ $labels.schedule }} has had no successful Velero backup for {{ $value | humanizeDuration }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
