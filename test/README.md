@@ -28,6 +28,11 @@ pending periods. Their synthetic samples follow these producer contracts:
   the largest finite completion and queue-duration buckets are 300 and 60 seconds.
   The rules use a strict greater-than-5% tail-event policy above those boundaries, not
   an interpolated p95. Exactly 5% and observations exactly at the time boundary stay quiet.
+- [External Secrets Operator v2.15.0 esmetrics.go, lines 127–172](https://github.com/external-secrets/external-secrets/blob/v2.15.0/pkg/controllers/externalsecret/esmetrics/esmetrics.go#L127-L172)
+  and [runtime/metrics/metrics.go, lines 34–52](https://github.com/external-secrets/external-secrets/blob/v2.15.0/runtime/metrics/metrics.go#L34-L52):
+  the Ready condition keeps one series per status, 1 for the current one and 0 for the
+  opposite one. Provider calls are counted per `provider`, `call` and `status` (`success`
+  or `error`); a provider with no calls in the window stays quiet.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.
