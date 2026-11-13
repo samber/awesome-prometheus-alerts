@@ -4817,12 +4817,14 @@ groups:
               # Performance and errors (RED)
               #
               - name: Nomad job failed
-                description: "Nomad job {{ $labels.job }} has {{ $value }} failed allocations."
-                query: "nomad_nomad_job_summary_failed > 0"
+                description: "Nomad job {{ $labels.job }} had {{ $value | printf \"%.0f\" }} new failed allocation(s) in the last 10 minutes."
+                query: "delta(nomad_nomad_job_summary_failed[10m]) > 0"
                 severity: warning
+                comments: |
+                  The job summary gauges only grow: a failed allocation stays counted until the job is garbage collected, so the rule alerts on new ones.
               - name: Nomad job lost
-                description: "Nomad job {{ $labels.job }} has {{ $value }} lost allocations."
-                query: "nomad_nomad_job_summary_lost > 0"
+                description: "Nomad job {{ $labels.job }} had {{ $value | printf \"%.0f\" }} new lost allocation(s) in the last 10 minutes."
+                query: "delta(nomad_nomad_job_summary_lost[10m]) > 0"
                 severity: warning
               - name: Nomad job queued
                 description: "Nomad job {{ $labels.job }} has {{ $value }} queued allocations."
