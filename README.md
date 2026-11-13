@@ -161,6 +161,7 @@ See also:
 - [Ceph](https://samber.github.io/awesome-prometheus-alerts/rules/storage/ceph/)
 - [ZFS](https://samber.github.io/awesome-prometheus-alerts/rules/storage/zfs/)
 - [OpenEBS](https://samber.github.io/awesome-prometheus-alerts/rules/storage/openebs/)
+- [Longhorn](https://samber.github.io/awesome-prometheus-alerts/rules/storage/longhorn/)
 - [Minio](https://samber.github.io/awesome-prometheus-alerts/rules/storage/minio/)
 - [Velero](https://samber.github.io/awesome-prometheus-alerts/rules/storage/velero/)
 
