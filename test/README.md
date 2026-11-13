@@ -33,6 +33,9 @@ pending periods. Their synthetic samples follow these producer contracts:
   the Ready condition keeps one series per status, 1 for the current one and 0 for the
   opposite one. Provider calls are counted per `provider`, `call` and `status` (`success`
   or `error`); a provider with no calls in the window stays quiet.
+- [Nomad v2.1.1 state_store.go, lines 6066–6160](https://github.com/hashicorp/nomad/blob/v2.1.1/nomad/state/state_store.go#L6066-L6160):
+  the job summary only adds to `Failed` (a terminal client status) and only takes from
+  `Lost` when a lost allocation comes back. A failure from an hour ago stays quiet.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.
