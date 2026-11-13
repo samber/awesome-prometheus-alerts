@@ -28,6 +28,9 @@ pending periods. Their synthetic samples follow these producer contracts:
   the largest finite completion and queue-duration buckets are 300 and 60 seconds.
   The rules use a strict greater-than-5% tail-event policy above those boundaries, not
   an interpolated p95. Exactly 5% and observations exactly at the time boundary stay quiet.
+- [Nomad v2.1.1 state_store.go, lines 6066–6160](https://github.com/hashicorp/nomad/blob/v2.1.1/nomad/state/state_store.go#L6066-L6160):
+  the job summary only adds to `Failed` (a terminal client status) and only takes from
+  `Lost` when a lost allocation comes back. A failure from an hour ago stays quiet.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.
