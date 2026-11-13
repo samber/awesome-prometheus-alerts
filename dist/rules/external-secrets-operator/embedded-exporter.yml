@@ -1,0 +1,54 @@
+groups:
+
+- name: EmbeddedExporter
+
+  # The `name` and `namespace` labels are those of the ExternalSecret, PushSecret or SecretStore.
+  # With the chart default `serviceMonitor.honorLabels: false`, Prometheus renames the resource namespace to `exported_namespace`.
+  
+  rules:
+
+    - alert: ExternalSecretsSecretstoreNotReady
+      expr: 'secretstore_status_condition{condition="Ready",status="False"} == 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: External Secrets SecretStore not ready (instance {{ $labels.instance }})
+        description: "SecretStore {{ $labels.namespace }}/{{ $labels.name }} is not ready. Every ExternalSecret that uses it stops syncing (credentials, permissions or provider unreachable).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ExternalSecretsClustersecretstoreNotReady
+      expr: 'clustersecretstore_status_condition{condition="Ready",status="False"} == 1'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: External Secrets ClusterSecretStore not ready (instance {{ $labels.instance }})
+        description: "ClusterSecretStore {{ $labels.name }} is not ready. Every ExternalSecret that uses it stops syncing (credentials, permissions or provider unreachable).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ExternalSecretsExternalsecretNotReady
+      expr: 'externalsecret_status_condition{condition="Ready",status="False"} == 1'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: External Secrets ExternalSecret not ready (instance {{ $labels.instance }})
+        description: "ExternalSecret {{ $labels.namespace }}/{{ $labels.name }} failed to sync. The target Secret keeps its last synced data or does not exist yet. Check the ExternalSecret events.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ExternalSecretsPushsecretNotReady
+      expr: 'pushsecret_status_condition{condition="Ready",status="False"} == 1'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: External Secrets PushSecret not ready (instance {{ $labels.instance }})
+        description: "PushSecret {{ $labels.namespace }}/{{ $labels.name }} failed to push its Secret to the provider.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 5% is arbitrary. Adjust it to your workload.
+    - alert: ExternalSecretsProviderApiErrors
+      expr: 'sum by (provider, call) (rate(externalsecret_provider_api_calls_count{status="error"}[5m])) / sum by (provider, call) (rate(externalsecret_provider_api_calls_count[5m])) > 0.05 and sum by (provider, call) (rate(externalsecret_provider_api_calls_count[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: External Secrets provider API errors (instance {{ $labels.instance }})
+        description: "{{ $value | humanizePercentage }} of the {{ $labels.call }} calls to provider {{ $labels.provider }} failed in the last 5 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
