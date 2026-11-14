@@ -130,6 +130,7 @@ See also:
 - [Consul](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/consul/)
 - [Etcd](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/etcd/)
 - [OpenStack](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/openstack/)
+- [Cluster Autoscaler](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/cluster-autoscaler/)
 - [KEDA](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/keda/)
 - [Karpenter](https://samber.github.io/awesome-prometheus-alerts/rules/orchestrators/karpenter/)
 

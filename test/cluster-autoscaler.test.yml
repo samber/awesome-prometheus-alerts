@@ -1,0 +1,136 @@
+# Cluster Autoscaler 1.36.2 metrics/metrics.go: last_activity carries activity (main,
+# autoscaling, scaleUp...), nodes_count carries state, max_nodes_count and
+# cluster_safe_to_autoscale have no labels, node_group_* carry node_group,
+# unschedulable_pods_count carries type (unschedulable|scheduler_unprocessed),
+# failed_scale_ups_total carries reason and errors_total carries type.
+rule_files:
+- rules/cluster-autoscaler/embedded-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: main loop stalled
+  interval: 1m
+  input_series:
+  - series: cluster_autoscaler_last_activity{instance="10.0.0.9:8085",job="cluster-autoscaler",activity="main"}
+    values: 0 60 120 180 180x10
+  - series: cluster_autoscaler_last_activity{instance="10.0.0.9:8085",job="cluster-autoscaler",activity="scaleDown"}
+    values: 0x13
+  alert_rule_test:
+  - eval_time: 7m
+    alertname: ClusterAutoscalerMainLoopStalled
+    exp_alerts: []
+  - eval_time: 9m
+    alertname: ClusterAutoscalerMainLoopStalled
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.0.9:8085
+        job: cluster-autoscaler
+        activity: main
+      exp_annotations:
+        summary: Cluster Autoscaler main loop stalled (instance 10.0.0.9:8085)
+        description: "The Cluster Autoscaler main loop has not run for 6m 0s. No scale-up or scale-down happens while it is stuck.\n  VALUE = 360\n  LABELS = map[activity:main instance:10.0.0.9:8085 job:cluster-autoscaler]"
+- name: node count near maximum
+  interval: 1m
+  input_series:
+  - series: cluster_autoscaler_nodes_count{instance="10.0.0.9:8085",job="cluster-autoscaler",state="ready"}
+    values: 40x20
+  - series: cluster_autoscaler_nodes_count{instance="10.0.0.9:8085",job="cluster-autoscaler",state="unready"}
+    values: 2x20
+  - series: cluster_autoscaler_nodes_count{instance="10.0.0.9:8085",job="cluster-autoscaler",state="notStarted"}
+    values: 3x20
+  - series: cluster_autoscaler_max_nodes_count{instance="10.0.0.9:8085",job="cluster-autoscaler"}
+    values: 50x20
+  alert_rule_test:
+  - eval_time: 16m
+    alertname: ClusterAutoscalerNodeCountNearMaximum(>80%)
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.9:8085
+        job: cluster-autoscaler
+      exp_annotations:
+        summary: Cluster Autoscaler node count near maximum (> 80%) (instance 10.0.0.9:8085)
+        description: "The cluster has 90% of the nodes its node groups allow. Cluster Autoscaler cannot add nodes past the maximum.\n  VALUE = 90\n  LABELS = map[instance:10.0.0.9:8085 job:cluster-autoscaler]"
+- name: node group at maximum size and unhealthy
+  interval: 1m
+  input_series:
+  - series: cluster_autoscaler_node_group_target_count{instance="10.0.0.9:8085",job="cluster-autoscaler",node_group="workers-a"}
+    values: 10x20
+  - series: cluster_autoscaler_node_group_max_count{instance="10.0.0.9:8085",job="cluster-autoscaler",node_group="workers-a"}
+    values: 10x20
+  - series: cluster_autoscaler_node_group_target_count{instance="10.0.0.9:8085",job="cluster-autoscaler",node_group="workers-b"}
+    values: 3x20
+  - series: cluster_autoscaler_node_group_max_count{instance="10.0.0.9:8085",job="cluster-autoscaler",node_group="workers-b"}
+    values: 10x20
+  - series: cluster_autoscaler_node_group_healthiness{instance="10.0.0.9:8085",job="cluster-autoscaler",node_group="workers-b"}
+    values: 0x20
+  alert_rule_test:
+  - eval_time: 16m
+    alertname: ClusterAutoscalerNodeGroupAtMaximumSize
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.9:8085
+        job: cluster-autoscaler
+        node_group: workers-a
+      exp_annotations:
+        summary: Cluster Autoscaler node group at maximum size (instance 10.0.0.9:8085)
+        description: "Node group workers-a is at its maximum size, so Cluster Autoscaler cannot scale it up.\n  VALUE = 10\n  LABELS = map[__name__:cluster_autoscaler_node_group_target_count instance:10.0.0.9:8085 job:cluster-autoscaler node_group:workers-a]"
+  - eval_time: 16m
+    alertname: ClusterAutoscalerNodeGroupUnhealthy
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.9:8085
+        job: cluster-autoscaler
+        node_group: workers-b
+      exp_annotations:
+        summary: Cluster Autoscaler node group unhealthy (instance 10.0.0.9:8085)
+        description: "Cluster Autoscaler considers node group workers-b unhealthy (too many unready or unregistered nodes) and does not scale it.\n  VALUE = 0\n  LABELS = map[__name__:cluster_autoscaler_node_group_healthiness instance:10.0.0.9:8085 job:cluster-autoscaler node_group:workers-b]"
+- name: unschedulable pods
+  interval: 1m
+  input_series:
+  - series: cluster_autoscaler_unschedulable_pods_count{instance="10.0.0.9:8085",job="cluster-autoscaler",type="unschedulable"}
+    values: 4x20
+  - series: cluster_autoscaler_unschedulable_pods_count{instance="10.0.0.9:8085",job="cluster-autoscaler",type="scheduler_unprocessed"}
+    values: 7x20
+  alert_rule_test:
+  - eval_time: 16m
+    alertname: ClusterAutoscalerUnschedulablePods
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.9:8085
+        job: cluster-autoscaler
+        type: unschedulable
+      exp_annotations:
+        summary: Cluster Autoscaler unschedulable pods (instance 10.0.0.9:8085)
+        description: "4 pod(s) have stayed unschedulable for 15 minutes. Check the pod constraints, the node group limits and the failed scale-ups.\n  VALUE = 4\n  LABELS = map[__name__:cluster_autoscaler_unschedulable_pods_count instance:10.0.0.9:8085 job:cluster-autoscaler type:unschedulable]"
+- name: failed scale-ups and errors
+  interval: 1m
+  input_series:
+  - series: cluster_autoscaler_failed_scale_ups_total{instance="10.0.0.9:8085",job="cluster-autoscaler",reason="cloudProviderError",gpu_resource_name="",gpu_name="",dra_drivers=""}
+    values: 0 0 1 1 1 1 1 1 1 1 1
+  - series: cluster_autoscaler_errors_total{instance="10.0.0.9:8085",job="cluster-autoscaler",type="cloudProviderError"}
+    values: 0+1x10
+  - series: cluster_autoscaler_errors_total{instance="10.0.0.9:8085",job="cluster-autoscaler",type="apiCallError"}
+    values: 0x10
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: ClusterAutoscalerFailedScale-up
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        reason: cloudProviderError
+      exp_annotations:
+        summary: Cluster Autoscaler failed scale-up (instance )
+        description: "Cluster Autoscaler failed to scale up 1 time(s) in the last 15 minutes (cloudProviderError).\n  VALUE = 1\n  LABELS = map[reason:cloudProviderError]"
+  - eval_time: 10m
+    alertname: ClusterAutoscalerErrors
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        type: cloudProviderError
+      exp_annotations:
+        summary: Cluster Autoscaler errors (instance )
+        description: "10 Cluster Autoscaler loops failed with cloudProviderError errors in the last 10 minutes.\n  VALUE = 10\n  LABELS = map[type:cloudProviderError]"

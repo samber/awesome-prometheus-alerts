@@ -41,6 +41,11 @@ pending periods. Their synthetic samples follow these producer contracts:
 - [Nomad v2.1.1 state_store.go, lines 6066–6160](https://github.com/hashicorp/nomad/blob/v2.1.1/nomad/state/state_store.go#L6066-L6160):
   the job summary only adds to `Failed` (a terminal client status) and only takes from
   `Lost` when a lost allocation comes back. A failure from an hour ago stays quiet.
+- [Cluster Autoscaler 1.36.2 metrics.go, lines 195–320](https://github.com/kubernetes/autoscaler/blob/cluster-autoscaler-1.36.2/cluster-autoscaler/metrics/metrics.go#L195-L320)
+  and [lines 642–685](https://github.com/kubernetes/autoscaler/blob/cluster-autoscaler-1.36.2/cluster-autoscaler/metrics/metrics.go#L642-L685):
+  `last_activity` holds the Unix time of each activity, `nodes_count` has one series per
+  node `state` and `unschedulable_pods_count` separates `unschedulable` from
+  `scheduler_unprocessed` pods. Only the `unschedulable` ones count.
 - [Karpenter v1.15.1 cloudprovider/metrics/cloudprovider.go, lines 64–119](https://github.com/kubernetes-sigs/karpenter/blob/v1.15.1/pkg/cloudprovider/metrics/cloudprovider.go#L64-L119)
   and [state/cluster.go, lines 152–181](https://github.com/kubernetes-sigs/karpenter/blob/v1.15.1/pkg/controllers/state/cluster.go#L152-L181):
   cloud provider errors are counted per `controller`, `method`, `provider`, `error` and
