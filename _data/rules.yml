@@ -4817,12 +4817,14 @@ groups:
               # Performance and errors (RED)
               #
               - name: Nomad job failed
-                description: "Nomad job {{ $labels.job }} has {{ $value }} failed allocations."
-                query: "nomad_nomad_job_summary_failed > 0"
+                description: "Nomad job {{ $labels.job }} had {{ $value | printf \"%.0f\" }} new failed allocation(s) in the last 10 minutes."
+                query: "delta(nomad_nomad_job_summary_failed[10m]) > 0"
                 severity: warning
+                comments: |
+                  The job summary gauges only grow: a failed allocation stays counted until the job is garbage collected, so the rule alerts on new ones.
               - name: Nomad job lost
-                description: "Nomad job {{ $labels.job }} has {{ $value }} lost allocations."
-                query: "nomad_nomad_job_summary_lost > 0"
+                description: "Nomad job {{ $labels.job }} had {{ $value | printf \"%.0f\" }} new lost allocation(s) in the last 10 minutes."
+                query: "delta(nomad_nomad_job_summary_lost[10m]) > 0"
                 severity: warning
               - name: Nomad job queued
                 description: "Nomad job {{ $labels.job }} has {{ $value }} queued allocations."
@@ -6028,6 +6030,50 @@ groups:
                 for: 5m
                 comments: |
                   100 is a rough default; storage-apply backlog scales with your Raft cluster's write throughput — adjust based on your workload.
+
+      - name: External Secrets Operator
+        logo: /images/services/external-secrets-operator.svg
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://external-secrets.io/latest/api/metrics/
+            comments: |
+              The `name` and `namespace` labels are those of the ExternalSecret, PushSecret or SecretStore.
+              With the chart default `serviceMonitor.honorLabels: false`, Prometheus renames the resource namespace to `exported_namespace`.
+            rules:
+              #
+              # Availability
+              #
+              - name: External Secrets SecretStore not ready
+                description: SecretStore {{ $labels.namespace }}/{{ $labels.name }} is not ready. Every ExternalSecret that uses it stops syncing (credentials, permissions or provider unreachable).
+                query: 'secretstore_status_condition{condition="Ready",status="False"} == 1'
+                severity: critical
+                for: 5m
+              - name: External Secrets ClusterSecretStore not ready
+                description: ClusterSecretStore {{ $labels.name }} is not ready. Every ExternalSecret that uses it stops syncing (credentials, permissions or provider unreachable).
+                query: 'clustersecretstore_status_condition{condition="Ready",status="False"} == 1'
+                severity: critical
+                for: 5m
+              - name: External Secrets ExternalSecret not ready
+                description: ExternalSecret {{ $labels.namespace }}/{{ $labels.name }} failed to sync. The target Secret keeps its last synced data or does not exist yet. Check the ExternalSecret events.
+                query: 'externalsecret_status_condition{condition="Ready",status="False"} == 1'
+                severity: warning
+                for: 10m
+              - name: External Secrets PushSecret not ready
+                description: PushSecret {{ $labels.namespace }}/{{ $labels.name }} failed to push its Secret to the provider.
+                query: 'pushsecret_status_condition{condition="Ready",status="False"} == 1'
+                severity: warning
+                for: 10m
+              #
+              # Performance and errors (RED)
+              #
+              - name: External Secrets provider API errors
+                description: "{{ $value | humanizePercentage }} of the {{ $labels.call }} calls to provider {{ $labels.provider }} failed in the last 5 minutes."
+                query: 'sum by (provider, call) (rate(externalsecret_provider_api_calls_count{status="error"}[5m])) / sum by (provider, call) (rate(externalsecret_provider_api_calls_count[5m])) > 0.05 and sum by (provider, call) (rate(externalsecret_provider_api_calls_count[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  Threshold of 5% is arbitrary. Adjust it to your workload.
 
       - name: Keycloak
         logo: /images/services/keycloak.svg

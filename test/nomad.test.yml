@@ -1,0 +1,38 @@
+# Nomad v2.1.1 state_store.go updateSummaryWithAlloc: Failed is only ever incremented
+# (failed is a terminal client status), Lost is decremented when a lost allocation
+# comes back. leader.go publishes the job summary as gauges.
+rule_files:
+- rules/nomad/embedded-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: one failure an hour ago, nothing since
+  interval: 1m
+  input_series:
+  - series: nomad_nomad_job_summary_failed{instance="10.0.0.9:4646",job="nomad",exported_job="web",task_group="web",namespace="default"}
+    values: 0x10 1x60
+  alert_rule_test:
+  - eval_time: 12m
+    alertname: NomadJobFailed
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.9:4646
+        job: nomad
+        exported_job: web
+        task_group: web
+        namespace: default
+      exp_annotations:
+        summary: Nomad job failed (instance 10.0.0.9:4646)
+        description: "Nomad job nomad had 1 new failed allocation(s) in the last 10 minutes.\n  VALUE = 1.1111111111111112\n  LABELS = map[exported_job:web instance:10.0.0.9:4646 job:nomad namespace:default task_group:web]"
+  - eval_time: 70m
+    alertname: NomadJobFailed
+    exp_alerts: []
+- name: lost allocation that reconnected
+  interval: 1m
+  input_series:
+  - series: nomad_nomad_job_summary_lost{instance="10.0.0.9:4646",job="nomad",exported_job="web",task_group="web",namespace="default"}
+    values: 1x20 0x20
+  alert_rule_test:
+  - eval_time: 25m
+    alertname: NomadJobLost
+    exp_alerts: []

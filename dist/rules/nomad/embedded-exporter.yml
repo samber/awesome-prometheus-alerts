@@ -5,23 +5,24 @@ groups:
   
   rules:
 
+    # The job summary gauges only grow: a failed allocation stays counted until the job is garbage collected, so the rule alerts on new ones.
     - alert: NomadJobFailed
-      expr: 'nomad_nomad_job_summary_failed > 0'
+      expr: 'delta(nomad_nomad_job_summary_failed[10m]) > 0'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: Nomad job failed (instance {{ $labels.instance }})
-        description: "Nomad job {{ $labels.job }} has {{ $value }} failed allocations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Nomad job {{ $labels.job }} had {{ $value | printf \"%.0f\" }} new failed allocation(s) in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NomadJobLost
-      expr: 'nomad_nomad_job_summary_lost > 0'
+      expr: 'delta(nomad_nomad_job_summary_lost[10m]) > 0'
       for: 0m
       labels:
         severity: warning
       annotations:
         summary: Nomad job lost (instance {{ $labels.instance }})
-        description: "Nomad job {{ $labels.job }} has {{ $value }} lost allocations.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        description: "Nomad job {{ $labels.job }} had {{ $value | printf \"%.0f\" }} new lost allocation(s) in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
     - alert: NomadJobQueued
       expr: 'nomad_nomad_job_summary_queued > 0'
