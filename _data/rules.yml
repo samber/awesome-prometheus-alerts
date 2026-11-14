@@ -5138,6 +5138,64 @@ groups:
                 query: 'openstack_cinder_limits_volume_used_gb / openstack_cinder_limits_volume_max_gb > 0.9 and openstack_cinder_limits_volume_max_gb > 0'
                 severity: warning
 
+      - name: Cluster Autoscaler
+        logo: /images/services/cluster-autoscaler.svg
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/proposals/metrics.md
+            comments: |
+              Scrape the cluster-autoscaler metrics endpoint (port 8085 by default). The node_group_* series need the --emit-per-nodegroup-metrics flag.
+            rules:
+              #
+              # Availability
+              #
+              - name: Cluster Autoscaler main loop stalled
+                description: The Cluster Autoscaler main loop has not run for {{ $value | humanizeDuration }}. No scale-up or scale-down happens while it is stuck.
+                query: 'time() - cluster_autoscaler_last_activity{activity="main"} > 300'
+                severity: critical
+                comments: |
+                  The loop runs every --scan-interval (10s by default). Only the leader replica sets this series.
+              - name: Cluster Autoscaler cluster not safe to autoscale
+                description: Cluster Autoscaler considers the cluster unhealthy (too many unready nodes) and stopped scaling it.
+                query: "cluster_autoscaler_cluster_safe_to_autoscale == 0"
+                severity: critical
+                for: 15m
+              #
+              # Resource saturation (USE)
+              #
+              - name: Cluster Autoscaler node count near maximum (> 80%)
+                description: The cluster has {{ $value | printf "%.0f" }}% of the nodes its node groups allow. Cluster Autoscaler cannot add nodes past the maximum.
+                query: "sum without (state) (cluster_autoscaler_nodes_count) / cluster_autoscaler_max_nodes_count * 100 > 80 and cluster_autoscaler_max_nodes_count > 0"
+                severity: warning
+                for: 15m
+              - name: Cluster Autoscaler node group at maximum size
+                description: Node group {{ $labels.node_group }} is at its maximum size, so Cluster Autoscaler cannot scale it up.
+                query: "cluster_autoscaler_node_group_target_count >= cluster_autoscaler_node_group_max_count"
+                severity: warning
+                for: 15m
+              - name: Cluster Autoscaler node group unhealthy
+                description: Cluster Autoscaler considers node group {{ $labels.node_group }} unhealthy (too many unready or unregistered nodes) and does not scale it.
+                query: "cluster_autoscaler_node_group_healthiness == 0"
+                severity: warning
+                for: 15m
+              #
+              # Performance and errors (RED)
+              #
+              - name: Cluster Autoscaler unschedulable pods
+                description: "{{ $value | printf \"%.0f\" }} pod(s) have stayed unschedulable for 15 minutes. Check the pod constraints, the node group limits and the failed scale-ups."
+                query: 'cluster_autoscaler_unschedulable_pods_count{type="unschedulable"} > 0'
+                severity: warning
+                for: 15m
+              - name: Cluster Autoscaler failed scale-up
+                description: Cluster Autoscaler failed to scale up {{ $value | printf "%.0f" }} time(s) in the last 15 minutes ({{ $labels.reason }}).
+                query: "sum by (reason) (increase(cluster_autoscaler_failed_scale_ups_total[15m])) > 0"
+                severity: warning
+              - name: Cluster Autoscaler errors
+                description: "{{ $value | printf \"%.0f\" }} Cluster Autoscaler loops failed with {{ $labels.type }} errors in the last 10 minutes."
+                query: "sum by (type) (increase(cluster_autoscaler_errors_total[10m])) > 3"
+                severity: warning
+
       - name: KEDA
         logo: /images/services/keda.svg
         exporters:

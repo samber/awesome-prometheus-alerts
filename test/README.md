@@ -36,6 +36,11 @@ pending periods. Their synthetic samples follow these producer contracts:
 - [Nomad v2.1.1 state_store.go, lines 6066–6160](https://github.com/hashicorp/nomad/blob/v2.1.1/nomad/state/state_store.go#L6066-L6160):
   the job summary only adds to `Failed` (a terminal client status) and only takes from
   `Lost` when a lost allocation comes back. A failure from an hour ago stays quiet.
+- [Cluster Autoscaler 1.36.2 metrics.go, lines 195–320](https://github.com/kubernetes/autoscaler/blob/cluster-autoscaler-1.36.2/cluster-autoscaler/metrics/metrics.go#L195-L320)
+  and [lines 642–685](https://github.com/kubernetes/autoscaler/blob/cluster-autoscaler-1.36.2/cluster-autoscaler/metrics/metrics.go#L642-L685):
+  `last_activity` holds the Unix time of each activity, `nodes_count` has one series per
+  node `state` and `unschedulable_pods_count` separates `unschedulable` from
+  `scheduler_unprocessed` pods. Only the `unschedulable` ones count.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.
