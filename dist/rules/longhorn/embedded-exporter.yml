@@ -1,0 +1,97 @@
+groups:
+
+- name: EmbeddedExporter
+
+  # longhorn-manager exposes these metrics on port 9500 of every node (service longhorn-backend).
+  # Each manager reports the volumes, disks and backups owned by its node.
+  # Since Longhorn v1.11, longhorn_volume_robustness and longhorn_volume_state carry the value in a `state` label (1 for the current one).
+  # Before v1.11 they were a single series with a numeric value: robustness 2 is degraded and 3 is faulted.
+  
+  rules:
+
+    - alert: LonghornVolumeFaulted
+      expr: 'longhorn_volume_robustness{state="faulted"} == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Longhorn volume faulted (instance {{ $labels.instance }})
+        description: "Longhorn volume {{ $labels.volume }} (PVC {{ $labels.pvc_namespace }}/{{ $labels.pvc }}) is faulted. No healthy replica is left and the data is unavailable until a replica is salvaged.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: LonghornVolumeRead-only
+      expr: 'longhorn_volume_file_system_read_only == 1'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Longhorn volume read-only (instance {{ $labels.instance }})
+        description: "The filesystem of Longhorn volume {{ $labels.volume }} (PVC {{ $labels.pvc_namespace }}/{{ $labels.pvc }}) was remounted read-only, usually after an I/O error. Writes from the workload fail until it is remounted.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # A node that is down has no longhorn-manager to report it, so the rule compares the node count with the nodes that report ready.
+    - alert: LonghornNodeDown
+      expr: '(max(longhorn_node_count_total) or on() vector(0)) - (count(longhorn_node_status{condition="ready"} == 1) or on() vector(0)) > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Longhorn node down (instance {{ $labels.instance }})
+        description: "{{ $value }} Longhorn node(s) are not ready. Replicas on them are unavailable and volumes with replicas there run degraded.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # 10m covers a normal replica rebuild. Raise it for large volumes.
+    - alert: LonghornVolumeDegraded
+      expr: 'longhorn_volume_robustness{state="degraded"} == 1'
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Longhorn volume degraded (instance {{ $labels.instance }})
+        description: "Longhorn volume {{ $labels.volume }} (PVC {{ $labels.pvc_namespace }}/{{ $labels.pvc }}) is degraded. At least one replica is missing or rebuilding.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: LonghornDiskNotReady
+      expr: 'longhorn_disk_status{condition="ready"} == 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Longhorn disk not ready (instance {{ $labels.instance }})
+        description: "Longhorn disk {{ $labels.disk }} on node {{ $labels.node }} is not ready ({{ $labels.condition_reason }}). No replica can be scheduled on it.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 85% is arbitrary. Adjust it to the storage over-provisioning and minimal available settings.
+    - alert: LonghornDiskAlmostFull
+      expr: 'longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes > 0.85 and longhorn_disk_capacity_bytes > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Longhorn disk almost full (instance {{ $labels.instance }})
+        description: "Longhorn disk {{ $labels.disk }} on node {{ $labels.node }} is {{ $value | humanizePercentage }} full.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # longhorn_disk_health exists since Longhorn v1.11 and only for disks with SMART data.
+    - alert: LonghornDiskUnhealthy
+      expr: 'longhorn_disk_health == 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Longhorn disk unhealthy (instance {{ $labels.instance }})
+        description: "Longhorn disk {{ $labels.disk }} on node {{ $labels.node }} failed its SMART health check. Move the replicas off it and replace the disk.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: LonghornBackupFailed
+      expr: 'longhorn_backup_state == 4'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Longhorn backup failed (instance {{ $labels.instance }})
+        description: "Longhorn backup {{ $labels.backup }} of volume {{ $labels.volume }} is in error state.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # longhorn_volume_last_backup_at exists since Longhorn v1.11. It is 0 for a volume that was never backed up, which this rule ignores.
+    # 25h fits a daily recurring backup job. Set it a bit above the interval of your slowest job.
+    - alert: LonghornVolumeBackupTooOld
+      expr: 'time() - longhorn_volume_last_backup_at > 86400 + 3600 and longhorn_volume_last_backup_at > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Longhorn volume backup too old (instance {{ $labels.instance }})
+        description: "The last successful backup of Longhorn volume {{ $labels.volume }} (PVC {{ $labels.pvc_namespace }}/{{ $labels.pvc }}) is {{ $value | humanizeDuration }} old.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
