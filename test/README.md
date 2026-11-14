@@ -28,6 +28,11 @@ pending periods. Their synthetic samples follow these producer contracts:
   the largest finite completion and queue-duration buckets are 300 and 60 seconds.
   The rules use a strict greater-than-5% tail-event policy above those boundaries, not
   an interpolated p95. Exactly 5% and observations exactly at the time boundary stay quiet.
+- [Longhorn v1.11.0 volume_collector.go, lines 306–324](https://github.com/longhorn/longhorn-manager/blob/v1.11.0/metrics_collector/volume_collector.go#L306-L324)
+  and [node_collector.go, lines 199–215](https://github.com/longhorn/longhorn-manager/blob/v1.11.0/metrics_collector/node_collector.go#L199-L215):
+  robustness is one series per `state` label, 1 for the current state and 0 for the others.
+  Each longhorn-manager reports only its own node, so a node that is down has no status
+  series and is found by comparing with `longhorn_node_count_total`.
 - [External Secrets Operator v2.15.0 esmetrics.go, lines 127–172](https://github.com/external-secrets/external-secrets/blob/v2.15.0/pkg/controllers/externalsecret/esmetrics/esmetrics.go#L127-L172)
   and [runtime/metrics/metrics.go, lines 34–52](https://github.com/external-secrets/external-secrets/blob/v2.15.0/runtime/metrics/metrics.go#L34-L52):
   the Ready condition keeps one series per status, 1 for the current one and 0 for the

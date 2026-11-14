@@ -1,0 +1,102 @@
+# Longhorn v1.11+ longhorn-manager metrics_collector: volume robustness is label based
+# (one series per state, 1 for the current one), node status and the node count come
+# from every manager, a manager only reports its own node.
+rule_files:
+- rules/longhorn/embedded-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: degraded and faulted volumes
+  interval: 1m
+  input_series:
+  - series: longhorn_volume_robustness{instance="10.0.0.1:9500",node="worker-1",pvc="data-a",pvc_namespace="app",volume="pvc-a",state="healthy"}
+    values: 0x15
+  - series: longhorn_volume_robustness{instance="10.0.0.1:9500",node="worker-1",pvc="data-a",pvc_namespace="app",volume="pvc-a",state="degraded"}
+    values: 1x15
+  - series: longhorn_volume_robustness{instance="10.0.0.1:9500",node="worker-1",pvc="data-a",pvc_namespace="app",volume="pvc-a",state="faulted"}
+    values: 0x15
+  - series: longhorn_volume_robustness{instance="10.0.0.2:9500",node="worker-2",pvc="data-b",pvc_namespace="app",volume="pvc-b",state="healthy"}
+    values: 1x15
+  - series: longhorn_volume_robustness{instance="10.0.0.2:9500",node="worker-2",pvc="data-b",pvc_namespace="app",volume="pvc-b",state="degraded"}
+    values: 0x15
+  - series: longhorn_volume_robustness{instance="10.0.0.2:9500",node="worker-2",pvc="data-b",pvc_namespace="app",volume="pvc-b",state="faulted"}
+    values: 0x15
+  alert_rule_test:
+  - eval_time: 9m
+    alertname: LonghornVolumeDegraded
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: LonghornVolumeDegraded
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.1:9500
+        node: worker-1
+        pvc: data-a
+        pvc_namespace: app
+        volume: pvc-a
+        state: degraded
+      exp_annotations:
+        summary: Longhorn volume degraded (instance 10.0.0.1:9500)
+        description: "Longhorn volume pvc-a (PVC app/data-a) is degraded. At least one replica is missing or rebuilding.\n  VALUE = 1\n  LABELS = map[__name__:longhorn_volume_robustness instance:10.0.0.1:9500 node:worker-1 pvc:data-a pvc_namespace:app state:degraded volume:pvc-a]"
+  - eval_time: 10m
+    alertname: LonghornVolumeFaulted
+    exp_alerts: []
+- name: node that stopped reporting
+  interval: 1m
+  input_series:
+  - series: longhorn_node_count_total{instance="10.0.0.1:9500"}
+    values: 3x10
+  - series: longhorn_node_count_total{instance="10.0.0.2:9500"}
+    values: 3x10
+  - series: longhorn_node_status{instance="10.0.0.1:9500",node="worker-1",condition="ready",condition_reason=""}
+    values: 1x10
+  - series: longhorn_node_status{instance="10.0.0.2:9500",node="worker-2",condition="ready",condition_reason=""}
+    values: 1x10
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: LonghornNodeDown
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+      exp_annotations:
+        summary: Longhorn node down (instance )
+        description: "1 Longhorn node(s) are not ready. Replicas on them are unavailable and volumes with replicas there run degraded.\n  VALUE = 1\n  LABELS = map[]"
+- name: all nodes ready
+  interval: 1m
+  input_series:
+  - series: longhorn_node_count_total{instance="10.0.0.1:9500"}
+    values: 2x10
+  - series: longhorn_node_count_total{instance="10.0.0.2:9500"}
+    values: 2x10
+  - series: longhorn_node_status{instance="10.0.0.1:9500",node="worker-1",condition="ready",condition_reason=""}
+    values: 1x10
+  - series: longhorn_node_status{instance="10.0.0.2:9500",node="worker-2",condition="ready",condition_reason=""}
+    values: 1x10
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: LonghornNodeDown
+    exp_alerts: []
+- name: volume backups
+  interval: 1h
+  input_series:
+  - series: longhorn_volume_last_backup_at{instance="10.0.0.1:9500",node="worker-1",pvc="data-a",pvc_namespace="app",volume="pvc-a"}
+    values: 0x30
+  - series: longhorn_volume_last_backup_at{instance="10.0.0.1:9500",node="worker-1",pvc="data-b",pvc_namespace="app",volume="pvc-b"}
+    values: 3600x30
+  alert_rule_test:
+  - eval_time: 26h
+    alertname: LonghornVolumeBackupTooOld
+    exp_alerts: []
+  - eval_time: 27h
+    alertname: LonghornVolumeBackupTooOld
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.1:9500
+        node: worker-1
+        pvc: data-b
+        pvc_namespace: app
+        volume: pvc-b
+      exp_annotations:
+        summary: Longhorn volume backup too old (instance 10.0.0.1:9500)
+        description: "The last successful backup of Longhorn volume pvc-b (PVC app/data-b) is 1d 2h 0m 0s old.\n  VALUE = 93600\n  LABELS = map[instance:10.0.0.1:9500 node:worker-1 pvc:data-b pvc_namespace:app volume:pvc-b]"
