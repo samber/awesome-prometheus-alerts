@@ -28,6 +28,11 @@ pending periods. Their synthetic samples follow these producer contracts:
   the largest finite completion and queue-duration buckets are 300 and 60 seconds.
   The rules use a strict greater-than-5% tail-event policy above those boundaries, not
   an interpolated p95. Exactly 5% and observations exactly at the time boundary stay quiet.
+- [Longhorn v1.11.0 volume_collector.go, lines 306–324](https://github.com/longhorn/longhorn-manager/blob/v1.11.0/metrics_collector/volume_collector.go#L306-L324)
+  and [node_collector.go, lines 199–215](https://github.com/longhorn/longhorn-manager/blob/v1.11.0/metrics_collector/node_collector.go#L199-L215):
+  robustness is one series per `state` label, 1 for the current state and 0 for the others.
+  Each longhorn-manager reports only its own node, so a node that is down has no status
+  series and is found by comparing with `longhorn_node_count_total`.
 - [External Secrets Operator v2.15.0 esmetrics.go, lines 127–172](https://github.com/external-secrets/external-secrets/blob/v2.15.0/pkg/controllers/externalsecret/esmetrics/esmetrics.go#L127-L172)
   and [runtime/metrics/metrics.go, lines 34–52](https://github.com/external-secrets/external-secrets/blob/v2.15.0/runtime/metrics/metrics.go#L34-L52):
   the Ready condition keeps one series per status, 1 for the current one and 0 for the
@@ -41,6 +46,11 @@ pending periods. Their synthetic samples follow these producer contracts:
   `last_activity` holds the Unix time of each activity, `nodes_count` has one series per
   node `state` and `unschedulable_pods_count` separates `unschedulable` from
   `scheduler_unprocessed` pods. Only the `unschedulable` ones count.
+- [Karpenter v1.15.1 cloudprovider/metrics/cloudprovider.go, lines 64–119](https://github.com/kubernetes-sigs/karpenter/blob/v1.15.1/pkg/cloudprovider/metrics/cloudprovider.go#L64-L119)
+  and [state/cluster.go, lines 152–181](https://github.com/kubernetes-sigs/karpenter/blob/v1.15.1/pkg/controllers/state/cluster.go#L152-L181):
+  cloud provider errors are counted per `controller`, `method`, `provider`, `error` and
+  `nodepool`, and `Cluster.Synced()` sets `karpenter_cluster_state_synced` to 1 or 0 with no labels.
+  `NodeClaimNotFoundError` and `InsufficientCapacityError` stay quiet.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.

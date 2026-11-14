@@ -1,0 +1,63 @@
+groups:
+
+- name: EmbeddedExporter
+
+  # Scrape the Karpenter controller metrics endpoint (port 8080 by default). Only the leader replica runs the controllers, so most of these series come from one pod at a time.
+  
+  rules:
+
+    - alert: KarpenterClusterStateNotSynced
+      expr: 'karpenter_cluster_state_synced == 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Karpenter cluster state not synced (instance {{ $labels.instance }})
+        description: "Karpenter cluster state has not been in sync with the NodeClaims and Nodes of the API server for 15 minutes. Karpenter does not provision or disrupt nodes until it is.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: KarpenterNodepoolNotReady
+      expr: 'operator_nodepool_status_condition_count{type="Ready", status="False"} > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: Karpenter NodePool not ready (instance {{ $labels.instance }})
+        description: "NodePool {{ $labels.name }} is not Ready ({{ $labels.reason }}). Karpenter does not launch nodes for it; check its NodeClass.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: KarpenterNodepoolNearItsLimit(>80%)
+      expr: 'karpenter_nodepools_usage / karpenter_nodepools_limit * 100 > 80 and karpenter_nodepools_limit > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Karpenter NodePool near its limit (> 80%) (instance {{ $labels.instance }})
+        description: "NodePool {{ $labels.nodepool }} uses {{ $value | printf \"%.0f\" }}% of its {{ $labels.resource_type }} limit. Karpenter stops launching nodes for it at 100%.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: KarpenterUnschedulablePods
+      expr: 'karpenter_scheduler_unschedulable_pods_count > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Karpenter unschedulable pods (instance {{ $labels.instance }})
+        description: "Karpenter found {{ $value | printf \"%.0f\" }} pending pod(s) that no NodePool can fit for 15 minutes. Check the pod constraints, the NodePool requirements and limits.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # NodeClaimNotFoundError (the instance is already gone) and InsufficientCapacityError (Karpenter falls back to other offerings) are part of normal operation.
+    - alert: KarpenterCloudProviderErrors
+      expr: 'sum by (controller, method, provider, error, nodepool) (increase(karpenter_cloudprovider_errors_total{error!~"NodeClaimNotFoundError|InsufficientCapacityError"}[5m])) > 0'
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Karpenter cloud provider errors (instance {{ $labels.instance }})
+        description: "Karpenter {{ $labels.controller }} keeps getting {{ $labels.error }} errors from {{ $labels.provider }} {{ $labels.method }} calls for NodePool {{ $labels.nodepool }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    # Threshold of 1h is arbitrary. Keep it above the terminationGracePeriod of your NodePools, if they set one.
+    - alert: KarpenterNodeclaimStuckTerminating
+      expr: 'operator_nodeclaim_termination_current_time_seconds > 3600'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Karpenter NodeClaim stuck terminating (instance {{ $labels.instance }})
+        description: "NodeClaim {{ $labels.name }} has been terminating for {{ $value | humanizeDuration }}. A PodDisruptionBudget, a do-not-disrupt pod or the cloud provider is holding the node.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
