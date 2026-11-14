@@ -1,0 +1,80 @@
+groups:
+
+- name: EmbeddedExporter
+
+  # Scrape the cluster-autoscaler metrics endpoint (port 8085 by default). The node_group_* series need the --emit-per-nodegroup-metrics flag.
+  
+  rules:
+
+    # The loop runs every --scan-interval (10s by default). Only the leader replica sets this series.
+    - alert: ClusterAutoscalerMainLoopStalled
+      expr: 'time() - cluster_autoscaler_last_activity{activity="main"} > 300'
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cluster Autoscaler main loop stalled (instance {{ $labels.instance }})
+        description: "The Cluster Autoscaler main loop has not run for {{ $value | humanizeDuration }}. No scale-up or scale-down happens while it is stuck.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClusterAutoscalerClusterNotSafeToAutoscale
+      expr: 'cluster_autoscaler_cluster_safe_to_autoscale == 0'
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: Cluster Autoscaler cluster not safe to autoscale (instance {{ $labels.instance }})
+        description: "Cluster Autoscaler considers the cluster unhealthy (too many unready nodes) and stopped scaling it.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClusterAutoscalerNodeCountNearMaximum(>80%)
+      expr: 'sum without (state) (cluster_autoscaler_nodes_count) / cluster_autoscaler_max_nodes_count * 100 > 80 and cluster_autoscaler_max_nodes_count > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cluster Autoscaler node count near maximum (> 80%) (instance {{ $labels.instance }})
+        description: "The cluster has {{ $value | printf \"%.0f\" }}% of the nodes its node groups allow. Cluster Autoscaler cannot add nodes past the maximum.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClusterAutoscalerNodeGroupAtMaximumSize
+      expr: 'cluster_autoscaler_node_group_target_count >= cluster_autoscaler_node_group_max_count'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cluster Autoscaler node group at maximum size (instance {{ $labels.instance }})
+        description: "Node group {{ $labels.node_group }} is at its maximum size, so Cluster Autoscaler cannot scale it up.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClusterAutoscalerNodeGroupUnhealthy
+      expr: 'cluster_autoscaler_node_group_healthiness == 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cluster Autoscaler node group unhealthy (instance {{ $labels.instance }})
+        description: "Cluster Autoscaler considers node group {{ $labels.node_group }} unhealthy (too many unready or unregistered nodes) and does not scale it.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClusterAutoscalerUnschedulablePods
+      expr: 'cluster_autoscaler_unschedulable_pods_count{type="unschedulable"} > 0'
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cluster Autoscaler unschedulable pods (instance {{ $labels.instance }})
+        description: "{{ $value | printf \"%.0f\" }} pod(s) have stayed unschedulable for 15 minutes. Check the pod constraints, the node group limits and the failed scale-ups.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClusterAutoscalerFailedScale-up
+      expr: 'sum by (reason) (increase(cluster_autoscaler_failed_scale_ups_total[15m])) > 0'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cluster Autoscaler failed scale-up (instance {{ $labels.instance }})
+        description: "Cluster Autoscaler failed to scale up {{ $value | printf \"%.0f\" }} time(s) in the last 15 minutes ({{ $labels.reason }}).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    - alert: ClusterAutoscalerErrors
+      expr: 'sum by (type) (increase(cluster_autoscaler_errors_total[10m])) > 3'
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: Cluster Autoscaler errors (instance {{ $labels.instance }})
+        description: "{{ $value | printf \"%.0f\" }} Cluster Autoscaler loops failed with {{ $labels.type }} errors in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
