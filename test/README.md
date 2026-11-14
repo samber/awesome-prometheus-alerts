@@ -41,6 +41,11 @@ pending periods. Their synthetic samples follow these producer contracts:
 - [Nomad v2.1.1 state_store.go, lines 6066–6160](https://github.com/hashicorp/nomad/blob/v2.1.1/nomad/state/state_store.go#L6066-L6160):
   the job summary only adds to `Failed` (a terminal client status) and only takes from
   `Lost` when a lost allocation comes back. A failure from an hour ago stays quiet.
+- [Karpenter v1.15.1 cloudprovider/metrics/cloudprovider.go, lines 64–119](https://github.com/kubernetes-sigs/karpenter/blob/v1.15.1/pkg/cloudprovider/metrics/cloudprovider.go#L64-L119)
+  and [state/cluster.go, lines 152–181](https://github.com/kubernetes-sigs/karpenter/blob/v1.15.1/pkg/controllers/state/cluster.go#L152-L181):
+  cloud provider errors are counted per `controller`, `method`, `provider`, `error` and
+  `nodepool`, and `Cluster.Synced()` sets `karpenter_cluster_state_synced` to 1 or 0 with no labels.
+  `NodeClaimNotFoundError` and `InsufficientCapacityError` stay quiet.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.

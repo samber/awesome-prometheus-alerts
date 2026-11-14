@@ -1,0 +1,141 @@
+# Karpenter v1.15.1: karpenter_cluster_state_synced has no labels besides the target ones,
+# operator_nodepool_status_condition_count carries name, namespace, type, status and reason,
+# karpenter_nodepools_usage/limit carry nodepool and resource_type, the scheduler gauge
+# carries controller and karpenter_cloudprovider_errors_total carries controller, method,
+# provider, error and nodepool.
+rule_files:
+- rules/karpenter/embedded-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: cluster state not synced
+  interval: 1m
+  input_series:
+  - series: karpenter_cluster_state_synced{instance="10.0.0.7:8080",job="karpenter"}
+    values: 1x5 0x20
+  alert_rule_test:
+  - eval_time: 19m
+    alertname: KarpenterClusterStateNotSynced
+    exp_alerts: []
+  - eval_time: 21m
+    alertname: KarpenterClusterStateNotSynced
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.0.7:8080
+        job: karpenter
+      exp_annotations:
+        summary: Karpenter cluster state not synced (instance 10.0.0.7:8080)
+        description: "Karpenter cluster state has not been in sync with the NodeClaims and Nodes of the API server for 15 minutes. Karpenter does not provision or disrupt nodes until it is.\n  VALUE = 0\n  LABELS = map[__name__:karpenter_cluster_state_synced instance:10.0.0.7:8080 job:karpenter]"
+- name: NodePool not ready
+  interval: 1m
+  input_series:
+  - series: operator_nodepool_status_condition_count{instance="10.0.0.7:8080",job="karpenter",name="default",namespace="",type="Ready",status="False",reason="NodeClassNotReady"}
+    values: 1x10
+  - series: operator_nodepool_status_condition_count{instance="10.0.0.7:8080",job="karpenter",name="gpu",namespace="",type="Ready",status="True",reason="Ready"}
+    values: 1x10
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: KarpenterNodepoolNotReady
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.0.7:8080
+        job: karpenter
+        name: default
+        type: Ready
+        status: "False"
+        reason: NodeClassNotReady
+      exp_annotations:
+        summary: Karpenter NodePool not ready (instance 10.0.0.7:8080)
+        description: "NodePool default is not Ready (NodeClassNotReady). Karpenter does not launch nodes for it; check its NodeClass.\n  VALUE = 1\n  LABELS = map[__name__:operator_nodepool_status_condition_count instance:10.0.0.7:8080 job:karpenter name:default reason:NodeClassNotReady status:False type:Ready]"
+- name: NodePool near its limit
+  interval: 1m
+  input_series:
+  - series: karpenter_nodepools_usage{instance="10.0.0.7:8080",job="karpenter",nodepool="default",resource_type="cpu"}
+    values: 90x20
+  - series: karpenter_nodepools_limit{instance="10.0.0.7:8080",job="karpenter",nodepool="default",resource_type="cpu"}
+    values: 100x20
+  - series: karpenter_nodepools_usage{instance="10.0.0.7:8080",job="karpenter",nodepool="default",resource_type="memory"}
+    values: 100x20
+  - series: karpenter_nodepools_limit{instance="10.0.0.7:8080",job="karpenter",nodepool="default",resource_type="memory"}
+    values: 1000x20
+  - series: karpenter_nodepools_usage{instance="10.0.0.7:8080",job="karpenter",nodepool="batch",resource_type="cpu"}
+    values: 4x20
+  - series: karpenter_nodepools_limit{instance="10.0.0.7:8080",job="karpenter",nodepool="batch",resource_type="cpu"}
+    values: 0x20
+  alert_rule_test:
+  - eval_time: 16m
+    alertname: KarpenterNodepoolNearItsLimit(>80%)
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.7:8080
+        job: karpenter
+        nodepool: default
+        resource_type: cpu
+      exp_annotations:
+        summary: Karpenter NodePool near its limit (> 80%) (instance 10.0.0.7:8080)
+        description: "NodePool default uses 90% of its cpu limit. Karpenter stops launching nodes for it at 100%.\n  VALUE = 90\n  LABELS = map[instance:10.0.0.7:8080 job:karpenter nodepool:default resource_type:cpu]"
+- name: unschedulable pods
+  interval: 1m
+  input_series:
+  - series: karpenter_scheduler_unschedulable_pods_count{instance="10.0.0.7:8080",job="karpenter",controller="provisioner"}
+    values: 0x5 3x20
+  alert_rule_test:
+  - eval_time: 19m
+    alertname: KarpenterUnschedulablePods
+    exp_alerts: []
+  - eval_time: 21m
+    alertname: KarpenterUnschedulablePods
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.7:8080
+        job: karpenter
+        controller: provisioner
+      exp_annotations:
+        summary: Karpenter unschedulable pods (instance 10.0.0.7:8080)
+        description: "Karpenter found 3 pending pod(s) that no NodePool can fit for 15 minutes. Check the pod constraints, the NodePool requirements and limits.\n  VALUE = 3\n  LABELS = map[__name__:karpenter_scheduler_unschedulable_pods_count controller:provisioner instance:10.0.0.7:8080 job:karpenter]"
+- name: cloud provider errors
+  interval: 1m
+  input_series:
+  - series: karpenter_cloudprovider_errors_total{instance="10.0.0.7:8080",job="karpenter",controller="nodeclaim.lifecycle",method="Create",provider="aws",error="unknown",nodepool="default"}
+    values: 0+2x15
+  - series: karpenter_cloudprovider_errors_total{instance="10.0.0.7:8080",job="karpenter",controller="nodeclaim.lifecycle",method="Create",provider="aws",error="InsufficientCapacityError",nodepool="spot"}
+    values: 0+5x15
+  - series: karpenter_cloudprovider_errors_total{instance="10.0.0.7:8080",job="karpenter",controller="nodeclaim.termination",method="Get",provider="aws",error="NodeClaimNotFoundError",nodepool="default"}
+    values: 0+1x15
+  alert_rule_test:
+  - eval_time: 12m
+    alertname: KarpenterCloudProviderErrors
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        controller: nodeclaim.lifecycle
+        method: Create
+        provider: aws
+        error: unknown
+        nodepool: default
+      exp_annotations:
+        summary: Karpenter cloud provider errors (instance )
+        description: "Karpenter nodeclaim.lifecycle keeps getting unknown errors from aws Create calls for NodePool default.\n  VALUE = 10\n  LABELS = map[controller:nodeclaim.lifecycle error:unknown method:Create nodepool:default provider:aws]"
+- name: NodeClaim stuck terminating
+  interval: 1m
+  input_series:
+  - series: operator_nodeclaim_termination_current_time_seconds{instance="10.0.0.7:8080",job="karpenter",name="default-abcde",namespace=""}
+    values: 3000+60x20
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: KarpenterNodeclaimStuckTerminating
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: KarpenterNodeclaimStuckTerminating
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.7:8080
+        job: karpenter
+        name: default-abcde
+      exp_annotations:
+        summary: Karpenter NodeClaim stuck terminating (instance 10.0.0.7:8080)
+        description: "NodeClaim default-abcde has been terminating for 1h 5m 0s. A PodDisruptionBudget, a do-not-disrupt pod or the cloud provider is holding the node.\n  VALUE = 3900\n  LABELS = map[__name__:operator_nodeclaim_termination_current_time_seconds instance:10.0.0.7:8080 job:karpenter name:default-abcde]"

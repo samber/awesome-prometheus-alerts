@@ -5188,6 +5188,58 @@ groups:
                 severity: info
                 for: 24h
 
+      - name: Karpenter
+        logo: /images/services/karpenter.svg
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://karpenter.sh/docs/reference/metrics/
+            comments: |
+              Scrape the Karpenter controller metrics endpoint (port 8080 by default). Only the leader replica runs the controllers, so most of these series come from one pod at a time.
+            rules:
+              #
+              # Availability
+              #
+              - name: Karpenter cluster state not synced
+                description: Karpenter cluster state has not been in sync with the NodeClaims and Nodes of the API server for 15 minutes. Karpenter does not provision or disrupt nodes until it is.
+                query: "karpenter_cluster_state_synced == 0"
+                severity: critical
+                for: 15m
+              - name: Karpenter NodePool not ready
+                description: NodePool {{ $labels.name }} is not Ready ({{ $labels.reason }}). Karpenter does not launch nodes for it; check its NodeClass.
+                query: 'operator_nodepool_status_condition_count{type="Ready", status="False"} > 0'
+                severity: critical
+                for: 5m
+              #
+              # Resource saturation (USE)
+              #
+              - name: Karpenter NodePool near its limit (> 80%)
+                description: NodePool {{ $labels.nodepool }} uses {{ $value | printf "%.0f" }}% of its {{ $labels.resource_type }} limit. Karpenter stops launching nodes for it at 100%.
+                query: "karpenter_nodepools_usage / karpenter_nodepools_limit * 100 > 80 and karpenter_nodepools_limit > 0"
+                severity: warning
+                for: 15m
+              #
+              # Performance and errors (RED)
+              #
+              - name: Karpenter unschedulable pods
+                description: Karpenter found {{ $value | printf "%.0f" }} pending pod(s) that no NodePool can fit for 15 minutes. Check the pod constraints, the NodePool requirements and limits.
+                query: "karpenter_scheduler_unschedulable_pods_count > 0"
+                severity: warning
+                for: 15m
+              - name: Karpenter cloud provider errors
+                description: Karpenter {{ $labels.controller }} keeps getting {{ $labels.error }} errors from {{ $labels.provider }} {{ $labels.method }} calls for NodePool {{ $labels.nodepool }}.
+                query: 'sum by (controller, method, provider, error, nodepool) (increase(karpenter_cloudprovider_errors_total{error!~"NodeClaimNotFoundError|InsufficientCapacityError"}[5m])) > 0'
+                severity: warning
+                for: 5m
+                comments: |
+                  NodeClaimNotFoundError (the instance is already gone) and InsufficientCapacityError (Karpenter falls back to other offerings) are part of normal operation.
+              - name: Karpenter NodeClaim stuck terminating
+                description: NodeClaim {{ $labels.name }} has been terminating for {{ $value | humanizeDuration }}. A PodDisruptionBudget, a do-not-disrupt pod or the cloud provider is holding the node.
+                query: "operator_nodeclaim_termination_current_time_seconds > 3600"
+                severity: warning
+                comments: |
+                  Threshold of 1h is arbitrary. Keep it above the terminationGracePeriod of your NodePools, if they set one.
+
   - name: CI/CD
     services:
       - name: Jenkins
