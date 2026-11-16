@@ -1,0 +1,137 @@
+# Kyverno v1.20.0: counters come from the OpenTelemetry Prometheus exporter and carry the
+# _total suffix. kyverno_controller_drop_total carries controller_name,
+# kyverno_breaker_drops_total carries circuit_name, kyverno_deleting_controller_errors_total
+# carries policy_type, policy_namespace, policy_name and resource, and
+# kyverno_ttl_controller_errors_total carries resource_group, resource_version and
+# resource_resource. kyverno_events_dropped_total has no attributes.
+rule_files:
+- rules/kyverno/embedded-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: slow admission reviews
+  interval: 1m
+  input_series:
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.9:8000",job="kyverno-admission",le="0.5"}
+    values: 0+10x20
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.9:8000",job="kyverno-admission",le="1"}
+    values: 0+20x20
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.9:8000",job="kyverno-admission",le="2.5"}
+    values: 0+100x20
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.9:8000",job="kyverno-admission",le="+Inf"}
+    values: 0+100x20
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.10:8000",job="kyverno-admission",le="0.5"}
+    values: 0+100x20
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.10:8000",job="kyverno-admission",le="1"}
+    values: 0+100x20
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.10:8000",job="kyverno-admission",le="2.5"}
+    values: 0+100x20
+  - series: kyverno_admission_review_duration_seconds_bucket{instance="10.0.0.10:8000",job="kyverno-admission",le="+Inf"}
+    values: 0+100x20
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: KyvernoAdmissionReviewSlow(p99>1s)
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: KyvernoAdmissionReviewSlow(p99>1s)
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.9:8000
+      exp_annotations:
+        summary: Kyverno admission review slow (p99 > 1s) (instance 10.0.0.9:8000)
+        description: "99th percentile of the Kyverno admission review latency on 10.0.0.9:8000 is 2.481s. Every API request matched by a policy waits for it, and the API server gives up on the webhook at its timeout (10s by default).\n  VALUE = 2.4812499999999997\n  LABELS = map[instance:10.0.0.9:8000]"
+- name: controller dropping queue items
+  interval: 1m
+  input_series:
+  - series: kyverno_controller_drop_total{instance="10.0.0.11:8000",job="kyverno-background",controller_name="background-scan-controller"}
+    values: 0x5 1 2 2 2 2 2 2 2 2 2 2
+  - series: kyverno_controller_drop_total{instance="10.0.0.11:8000",job="kyverno-background",controller_name="policy-controller"}
+    values: 0x16
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: KyvernoControllerDroppingWork
+    exp_alerts: []
+  - eval_time: 8m
+    alertname: KyvernoControllerDroppingWork
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.11:8000
+        controller_name: background-scan-controller
+      exp_annotations:
+        summary: Kyverno controller dropping work (instance 10.0.0.11:8000)
+        description: "Kyverno controller background-scan-controller on 10.0.0.11:8000 dropped 2 item(s) from its queue after exhausting its retries. Those resources are not reconciled until they change again.\n  VALUE = 2\n  LABELS = map[controller_name:background-scan-controller instance:10.0.0.11:8000]"
+  - eval_time: 16m
+    alertname: KyvernoControllerDroppingWork
+    exp_alerts: []
+- name: admission reports breaker open
+  interval: 1m
+  input_series:
+  - series: kyverno_breaker_drops_total{instance="10.0.0.9:8000",job="kyverno-admission",circuit_name="admission reports"}
+    values: 0x5 0+50x5
+  - series: kyverno_breaker_total{instance="10.0.0.9:8000",job="kyverno-admission",circuit_name="admission reports"}
+    values: 0+100x10
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: KyvernoAdmissionReportsDropped
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: KyvernoAdmissionReportsDropped
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.9:8000
+        circuit_name: admission reports
+      exp_annotations:
+        summary: Kyverno admission reports dropped (instance 10.0.0.9:8000)
+        description: "Kyverno on 10.0.0.9:8000 skipped 200 admission report(s) because the admission reports circuit breaker is open. There are more ephemeral reports than --maxAdmissionReports allows, so policy reports miss admission results.\n  VALUE = 200\n  LABELS = map[circuit_name:admission reports instance:10.0.0.9:8000]"
+- name: cleanup and TTL deletion failures
+  interval: 1m
+  input_series:
+  - series: kyverno_deleting_controller_errors_total{instance="10.0.0.12:8000",job="kyverno-cleanup",policy_type="ClusterCleanupPolicy",policy_namespace="",policy_name="remove-old-jobs",resource="batch/v1/jobs",resource_namespace="ci"}
+    values: 0x5 4x5
+  - series: kyverno_ttl_controller_errors_total{instance="10.0.0.12:8000",job="kyverno-cleanup",resource_namespace="ci",resource_group="",resource_version="v1",resource_resource="pods"}
+    values: 0x5 3x5
+  alert_rule_test:
+  - eval_time: 7m
+    alertname: KyvernoCleanupPolicyFailures
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.12:8000
+        policy_type: ClusterCleanupPolicy
+        policy_name: remove-old-jobs
+        resource: batch/v1/jobs
+      exp_annotations:
+        summary: Kyverno cleanup policy failures (instance 10.0.0.12:8000)
+        description: "Kyverno failed to delete 4 batch/v1/jobs object(s) matched by ClusterCleanupPolicy remove-old-jobs in the last 5 minutes.\n  VALUE = 4\n  LABELS = map[instance:10.0.0.12:8000 policy_name:remove-old-jobs policy_type:ClusterCleanupPolicy resource:batch/v1/jobs]"
+  - eval_time: 7m
+    alertname: KyvernoTtlCleanupFailures
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.0.12:8000
+        resource_version: v1
+        resource_resource: pods
+      exp_annotations:
+        summary: Kyverno TTL cleanup failures (instance 10.0.0.12:8000)
+        description: "Kyverno failed to delete 3 pods object(s) labeled with cleanup.kyverno.io/ttl in the last 5 minutes.\n  VALUE = 3\n  LABELS = map[instance:10.0.0.12:8000 resource_resource:pods resource_version:v1]"
+- name: events dropped
+  interval: 1m
+  input_series:
+  - series: kyverno_events_dropped_total{instance="10.0.0.9:8000",job="kyverno-admission"}
+    values: 0x5 7x5
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: KyvernoEventsDropped
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: KyvernoEventsDropped
+    exp_alerts:
+    - exp_labels:
+        severity: info
+        instance: 10.0.0.9:8000
+        job: kyverno-admission
+      exp_annotations:
+        summary: Kyverno events dropped (instance 10.0.0.9:8000)
+        description: "Kyverno on 10.0.0.9:8000 dropped 7 Kubernetes event(s) in the last 5 minutes. Policy violations and rule results are missing from the cluster events.\n  VALUE = 7\n  LABELS = map[instance:10.0.0.9:8000 job:kyverno-admission]"

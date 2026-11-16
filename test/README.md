@@ -51,6 +51,11 @@ pending periods. Their synthetic samples follow these producer contracts:
   cloud provider errors are counted per `controller`, `method`, `provider`, `error` and
   `nodepool`, and `Cluster.Synced()` sets `karpenter_cluster_state_synced` to 1 or 0 with no labels.
   `NodeClaimNotFoundError` and `InsufficientCapacityError` stay quiet.
+- [Kyverno v1.20.0 pkg/metrics/controller.go, lines 36–77](https://github.com/kyverno/kyverno/blob/v1.20.0/pkg/metrics/controller.go#L36-L77)
+  and [pkg/breaker/breaker.go](https://github.com/kyverno/kyverno/blob/v1.20.0/pkg/breaker/breaker.go):
+  Kyverno exports OpenTelemetry counters, so `kyverno_controller_drop` is scraped as
+  `kyverno_controller_drop_total{controller_name}` and the breaker counts a drop per
+  admission report it skips while more ephemeral reports than `--maxAdmissionReports` exist.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.
