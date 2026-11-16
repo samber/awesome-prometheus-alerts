@@ -1,0 +1,173 @@
+# CloudNativePG 1.30.1: cnpg_collector_* gauges come from the instance manager
+# (cnpg_collector_up carries the cluster label, pg_wal_archive_status a value label of
+# ready or done). cnpg_pg_replication_* and cnpg_pg_stat_archiver_* come from the default
+# monitoring queries, where pg_stat_archiver only runs on the primary and the times are
+# Unix epochs, -1 when never set. cnpg_pg_replication_slots_* carry slot_name, slot_type
+# and database.
+rule_files:
+- rules/cloudnativepg/embedded-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: instance down
+  interval: 1m
+  input_series:
+  - series: cnpg_collector_up{instance="10.0.1.4:9187",job="cnpg",cluster="pg-main"}
+    values: 1 1 0 0 0 0
+  - series: cnpg_collector_up{instance="10.0.1.5:9187",job="cnpg",cluster="pg-main"}
+    values: 1x5
+  alert_rule_test:
+  - eval_time: 2m
+    alertname: CloudnativepgInstanceDown
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: CloudnativepgInstanceDown
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.1.4:9187
+        job: cnpg
+        cluster: pg-main
+      exp_annotations:
+        summary: CloudNativePG instance down (instance 10.0.1.4:9187)
+        description: "PostgreSQL of cluster pg-main is not accepting connections on 10.0.1.4:9187.\n  VALUE = 0\n  LABELS = map[__name__:cnpg_collector_up cluster:pg-main instance:10.0.1.4:9187 job:cnpg]"
+- name: replica without WAL receiver and lagging replica
+  interval: 1m
+  input_series:
+  - series: cnpg_pg_replication_in_recovery{instance="10.0.1.4:9187",job="cnpg"}
+    values: 0x10
+  - series: cnpg_pg_replication_is_wal_receiver_up{instance="10.0.1.4:9187",job="cnpg"}
+    values: 0x10
+  - series: cnpg_pg_replication_lag{instance="10.0.1.4:9187",job="cnpg"}
+    values: 0x10
+  - series: cnpg_pg_replication_in_recovery{instance="10.0.1.5:9187",job="cnpg"}
+    values: 1x10
+  - series: cnpg_pg_replication_is_wal_receiver_up{instance="10.0.1.5:9187",job="cnpg"}
+    values: 1 0x9
+  - series: cnpg_pg_replication_lag{instance="10.0.1.5:9187",job="cnpg"}
+    values: 0 0 600x8
+  - series: cnpg_pg_replication_in_recovery{instance="10.0.1.6:9187",job="cnpg"}
+    values: 1x10
+  - series: cnpg_pg_replication_is_wal_receiver_up{instance="10.0.1.6:9187",job="cnpg"}
+    values: 1x10
+  - series: cnpg_pg_replication_lag{instance="10.0.1.6:9187",job="cnpg"}
+    values: 120x10
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CloudnativepgReplicaNotStreaming
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CloudnativepgReplicaNotStreaming
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.1.5:9187
+        job: cnpg
+      exp_annotations:
+        summary: CloudNativePG replica not streaming (instance 10.0.1.5:9187)
+        description: "Replica 10.0.1.5:9187 is in recovery but its WAL receiver is not running. It no longer receives changes from the primary.\n  VALUE = 1\n  LABELS = map[__name__:cnpg_pg_replication_in_recovery instance:10.0.1.5:9187 job:cnpg]"
+  - eval_time: 7m
+    alertname: CloudnativepgReplicationLag(>5m)
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.1.5:9187
+        job: cnpg
+      exp_annotations:
+        summary: CloudNativePG replication lag (> 5m) (instance 10.0.1.5:9187)
+        description: "Replica 10.0.1.5:9187 replays WAL 10m 0s behind the primary.\n  VALUE = 600\n  LABELS = map[__name__:cnpg_pg_replication_lag instance:10.0.1.5:9187 job:cnpg]"
+- name: inactive replication slot
+  interval: 1m
+  input_series:
+  - series: cnpg_pg_replication_slots_active{instance="10.0.1.4:9187",job="cnpg",slot_name="debezium",slot_type="logical",database="app"}
+    values: 0x40
+  - series: cnpg_pg_replication_slots_pg_wal_lsn_diff{instance="10.0.1.4:9187",job="cnpg",slot_name="debezium",slot_type="logical",database="app"}
+    values: 1073741824x40
+  - series: cnpg_pg_replication_slots_active{instance="10.0.1.4:9187",job="cnpg",slot_name="_cnpg_pg_main_2",slot_type="physical",database=""}
+    values: 1x40
+  - series: cnpg_pg_replication_slots_pg_wal_lsn_diff{instance="10.0.1.4:9187",job="cnpg",slot_name="_cnpg_pg_main_2",slot_type="physical",database=""}
+    values: 0x40
+  alert_rule_test:
+  - eval_time: 29m
+    alertname: CloudnativepgInactiveReplicationSlot
+    exp_alerts: []
+  - eval_time: 30m
+    alertname: CloudnativepgInactiveReplicationSlot
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.1.4:9187
+        job: cnpg
+        slot_name: debezium
+        slot_type: logical
+        database: app
+      exp_annotations:
+        summary: CloudNativePG inactive replication slot (instance 10.0.1.4:9187)
+        description: "Replication slot debezium on 10.0.1.4:9187 has been inactive for 30 minutes and holds back 1GiB of WAL. The WAL volume keeps growing until the slot is used or dropped.\n  VALUE = 1.073741824e+09\n  LABELS = map[__name__:cnpg_pg_replication_slots_pg_wal_lsn_diff database:app instance:10.0.1.4:9187 job:cnpg slot_name:debezium slot_type:logical]"
+- name: WAL archiving
+  interval: 1m
+  input_series:
+  - series: cnpg_pg_stat_archiver_last_archived_time{instance="10.0.1.4:9187",job="cnpg"}
+    values: 1700000000x15
+  - series: cnpg_pg_stat_archiver_last_failed_time{instance="10.0.1.4:9187",job="cnpg"}
+    values: -1 -1 1700000060x13
+  - series: cnpg_pg_stat_archiver_last_archived_time{instance="10.0.1.7:9187",job="cnpg"}
+    values: 1700000300x15
+  - series: cnpg_pg_stat_archiver_last_failed_time{instance="10.0.1.7:9187",job="cnpg"}
+    values: 1700000100x15
+  - series: cnpg_collector_pg_wal_archive_status{instance="10.0.1.4:9187",job="cnpg",value="ready"}
+    values: 2 4 8 16 32x12
+  - series: cnpg_collector_pg_wal_archive_status{instance="10.0.1.4:9187",job="cnpg",value="done"}
+    values: 40x15
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CloudnativepgWalArchivingFailing
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CloudnativepgWalArchivingFailing
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.1.4:9187
+        job: cnpg
+      exp_annotations:
+        summary: CloudNativePG WAL archiving failing (instance 10.0.1.4:9187)
+        description: "The last WAL archiving attempt on 10.0.1.4:9187 failed and no segment was archived since. Point-in-time recovery stops at the last archived segment and pg_wal keeps growing.\n  VALUE = 1.70000006e+09\n  LABELS = map[__name__:cnpg_pg_stat_archiver_last_failed_time instance:10.0.1.4:9187 job:cnpg]"
+  - eval_time: 14m
+    alertname: CloudnativepgWalSegmentsWaitingForArchive(>10)
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: 10.0.1.4:9187
+        job: cnpg
+        value: ready
+      exp_annotations:
+        summary: CloudNativePG WAL segments waiting for archive (> 10) (instance 10.0.1.4:9187)
+        description: "32 WAL segments on 10.0.1.4:9187 are waiting to be archived.\n  VALUE = 32\n  LABELS = map[__name__:cnpg_collector_pg_wal_archive_status instance:10.0.1.4:9187 job:cnpg value:ready]"
+- name: fenced instance and collection errors
+  interval: 1m
+  input_series:
+  - series: cnpg_collector_fencing_on{instance="10.0.1.6:9187",job="cnpg"}
+    values: 1x20
+  - series: cnpg_collector_last_collection_error{instance="10.0.1.6:9187",job="cnpg"}
+    values: 0 1x15
+  alert_rule_test:
+  - eval_time: 15m
+    alertname: CloudnativepgInstanceFenced
+    exp_alerts:
+    - exp_labels:
+        severity: info
+        instance: 10.0.1.6:9187
+        job: cnpg
+      exp_annotations:
+        summary: CloudNativePG instance fenced (instance 10.0.1.6:9187)
+        description: "Instance 10.0.1.6:9187 has been fenced for 15 minutes. PostgreSQL is stopped on it until the fencing annotation is removed.\n  VALUE = 1\n  LABELS = map[__name__:cnpg_collector_fencing_on instance:10.0.1.6:9187 job:cnpg]"
+  - eval_time: 11m
+    alertname: CloudnativepgMetricsCollectionErrors
+    exp_alerts:
+    - exp_labels:
+        severity: info
+        instance: 10.0.1.6:9187
+        job: cnpg
+      exp_annotations:
+        summary: CloudNativePG metrics collection errors (instance 10.0.1.6:9187)
+        description: "The last metrics collection on 10.0.1.6:9187 failed. Some cnpg_* series may be missing or stale.\n  VALUE = 1\n  LABELS = map[__name__:cnpg_collector_last_collection_error instance:10.0.1.6:9187 job:cnpg]"

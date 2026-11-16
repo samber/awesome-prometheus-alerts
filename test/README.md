@@ -51,6 +51,11 @@ pending periods. Their synthetic samples follow these producer contracts:
   cloud provider errors are counted per `controller`, `method`, `provider`, `error` and
   `nodepool`, and `Cluster.Synced()` sets `karpenter_cluster_state_synced` to 1 or 0 with no labels.
   `NodeClaimNotFoundError` and `InsufficientCapacityError` stay quiet.
+- [CloudNativePG 1.30.1 pg_collector.go, lines 108–215](https://github.com/cloudnative-pg/cloudnative-pg/blob/v1.30.1/pkg/management/postgres/webserver/metricserver/pg_collector.go#L108-L215)
+  and [default-monitoring.yaml, lines 110–200](https://github.com/cloudnative-pg/cloudnative-pg/blob/v1.30.1/config/manager/default-monitoring.yaml#L110-L200):
+  `cnpg_collector_up` carries `cluster`, the WAL archive gauge has `value="ready"|"done"`,
+  `pg_stat_archiver` runs only on the primary and reports -1 for a time that was never set,
+  and the replication lag query reports 0 once everything received has been replayed.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.

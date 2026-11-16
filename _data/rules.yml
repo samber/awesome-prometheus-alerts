@@ -1684,6 +1684,78 @@ groups:
                 comments: |
                   15s threshold is a rough default; depends on your configured pool_size and backend database capacity — adjust based on your workload.
 
+      - name: CloudNativePG
+        logo: /images/services/cloudnativepg.svg
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://cloudnative-pg.io/documentation/current/monitoring/
+            comments: |
+              Each instance pod exposes its metrics on port 9187 (enable `spec.monitoring.enablePodMonitor` or add your own PodMonitor).
+              The `cnpg_pg_*` series come from the default monitoring queries (`cnpg-default-monitoring` ConfigMap), the `cnpg_collector_*` ones from the instance manager.
+            rules:
+              #
+              # Availability
+              #
+              - name: CloudNativePG instance down
+                description: PostgreSQL of cluster {{ $labels.cluster }} is not accepting connections on {{ $labels.instance }}.
+                query: "cnpg_collector_up == 0"
+                severity: critical
+                for: 1m
+                comments: |
+                  1m delay allows a restart without triggering an alert.
+              - name: CloudNativePG replica not streaming
+                description: Replica {{ $labels.instance }} is in recovery but its WAL receiver is not running. It no longer receives changes from the primary.
+                query: "cnpg_pg_replication_in_recovery == 1 and cnpg_pg_replication_is_wal_receiver_up == 0"
+                severity: critical
+                for: 5m
+                comments: |
+                  The designated primary of a replica cluster that only restores WAL from an object store has no WAL receiver either.
+              - name: CloudNativePG replication lag (> 5m)
+                description: Replica {{ $labels.instance }} replays WAL {{ $value | humanizeDuration }} behind the primary.
+                query: "cnpg_pg_replication_lag > 300"
+                severity: warning
+                for: 5m
+                comments: |
+                  The query reports 0 when the replica has replayed everything it received, so an idle primary does not raise the lag.
+                  Threshold of 5m is arbitrary. Adjust it to your workload.
+              #
+              # Resource saturation (USE)
+              #
+              - name: CloudNativePG inactive replication slot
+                description: Replication slot {{ $labels.slot_name }} on {{ $labels.instance }} has been inactive for 30 minutes and holds back {{ $value | humanize1024 }}B of WAL. The WAL volume keeps growing until the slot is used or dropped.
+                query: "cnpg_pg_replication_slots_pg_wal_lsn_diff and on (instance, slot_name) cnpg_pg_replication_slots_active == 0"
+                severity: warning
+                for: 30m
+              #
+              # Performance and errors (RED)
+              #
+              - name: CloudNativePG WAL archiving failing
+                description: The last WAL archiving attempt on {{ $labels.instance }} failed and no segment was archived since. Point-in-time recovery stops at the last archived segment and pg_wal keeps growing.
+                query: "cnpg_pg_stat_archiver_last_failed_time > cnpg_pg_stat_archiver_last_archived_time"
+                severity: critical
+                for: 5m
+              - name: CloudNativePG WAL segments waiting for archive (> 10)
+                description: "{{ $value | printf \"%.0f\" }} WAL segments on {{ $labels.instance }} are waiting to be archived."
+                query: 'cnpg_collector_pg_wal_archive_status{value="ready"} > 10'
+                severity: warning
+                for: 10m
+                comments: |
+                  Threshold of 10 segments is arbitrary. Adjust it to your write rate.
+              #
+              # Info, security, and config
+              #
+              - name: CloudNativePG instance fenced
+                description: Instance {{ $labels.instance }} has been fenced for 15 minutes. PostgreSQL is stopped on it until the fencing annotation is removed.
+                query: "cnpg_collector_fencing_on == 1"
+                severity: info
+                for: 15m
+              - name: CloudNativePG metrics collection errors
+                description: The last metrics collection on {{ $labels.instance }} failed. Some cnpg_* series may be missing or stale.
+                query: "cnpg_collector_last_collection_error == 1"
+                severity: info
+                for: 10m
+
       - name: Redis
         logo: /images/services/redis.svg
         exporters:

@@ -78,6 +78,7 @@ See also:
 - [Oracle Database](https://samber.github.io/awesome-prometheus-alerts/rules/databases/oracle-database/)
 - [Patroni](https://samber.github.io/awesome-prometheus-alerts/rules/databases/patroni/)
 - [PGBouncer](https://samber.github.io/awesome-prometheus-alerts/rules/databases/pgbouncer/)
+- [CloudNativePG](https://samber.github.io/awesome-prometheus-alerts/rules/databases/cloudnativepg/)
 - [Redis](https://samber.github.io/awesome-prometheus-alerts/rules/databases/redis/)
 - [Memcached](https://samber.github.io/awesome-prometheus-alerts/rules/databases/memcached/)
 - [MongoDB](https://samber.github.io/awesome-prometheus-alerts/rules/databases/mongodb/)
