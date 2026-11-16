@@ -153,6 +153,7 @@ See also:
 - [Hashicorp Vault](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/hashicorp-vault/)
 - [External Secrets Operator](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/external-secrets-operator/)
 - [sip-exporter](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/sip-exporter)
+- [Kyverno](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/kyverno/)
 - [Keycloak](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/keycloak/)
 - [Cloudflare](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/cloudflare/)
 - [SNMP](https://samber.github.io/awesome-prometheus-alerts/rules/network-and-security/snmp/)

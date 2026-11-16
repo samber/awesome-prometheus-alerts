@@ -6185,6 +6185,50 @@ groups:
                 comments: |
                   Threshold of 5% is arbitrary. Adjust it to your workload.
 
+      - name: Kyverno
+        logo: /images/services/kyverno.svg
+        exporters:
+          - name: Embedded exporter
+            slug: embedded-exporter
+            doc_url: https://kyverno.io/docs/monitoring/
+            comments: |
+              Scrape the metrics port (8000 by default) of the admission, background, cleanup and reports controllers.
+              Kyverno exports its metrics through OpenTelemetry, so counters get the `_total` suffix.
+            rules:
+              #
+              # Performance and errors (RED)
+              #
+              - name: Kyverno admission review slow (p99 > 1s)
+                description: 99th percentile of the Kyverno admission review latency on {{ $labels.instance }} is {{ $value | humanizeDuration }}. Every API request matched by a policy waits for it, and the API server gives up on the webhook at its timeout (10s by default).
+                query: "histogram_quantile(0.99, sum by (instance, le) (rate(kyverno_admission_review_duration_seconds_bucket[5m]))) > 1"
+                severity: warning
+                for: 10m
+                comments: |
+                  Threshold of 1s is arbitrary. Adjust it to your workload.
+              - name: Kyverno controller dropping work
+                description: Kyverno controller {{ $labels.controller_name }} on {{ $labels.instance }} dropped {{ $value | printf "%.0f" }} item(s) from its queue after exhausting its retries. Those resources are not reconciled until they change again.
+                query: "sum by (instance, controller_name) (increase(kyverno_controller_drop_total[5m])) > 0"
+                severity: warning
+              - name: Kyverno admission reports dropped
+                description: Kyverno on {{ $labels.instance }} skipped {{ $value | printf "%.0f" }} admission report(s) because the {{ $labels.circuit_name }} circuit breaker is open. There are more ephemeral reports than --maxAdmissionReports allows, so policy reports miss admission results.
+                query: "sum by (instance, circuit_name) (increase(kyverno_breaker_drops_total[5m])) > 0"
+                severity: warning
+              - name: Kyverno cleanup policy failures
+                description: Kyverno failed to delete {{ $value | printf "%.0f" }} {{ $labels.resource }} object(s) matched by {{ $labels.policy_type }} {{ $labels.policy_name }} in the last 5 minutes.
+                query: "sum by (instance, policy_type, policy_namespace, policy_name, resource) (increase(kyverno_deleting_controller_errors_total[5m])) > 0"
+                severity: warning
+              - name: Kyverno TTL cleanup failures
+                description: Kyverno failed to delete {{ $value | printf "%.0f" }} {{ $labels.resource_resource }} object(s) labeled with cleanup.kyverno.io/ttl in the last 5 minutes.
+                query: "sum by (instance, resource_group, resource_version, resource_resource) (increase(kyverno_ttl_controller_errors_total[5m])) > 0"
+                severity: warning
+              #
+              # Info, security, and config
+              #
+              - name: Kyverno events dropped
+                description: Kyverno on {{ $labels.instance }} dropped {{ $value | printf "%.0f" }} Kubernetes event(s) in the last 5 minutes. Policy violations and rule results are missing from the cluster events.
+                query: "increase(kyverno_events_dropped_total[5m]) > 0"
+                severity: info
+
       - name: Keycloak
         logo: /images/services/keycloak.svg
         exporters:
