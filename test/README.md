@@ -52,5 +52,11 @@ pending periods. Their synthetic samples follow these producer contracts:
   `nodepool`, and `Cluster.Synced()` sets `karpenter_cluster_state_synced` to 1 or 0 with no labels.
   `NodeClaimNotFoundError` and `InsufficientCapacityError` stay quiet.
 
+- [dcgm-exporter 4.9.0 default-counters.csv, line 47](https://github.com/NVIDIA/dcgm-exporter/blob/4.9.0/etc/default-counters.csv#L47)
+  and [server.go, lines 616-642](https://github.com/NVIDIA/dcgm-exporter/blob/4.9.0/internal/pkg/server/server.go#L616-L642):
+  the default list collects `DCGM_FI_DEV_GPU_UTIL_RATIO`, one gauge per GPU, so a healthy exporter
+  always serves it. `/health` writes OK without checking DCGM collection, so `up` stays 1 while the
+  GPU series are gone. `up` and `absent(up{job=...})` are evaluated per scrape target.
+
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.

@@ -1,0 +1,117 @@
+# dcgm-exporter 4.9.0: the default metrics list (etc/default-counters.csv) collects
+# DCGM_FI_DEV_GPU_UTIL_RATIO, a 0 to 1 gauge with one series per GPU. up is added by
+# Prometheus for each scrape target. All samples are synthetic.
+rule_files:
+- rules/nvidia-gpu/nvidia-dcgm-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: healthy exporters stay quiet
+  interval: 1m
+  input_series:
+  - series: up{instance="10.0.0.1:9400",job="dcgm-exporter"}
+    values: 1x20
+  - series: up{instance="10.0.0.2:9400",job="dcgm-exporter"}
+    values: 1x20
+  - series: DCGM_FI_DEV_GPU_UTIL_RATIO{instance="10.0.0.1:9400",job="dcgm-exporter",gpu="0"}
+    values: 0.35x20
+  - series: DCGM_FI_DEV_GPU_UTIL_RATIO{instance="10.0.0.2:9400",job="dcgm-exporter",gpu="0"}
+    values: 0.8x20
+  alert_rule_test:
+  - eval_time: 15m
+    alertname: NvidiaDcgmExporterJobMissing
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: NvidiaDcgmExporterUpButNoGpuMetrics
+    exp_alerts: []
+- name: no dcgm-exporter target at all
+  interval: 1m
+  input_series:
+  - series: up{instance="10.0.0.9:8080",job="some-other-job"}
+    values: 1x20
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: NvidiaDcgmExporterJobMissing
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: NvidiaDcgmExporterJobMissing
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        job: dcgm-exporter
+      exp_annotations:
+        summary: "NVIDIA DCGM exporter job missing (instance )"
+        description: "Prometheus has no dcgm-exporter target. The exporter DaemonSet or its scrape config may be gone, so no GPU telemetry is collected and the other GPU alerts cannot fire.\n  VALUE = 1\n  LABELS = map[job:dcgm-exporter]"
+- name: target up but no GPU series
+  interval: 1m
+  input_series:
+  - series: up{instance="10.0.0.1:9400",job="dcgm-exporter"}
+    values: 1x20
+  - series: up{instance="10.0.0.2:9400",job="dcgm-exporter"}
+    values: 1x20
+  - series: DCGM_FI_DEV_GPU_UTIL_RATIO{instance="10.0.0.1:9400",job="dcgm-exporter",gpu="0"}
+    values: 0.35x20
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: NvidiaDcgmExporterUpButNoGpuMetrics
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: NvidiaDcgmExporterUpButNoGpuMetrics
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.0.2:9400
+        job: dcgm-exporter
+      exp_annotations:
+        summary: "NVIDIA DCGM exporter up but no GPU metrics (instance 10.0.0.2:9400)"
+        description: "10.0.0.2:9400 is scraped successfully but exports no DCGM_FI_DEV_GPU_UTIL_RATIO series. DCGM collection may have stopped while the exporter HTTP endpoint stays healthy.\n  VALUE = 1\n  LABELS = map[__name__:up instance:10.0.0.2:9400 job:dcgm-exporter]"
+- name: GPU series go stale while the target stays up
+  interval: 1m
+  input_series:
+  - series: up{instance="10.0.0.1:9400",job="dcgm-exporter"}
+    values: 1x30
+  - series: DCGM_FI_DEV_GPU_UTIL_RATIO{instance="10.0.0.1:9400",job="dcgm-exporter",gpu="0"}
+    values: 0.5x5 stale
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: NvidiaDcgmExporterUpButNoGpuMetrics
+    exp_alerts: []
+  - eval_time: 12m
+    alertname: NvidiaDcgmExporterUpButNoGpuMetrics
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        instance: 10.0.0.1:9400
+        job: dcgm-exporter
+      exp_annotations:
+        summary: "NVIDIA DCGM exporter up but no GPU metrics (instance 10.0.0.1:9400)"
+        description: "10.0.0.1:9400 is scraped successfully but exports no DCGM_FI_DEV_GPU_UTIL_RATIO series. DCGM collection may have stopped while the exporter HTTP endpoint stays healthy.\n  VALUE = 1\n  LABELS = map[__name__:up instance:10.0.0.1:9400 job:dcgm-exporter]"
+- name: a down target is left to the generic target-missing rule
+  interval: 1m
+  input_series:
+  - series: up{instance="10.0.0.1:9400",job="dcgm-exporter"}
+    values: 0x20
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: NvidiaDcgmExporterUpButNoGpuMetrics
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: NvidiaDcgmExporterJobMissing
+    exp_alerts: []
+- name: exporter pod replaced within about a minute stays quiet
+  interval: 1m
+  input_series:
+  - series: up{instance="10.0.0.1:9400",job="dcgm-exporter"}
+    values: 1x5 0 stale
+  - series: up{instance="10.0.0.7:9400",job="dcgm-exporter"}
+    values: _x7 1x13
+  - series: DCGM_FI_DEV_GPU_UTIL_RATIO{instance="10.0.0.1:9400",job="dcgm-exporter",gpu="0"}
+    values: 0.4x5 stale
+  - series: DCGM_FI_DEV_GPU_UTIL_RATIO{instance="10.0.0.7:9400",job="dcgm-exporter",gpu="0"}
+    values: _x7 0.4x13
+  alert_rule_test:
+  - eval_time: 15m
+    alertname: NvidiaDcgmExporterJobMissing
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: NvidiaDcgmExporterUpButNoGpuMetrics
+    exp_alerts: []
