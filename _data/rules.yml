@@ -617,6 +617,25 @@ groups:
               #
               # Availability
               #
+              - name: NVIDIA DCGM exporter job missing
+                description: "Prometheus has no dcgm-exporter target. The exporter DaemonSet or its scrape config may be gone, so no GPU telemetry is collected and the other GPU alerts cannot fire."
+                query: 'absent(up{job="dcgm-exporter"})'
+                severity: critical
+                for: 5m
+                comments: |
+                  Replace job="dcgm-exporter" with the actual job name in your Prometheus configuration.
+                  A single exporter target going down is already covered by the generic "Prometheus target missing" rule.
+              - name: NVIDIA DCGM exporter up but no GPU metrics
+                description: "{{ $labels.instance }} is scraped successfully but exports no DCGM_FI_DEV_GPU_UTIL_RATIO series. DCGM collection may have stopped while the exporter HTTP endpoint stays healthy."
+                query: 'up{job="dcgm-exporter"} == 1 unless on (instance) DCGM_FI_DEV_GPU_UTIL_RATIO'
+                severity: critical
+                for: 5m
+                comments: |
+                  An up == 0 alert cannot see this case: the target answers and /health returns OK, but no GPU series come back.
+                  Replace job="dcgm-exporter" with the actual job name in your Prometheus configuration.
+                  Fires on nodes where the exporter runs without a usable GPU; scope the scrape job to GPU nodes.
+                  If you replaced the default metrics list, use a field that list still collects.
+                  dcgm-exporter 4.8.x and older: DCGM_FI_DEV_GPU_UTIL.
               - name: NVIDIA GPU fatal XID error
                 description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) on {{ $labels.instance }} reported XID {{ $value }}. 48, 94 and 95 are ECC errors, 74 is an NVLink error and 79 means the GPU fell off the bus. Drain the node, then reset or replace the GPU."
                 query: "DCGM_FI_DEV_XID_ERROR == 48 or DCGM_FI_DEV_XID_ERROR == 74 or DCGM_FI_DEV_XID_ERROR == 79 or DCGM_FI_DEV_XID_ERROR == 94 or DCGM_FI_DEV_XID_ERROR == 95"
