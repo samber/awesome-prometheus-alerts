@@ -8492,17 +8492,17 @@ groups:
                   These processor metrics are deprecated since collector v0.110.0.
               - name: OpenTelemetry Collector exporter enqueue failed spans
                 description: OpenTelemetry Collector exporter {{ $labels.exporter }} is dropping {{ $value | humanize }}/s spans because its sending queue is full and rejects new items before they can be queued.
-                query: "rate(otelcol_exporter_enqueue_failed_spans_total[5m]) > 0.05"
+                query: "rate(otelcol_exporter_enqueue_failed_spans[5m]) > 0.05"
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector exporter enqueue failed metric points
                 description: OpenTelemetry Collector exporter {{ $labels.exporter }} is dropping {{ $value | humanize }}/s metric points because its sending queue is full and rejects new items before they can be queued.
-                query: "rate(otelcol_exporter_enqueue_failed_metric_points_total[5m]) > 0.05"
+                query: "rate(otelcol_exporter_enqueue_failed_metric_points[5m]) > 0.05"
                 severity: warning
                 for: 5m
               - name: OpenTelemetry Collector exporter enqueue failed log records
                 description: OpenTelemetry Collector exporter {{ $labels.exporter }} is dropping {{ $value | humanize }}/s log records because its sending queue is full and rejects new items before they can be queued.
-                query: "rate(otelcol_exporter_enqueue_failed_log_records_total[5m]) > 0.05"
+                query: "rate(otelcol_exporter_enqueue_failed_log_records[5m]) > 0.05"
                 severity: warning
                 for: 5m
 

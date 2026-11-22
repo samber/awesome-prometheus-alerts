@@ -1,0 +1,33 @@
+# OpenTelemetry Collector v0.165.0 internal telemetry: the default Prometheus reader on
+# :8888 sets without_type_suffix, so counters keep their raw names (no _total).
+rule_files:
+- rules/opentelemetry-collector/embedded-exporter.yml
+evaluation_interval: 1m
+tests:
+- name: exporter sending queue full
+  interval: 1m
+  input_series:
+  - series: otelcol_exporter_enqueue_failed_spans{instance="otelcol:8888",job="otel-collector",exporter="otlp_grpc"}
+    values: 0+30x10
+  - series: otelcol_exporter_enqueue_failed_metric_points{instance="otelcol:8888",job="otel-collector",exporter="otlp_grpc"}
+    values: 0+1x10
+  - series: otelcol_exporter_enqueue_failed_log_records{instance="otelcol:8888",job="otel-collector",exporter="otlp_grpc"}
+    values: 0x10
+  alert_rule_test:
+  - eval_time: 9m
+    alertname: OpentelemetryCollectorExporterEnqueueFailedSpans
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        instance: otelcol:8888
+        job: otel-collector
+        exporter: otlp_grpc
+      exp_annotations:
+        summary: OpenTelemetry Collector exporter enqueue failed spans (instance otelcol:8888)
+        description: "OpenTelemetry Collector exporter otlp_grpc is dropping 500m/s spans because its sending queue is full and rejects new items before they can be queued.\n  VALUE = 0.5\n  LABELS = map[exporter:otlp_grpc instance:otelcol:8888 job:otel-collector]"
+  - eval_time: 9m
+    alertname: OpentelemetryCollectorExporterEnqueueFailedMetricPoints
+    exp_alerts: []
+  - eval_time: 9m
+    alertname: OpentelemetryCollectorExporterEnqueueFailedLogRecords
+    exp_alerts: []
