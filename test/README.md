@@ -51,6 +51,10 @@ pending periods. Their synthetic samples follow these producer contracts:
   cloud provider errors are counted per `controller`, `method`, `provider`, `error` and
   `nodepool`, and `Cluster.Synced()` sets `karpenter_cluster_state_synced` to 1 or 0 with no labels.
   `NodeClaimNotFoundError` and `InsufficientCapacityError` stay quiet.
+- [OpenTelemetry Collector v0.165.0 otelconftelemetry/factory.go, lines 49–63](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.165.0/service/telemetry/otelconftelemetry/factory.go#L49-L63)
+  and [exporterhelper/metadata.yaml, lines 27–61](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.165.0/exporter/exporterhelper/metadata.yaml#L27-L61):
+  the default Prometheus reader on :8888 sets `without_type_suffix`, so the enqueue
+  failure counters are exposed as `otelcol_exporter_enqueue_failed_<signal>`, with no `_total`.
 
 These are rule-level regressions, not live deployment tests. GitLab histogram emission
 and application metrics must be enabled. No producer metrics or bucket boundaries are invented.
